@@ -1,273 +1,80 @@
-<p align="center">
-  <img src="ironclaw.png?v=2" alt="IronClaw" width="200"/>
-</p>
+# BastionClaw
 
-<h1 align="center">IronClaw</h1>
+**BastionClaw** is Terminal3's secure AI assistant runtime, built on the foundations of [IronClaw](https://github.com/nearai/ironclaw) and hardened with the Trinity decentralised secret network.
 
-<p align="center">
-  <strong>Your secure personal AI assistant, always on your side</strong>
-</p>
+## What makes BastionClaw different
 
-<p align="center">
-  <a href="#license"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache%202.0-blue.svg" alt="License: MIT OR Apache-2.0" /></a>
-  <a href="https://t.me/ironclawAI"><img src="https://img.shields.io/badge/Telegram-%40ironclawAI-26A5E4?style=flat&logo=telegram&logoColor=white" alt="Telegram: @ironclawAI" /></a>
-  <a href="https://www.reddit.com/r/ironclawAI/"><img src="https://img.shields.io/badge/Reddit-r%2FironclawAI-FF4500?style=flat&logo=reddit&logoColor=white" alt="Reddit: r/ironclawAI" /></a>
-  <a href="https://gitcgr.com/nearai/ironclaw">
-    <img src="https://gitcgr.com/badge/nearai/ironclaw.svg" alt="gitcgr" />
-  </a>
-</p>
+Standard AI assistants handle credentials unsafely — storing them in plaintext, passing them through model context, or trusting third-party services with your keys.
 
-<p align="center">
-  <a href="README.md">English</a> |
-  <a href="README.zh-CN.md">简体中文</a> |
-  <a href="README.ru.md">Русский</a> |
-  <a href="README.ja.md">日本語</a> |
-  <a href="README.ko.md">한국어</a>
-</p>
-
-<p align="center">
-  <a href="#philosophy">Philosophy</a> •
-  <a href="#features">Features</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#configuration">Configuration</a> •
-  <a href="#security">Security</a> •
-  <a href="#architecture">Architecture</a>
-</p>
-
----
-
-## Philosophy
-
-IronClaw is built on a simple principle: **your AI assistant should work for you, not against you**.
-
-In a world where AI systems are increasingly opaque about data handling and aligned with corporate interests, IronClaw takes a different approach:
-
-- **Your data stays yours** - All information is stored locally, encrypted, and never leaves your control
-- **Transparency by design** - Open source, auditable, no hidden telemetry or data harvesting
-- **Self-expanding capabilities** - Build new tools on the fly without waiting for vendor updates
-- **Defense in depth** - Multiple security layers protect against prompt injection and data exfiltration
-
-IronClaw is the AI assistant you can actually trust with your personal and professional life.
-
-## Features
-
-### Security First
-
-- **WASM Sandbox** - Untrusted tools run in isolated WebAssembly containers with capability-based permissions
-- **Credential Protection** - Secrets are never exposed to tools; injected at the host boundary with leak detection
-- **Prompt Injection Defense** - Pattern detection, content sanitization, and policy enforcement
-- **Endpoint Allowlisting** - HTTP requests only to explicitly approved hosts and paths
-
-### Always Available
-
-- **Multi-channel** - REPL, HTTP webhooks, WASM channels (Telegram, Slack), and web gateway
-- **Docker Sandbox** - Isolated container execution with per-job tokens and orchestrator/worker pattern
-- **Web Gateway** - Browser UI with real-time SSE/WebSocket streaming
-- **Routines** - Cron schedules, event triggers, webhook handlers for background automation
-- **Heartbeat System** - Proactive background execution for monitoring and maintenance tasks
-- **Parallel Jobs** - Handle multiple requests concurrently with isolated contexts
-- **Self-repair** - Automatic detection and recovery of stuck operations
-
-### Self-Expanding
-
-- **Dynamic Tool Building** - Describe what you need, and IronClaw builds it as a WASM tool
-- **MCP Protocol** - Connect to Model Context Protocol servers for additional capabilities
-- **Plugin Architecture** - Drop in new WASM tools and channels without restarting
-
-### Persistent Memory
-
-- **Hybrid Search** - Full-text + vector search using Reciprocal Rank Fusion
-- **Workspace Filesystem** - Flexible path-based storage for notes, logs, and context
-- **Identity Files** - Maintain consistent personality and preferences across sessions
-
-## Installation
-
-### Prerequisites
-
-- Rust 1.85+
-- PostgreSQL 15+ with [pgvector](https://github.com/pgvector/pgvector) extension
-- NEAR AI account (authentication handled via setup wizard)
-
-## Download or Build
-
-Visit [Releases page](https://github.com/nearai/ironclaw/releases/) to see the latest updates.
-
-<details>
-  <summary>Install via Windows Installer (Windows)</summary>
-
-Download the [Windows Installer](https://github.com/nearai/ironclaw/releases/latest/download/ironclaw-x86_64-pc-windows-msvc.msi) and run it.
-
-</details>
-
-<details>
-  <summary>Install via powershell script (Windows)</summary>
-
-```sh
-irm https://github.com/nearai/ironclaw/releases/latest/download/ironclaw-installer.ps1 | iex
-```
-
-</details>
-
-<details>
-  <summary>Install via shell script (macOS, Linux, Windows/WSL)</summary>
-
-```sh
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/ironclaw/releases/latest/download/ironclaw-installer.sh | sh
-```
-</details>
-
-<details>
-  <summary>Install via Homebrew (macOS/Linux)</summary>
-
-```sh
-brew install ironclaw
-```
-
-</details>
-
-<details>
-  <summary>Compile the source code (Cargo on Windows, Linux, macOS)</summary>
-
-Install it with `cargo`, just make sure you have [Rust](https://rustup.rs) installed on your computer.
-
-```bash
-# Clone the repository
-git clone https://github.com/nearai/ironclaw.git
-cd ironclaw
-
-# Build
-cargo build --release
-
-# Run tests
-cargo test
-```
-
-For **full release** (after modifying channel sources), run `./scripts/build-all.sh` to rebuild channels first.
-
-</details>
-
-### Database Setup
-
-```bash
-# Create database
-createdb ironclaw
-
-# Enable pgvector
-psql ironclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
-```
-
-## Configuration
-
-Run the setup wizard to configure IronClaw:
-
-```bash
-ironclaw onboard
-```
-
-The wizard handles database connection, NEAR AI authentication (via browser OAuth),
-and secrets encryption (using your system keychain). Settings are persisted in the
-connected database; bootstrap variables (e.g. `DATABASE_URL`, `LLM_BACKEND`) are
-written to `~/.ironclaw/.env` so they are available before the database connects.
-
-### Alternative LLM Providers
-
-IronClaw defaults to NEAR AI but supports many LLM providers out of the box.
-Built-in providers include **Anthropic**, **OpenAI**, **GitHub Copilot**, **Google Gemini**, **MiniMax**,
-**Mistral**, and **Ollama** (local). OpenAI-compatible services like **OpenRouter**
-(300+ models), **Together AI**, **Fireworks AI**, and self-hosted servers (**vLLM**,
-**LiteLLM**) are also supported.
-
-Select your provider in the wizard, or set environment variables directly:
-
-```env
-# Example: MiniMax (built-in, 204K context)
-LLM_BACKEND=minimax
-MINIMAX_API_KEY=...
-
-# Example: OpenAI-compatible endpoint
-LLM_BACKEND=openai_compatible
-LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_API_KEY=sk-or-...
-LLM_MODEL=anthropic/claude-sonnet-4
-```
-
-See [docs/capabilities/llm-providers.md](docs/capabilities/llm-providers.md) for a full provider guide.
-
-## Security
-
-IronClaw implements defense in depth to protect your data and prevent misuse.
-
-### WASM Sandbox
-
-All untrusted tools run in isolated WebAssembly containers:
-
-- **Capability-based permissions** - Explicit opt-in for HTTP, secrets, tool invocation
-- **Endpoint allowlisting** - HTTP requests only to approved hosts/paths
-- **Credential injection** - Secrets injected at host boundary, never exposed to WASM code
-- **Leak detection** - Scans requests and responses for secret exfiltration attempts
-- **Rate limiting** - Per-tool request limits to prevent abuse
-- **Resource limits** - Memory, CPU, and execution time constraints
+BastionClaw takes a different approach: **secrets never live in the assistant at all**. The [Trinity network](https://terminal3.io/trinity) is a decentralised, audited secret management layer. Keys are stored encrypted across Trinity nodes and are only injected at the execution boundary — just-in-time, only for explicitly allowed URLs, and only when the reason for access matches a defined policy.
 
 ```
-WASM ──► Allowlist ──► Leak Scan ──► Credential ──► Execute ──► Leak Scan ──► WASM
-         Validator     (request)     Injector       Request     (response)
+Tool Request ──► Allowlist Check ──► Trinity Fetch ──► Credential Inject ──► Execute ──► Leak Scan
+                 (URL + reason)       (boundary only)   (never in context)
 ```
 
-### Prompt Injection Defense
+This means:
+- **No secrets in model context** — the LLM never sees your credentials
+- **Decentralised storage** — no single point of compromise
+- **Audited access** — every injection is logged against a URL and reason
+- **Boundary enforcement** — credentials cannot leave through disallowed endpoints
 
-External content passes through multiple security layers:
+## Built on IronClaw
 
-- Pattern-based detection of injection attempts
-- Content sanitization and escaping
-- Policy rules with severity levels (Block/Warn/Review/Sanitize)
-- Tool output wrapping for safe LLM context injection
+BastionClaw forks [IronClaw](https://github.com/nearai/ironclaw) (MIT / Apache-2.0), which provides:
 
-### Data Protection
-
-- All data stored locally in your PostgreSQL database
-- Secrets encrypted with AES-256-GCM
-- No telemetry, analytics, or data sharing
-- Full audit log of all tool executions
+- WASM-sandboxed tool execution with capability-based permissions
+- Multi-channel input (REPL, HTTP, Telegram, Slack, web gateway)
+- Persistent memory with hybrid full-text + vector search
+- Docker sandbox for isolated container execution
+- Prompt injection defence and content sanitisation
+- Parallel jobs, routines (cron/event/webhook), heartbeat system
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                          Channels                              │
-│  ┌──────┐  ┌──────┐   ┌─────────────┐  ┌─────────────┐         │
-│  │ REPL │  │ HTTP │   │WASM Channels│  │ Web Gateway │         │
-│  └──┬───┘  └──┬───┘   └──────┬──────┘  │ (SSE + WS)  │         │
-│     │         │              │         └──────┬──────┘         │
-│     └─────────┴──────────────┴────────────────┘                │
-│                              │                                 │
-│                    ┌─────────▼─────────┐                       │
-│                    │    Agent Loop     │  Intent routing       │
-│                    └────┬──────────┬───┘                       │
-│                         │          │                           │
-│              ┌──────────▼────┐  ┌──▼───────────────┐           │
-│              │  Scheduler    │  │ Routines Engine  │           │
-│              │(parallel jobs)│  │(cron, event, wh) │           │
-│              └──────┬────────┘  └────────┬─────────┘           │
-│                     │                    │                     │
-│       ┌─────────────┼────────────────────┘                     │
-│       │             │                                          │
-│   ┌───▼─────┐  ┌────▼────────────────┐                         │
-│   │ Local   │  │    Orchestrator     │                         │
-│   │Workers  │  │  ┌───────────────┐  │                         │
-│   │(in-proc)│  │  │ Docker Sandbox│  │                         │
-│   └───┬─────┘  │  │   Containers  │  │                         │
-│       │        │  │ ┌───────────┐ │  │                         │
-│       │        │  │ │Worker / CC│ │  │                         │
-│       │        │  │ └───────────┘ │  │                         │
-│       │        │  └───────────────┘  │                         │
-│       │        └─────────┬───────────┘                         │
-│       └──────────────────┤                                     │
-│                          │                                     │
-│              ┌───────────▼──────────┐                          │
-│              │    Tool Registry     │                          │
-│              │  Built-in, MCP, WASM │                          │
-│              └──────────────────────┘                          │
-└────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                            Channels                              │
+│  ┌──────┐  ┌──────┐   ┌─────────────┐  ┌─────────────┐          │
+│  │ REPL │  │ HTTP │   │WASM Channels│  │ Web Gateway │          │
+│  └──┬───┘  └──┬───┘   └──────┬──────┘  │ (SSE + WS)  │          │
+│     │         │              │         └──────┬──────┘          │
+│     └─────────┴──────────────┴────────────────┘                 │
+│                              │                                  │
+│                    ┌─────────▼─────────┐                        │
+│                    │    Agent Loop     │  Intent routing        │
+│                    └────┬──────────┬───┘                        │
+│                         │          │                            │
+│              ┌──────────▼────┐  ┌──▼───────────────┐            │
+│              │  Scheduler    │  │ Routines Engine  │            │
+│              │(parallel jobs)│  │(cron, event, wh) │            │
+│              └──────┬────────┘  └────────┬─────────┘            │
+│                     │                    │                      │
+│       ┌─────────────┼────────────────────┘                      │
+│       │             │                                           │
+│   ┌───▼─────┐  ┌────▼────────────────┐                          │
+│   │ Local   │  │    Orchestrator     │                          │
+│   │Workers  │  │  ┌───────────────┐  │                          │
+│   │(in-proc)│  │  │ Docker Sandbox│  │                          │
+│   └───┬─────┘  │  │   Containers  │  │                          │
+│       │        │  │ ┌───────────┐ │  │                          │
+│       │        │  │ │Worker / CC│ │  │                          │
+│       │        │  │ └───────────┘ │  │                          │
+│       │        │  └───────────────┘  │                          │
+│       │        └───────┬────────┬────┘                          │
+│       │                │        │ (secret tools)                │
+│       └────────────────┤        │                               │
+│                        ▼        ▼                               │
+│           ┌──────────────┐  ┌───────────────────────────┐       │
+│           │ Tool Registry│  │          Trinity          │       │
+│           │  Built-in,   │  │  Decentralised Secret Net │       │
+│           │  MCP, WASM   │  │  ┌─────────────────────┐  │       │
+│           └──────────────┘  │  │ Credential Injection │  │       │
+│                             │  │ boundary-only        │  │       │
+│                             │  │ URL + reason gated   │  │       │
+│                             │  └─────────────────────┘  │       │
+│                             └───────────────────────────┘       │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ### Core Components
@@ -275,60 +82,60 @@ External content passes through multiple security layers:
 | Component | Purpose |
 |-----------|---------|
 | **Agent Loop** | Main message handling and job coordination |
-| **Router** | Classifies user intent (command, query, task) |
 | **Scheduler** | Manages parallel job execution with priorities |
 | **Worker** | Executes jobs with LLM reasoning and tool calls |
 | **Orchestrator** | Container lifecycle, LLM proxying, per-job auth |
 | **Web Gateway** | Browser UI with chat, memory, jobs, logs, extensions, routines |
 | **Routines Engine** | Scheduled (cron) and reactive (event, webhook) background tasks |
-| **Workspace** | Persistent memory with hybrid search |
-| **Safety Layer** | Prompt injection defense and content sanitization |
+| **Tool Registry** | Built-in, MCP, and WASM tools (no secret access) |
+| **Trinity** | Terminal3's decentralised secret network — stores keys and injects credentials at the execution boundary for allowed URLs and verified reasons only |
 
-## Usage
+## Installation
+
+### Prerequisites
+
+- Rust 1.85+
+- PostgreSQL 15+ with [pgvector](https://github.com/pgvector/pgvector)
+
+### Build from source
 
 ```bash
-# First-time setup (configures database, auth, etc.)
-ironclaw onboard
+git clone https://github.com/Terminal-3/bastion-claw.git
+cd bastion-claw
+cargo build --release
+```
 
-# Start interactive REPL
-cargo run
+### First-time setup
 
-# With debug logging
-RUST_LOG=ironclaw=debug cargo run
+```bash
+bastionclaw onboard
+```
+
+The wizard configures your database connection, LLM provider, and Trinity secret network credentials. Bootstrap variables are written to `~/.bastionclaw/.env`.
+
+## LLM Providers
+
+Supports **Anthropic**, **OpenAI**, **GitHub Copilot**, **Google Gemini**, **MiniMax**, **Mistral**, **Ollama**, and any OpenAI-compatible endpoint (OpenRouter, Together AI, vLLM, LiteLLM, etc.).
+
+```env
+LLM_BACKEND=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 ## Development
 
 ```bash
-# Format code
 cargo fmt
-
-# Lint
 cargo clippy --all --benches --tests --examples --all-features
-
-# Run tests
-createdb ironclaw_test
 cargo test
-
-# Run specific test
-cargo test test_name
+RUST_LOG=bastionclaw=debug cargo run
 ```
 
-- **Channels**: See [docs/channels/overview.mdx](docs/channels/overview.mdx) for setup of Telegram, Discord, and other channels.
-- **Changing channel sources**: Run `./channels-src/telegram/build.sh` before `cargo build` so the updated WASM is bundled.
+## Security
 
-## OpenClaw Heritage
+See [docs/security.md](docs/security.md) for the full threat model, WASM sandbox architecture, and Trinity integration details.
 
-IronClaw is a Rust reimplementation inspired by [OpenClaw](https://github.com/openclaw/openclaw). See [FEATURE_PARITY.md](FEATURE_PARITY.md) for the complete tracking matrix.
-
-Key differences:
-
-- **Rust vs TypeScript** - Native performance, memory safety, single binary
-- **WASM sandbox vs Docker** - Lightweight, capability-based security
-- **PostgreSQL vs SQLite** - Production-ready persistence
-- **Security-first design** - Multiple defense layers, credential protection
-
-## License
+## Licence
 
 Licensed under either of:
 
@@ -336,3 +143,5 @@ Licensed under either of:
 - MIT License ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
+
+BastionClaw is a derivative work of [IronClaw](https://github.com/nearai/ironclaw) by NEAR AI, used under the same dual licence. Original copyright notices are retained in [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).

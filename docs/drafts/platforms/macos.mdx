@@ -1,10 +1,10 @@
 ---
 title: macOS
 sidebarTitle: macOS
-description: Running IronClaw on macOS with Homebrew, Keychain, and launchd
+description: Running BastionClaw on macOS with Homebrew, Keychain, and launchd
 ---
 
-IronClaw supports macOS natively with Homebrew installation, macOS Keychain for secure key storage, and launchd for background service management.
+BastionClaw supports macOS natively with Homebrew installation, macOS Keychain for secure key storage, and launchd for background service management.
 
 ---
 
@@ -13,20 +13,20 @@ IronClaw supports macOS natively with Homebrew installation, macOS Keychain for 
 ### Homebrew (Recommended)
 
 ```bash
-# Add the IronClaw tap
-brew tap ironclaw-ai/tap
+# Add the BastionClaw tap
+brew tap bastionclaw-ai/tap
 
-# Install IronClaw
-brew install ironclaw
+# Install BastionClaw
+brew install bastionclaw
 ```
 
 ### Shell Script
 
 ```bash
-curl -fsSL https://install.ironclaw.ai | bash
+curl -fsSL https://install.bastionclaw.ai | bash
 ```
 
-Installs to `~/.local/bin/ironclaw`. Add to PATH:
+Installs to `~/.local/bin/bastionclaw`. Add to PATH:
 
 ```bash
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
@@ -40,14 +40,14 @@ source ~/.zshrc
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Build and install
-cargo install ironclaw
+cargo install bastionclaw
 ```
 
 ### Verify Installation
 
 ```bash
-ironclaw --version
-ironclaw doctor
+bastionclaw --version
+bastionclaw doctor
 ```
 
 ---
@@ -58,31 +58,31 @@ macOS Gatekeeper may block the binary on first launch if it was downloaded direc
 
 **To allow it:**
 
-1. Right-click `ironclaw` in Finder and choose **Open**
+1. Right-click `bastionclaw` in Finder and choose **Open**
 2. Click **Open** in the security dialog
 
 Or via the terminal:
 
 ```bash
-xattr -d com.apple.quarantine ~/.local/bin/ironclaw
+xattr -d com.apple.quarantine ~/.local/bin/bastionclaw
 ```
 
 <Note>
-Binaries installed via `brew install ironclaw` are automatically notarized and will not trigger the Gatekeeper warning.
+Binaries installed via `brew install bastionclaw` are automatically notarized and will not trigger the Gatekeeper warning.
 </Note>
 
 ---
 
 ## macOS Keychain Integration
 
-IronClaw stores its encryption master key in the macOS Keychain. This keeps the key off disk and protected by your login password and Touch ID.
+BastionClaw stores its encryption master key in the macOS Keychain. This keeps the key off disk and protected by your login password and Touch ID.
 
 ### First Run Dialogs
 
 On first run you will see two system dialogs:
 
 1. **"Enter your password to unlock the login keychain"** — Unlock the keychain to read/write items. Enter your macOS login password.
-2. **"ironclaw wants to use your confidential information stored in 'IronClaw Master Key' in your keychain"** — Click **Always Allow** to prevent repeated prompts on future launches.
+2. **"bastionclaw wants to use your confidential information stored in 'BastionClaw Master Key' in your keychain"** — Click **Always Allow** to prevent repeated prompts on future launches.
 
 <Warning>
 Clicking **Allow** instead of **Always Allow** causes this dialog to appear on every launch. Choose **Always Allow** the first time to avoid repeated interruptions.
@@ -92,14 +92,14 @@ Clicking **Allow** instead of **Always Allow** causes this dialog to appear on e
 
 View the entry in Keychain Access (open via Spotlight: `keychain access`):
 - Category: **Passwords**
-- Name: `IronClaw Master Key`
-- Account: `ironclaw`
+- Name: `BastionClaw Master Key`
+- Account: `bastionclaw`
 
 To delete and regenerate the master key (this invalidates all stored secrets):
 
 ```bash
-security delete-generic-password -a ironclaw -s "IronClaw Master Key"
-ironclaw onboard  # Re-run wizard to generate a new key
+security delete-generic-password -a bastionclaw -s "BastionClaw Master Key"
+bastionclaw onboard  # Re-run wizard to generate a new key
 ```
 
 ### Headless / CI Environments
@@ -107,18 +107,18 @@ ironclaw onboard  # Re-run wizard to generate a new key
 For non-interactive macOS environments (CI, build machines), use the environment variable fallback:
 
 ```bash
-export IRONCLAW_MASTER_KEY=$(openssl rand -base64 32)
+export BASTIONCLAW_MASTER_KEY=$(openssl rand -base64 32)
 ```
 
 ---
 
 ## launchd Service
 
-launchd is the macOS equivalent of systemd. It manages background services and can restart IronClaw automatically on failure or system reboot.
+launchd is the macOS equivalent of systemd. It manages background services and can restart BastionClaw automatically on failure or system reboot.
 
 ### User-Level Service (Recommended)
 
-Create `~/Library/LaunchAgents/ai.ironclaw.plist`:
+Create `~/Library/LaunchAgents/ai.bastionclaw.plist`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -127,11 +127,11 @@ Create `~/Library/LaunchAgents/ai.ironclaw.plist`:
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>ai.ironclaw</string>
+  <string>ai.bastionclaw</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/ironclaw</string>
+    <string>/usr/local/bin/bastionclaw</string>
     <string>run</string>
   </array>
 
@@ -148,7 +148,7 @@ Create `~/Library/LaunchAgents/ai.ironclaw.plist`:
     <key>GATEWAY_PORT</key>
     <string>3000</string>
     <key>RUST_LOG</key>
-    <string>ironclaw=info</string>
+    <string>bastionclaw=info</string>
   </dict>
 
   <key>RunAtLoad</key>
@@ -163,10 +163,10 @@ Create `~/Library/LaunchAgents/ai.ironclaw.plist`:
   </dict>
 
   <key>StandardOutPath</key>
-  <string>/tmp/ironclaw.stdout.log</string>
+  <string>/tmp/bastionclaw.stdout.log</string>
 
   <key>StandardErrorPath</key>
-  <string>/tmp/ironclaw.stderr.log</string>
+  <string>/tmp/bastionclaw.stderr.log</string>
 
   <key>WorkingDirectory</key>
   <string>/Users/YOUR_USERNAME</string>
@@ -177,28 +177,28 @@ Create `~/Library/LaunchAgents/ai.ironclaw.plist`:
 Replace `YOUR_USERNAME` with your actual macOS username (`whoami`).
 
 <Note>
-Sensitive values (API keys, auth tokens) should not be placed in the plist directly since it is a plain text file. Store them in the Keychain and have IronClaw read them at startup, or use `launchctl setenv` to inject them at runtime.
+Sensitive values (API keys, auth tokens) should not be placed in the plist directly since it is a plain text file. Store them in the Keychain and have BastionClaw read them at startup, or use `launchctl setenv` to inject them at runtime.
 </Note>
 
 ### Load and Manage the Service
 
 ```bash
 # Load the service (starts immediately due to RunAtLoad)
-launchctl load ~/Library/LaunchAgents/ai.ironclaw.plist
+launchctl load ~/Library/LaunchAgents/ai.bastionclaw.plist
 
 # Unload (stop and disable)
-launchctl unload ~/Library/LaunchAgents/ai.ironclaw.plist
+launchctl unload ~/Library/LaunchAgents/ai.bastionclaw.plist
 
 # Reload after editing the plist
-launchctl unload ~/Library/LaunchAgents/ai.ironclaw.plist
-launchctl load ~/Library/LaunchAgents/ai.ironclaw.plist
+launchctl unload ~/Library/LaunchAgents/ai.bastionclaw.plist
+launchctl load ~/Library/LaunchAgents/ai.bastionclaw.plist
 
 # Check status
-launchctl list | grep ironclaw
+launchctl list | grep bastionclaw
 
 # Start / stop manually
-launchctl start ai.ironclaw
-launchctl stop ai.ironclaw
+launchctl start ai.bastionclaw
+launchctl stop ai.bastionclaw
 ```
 
 ### Homebrew Services (Alternative)
@@ -207,16 +207,16 @@ If installed via Homebrew:
 
 ```bash
 # Start now and on login
-brew services start ironclaw
+brew services start bastionclaw
 
 # Stop
-brew services stop ironclaw
+brew services stop bastionclaw
 
 # Restart
-brew services restart ironclaw
+brew services restart bastionclaw
 
 # View status
-brew services list | grep ironclaw
+brew services list | grep bastionclaw
 ```
 
 ---
@@ -252,14 +252,14 @@ Docker on macOS has more overhead than native Linux due to the VM layer. Sandbox
 
 ```bash
 # Stream logs in real time (unified log)
-log stream --predicate 'process == "ironclaw"' --level info
+log stream --predicate 'process == "bastionclaw"' --level info
 
 # Show recent messages
-log show --predicate 'process == "ironclaw"' --last 1h
+log show --predicate 'process == "bastionclaw"' --last 1h
 
 # View launchd stdout/stderr files
-tail -f /tmp/ironclaw.stdout.log
-tail -f /tmp/ironclaw.stderr.log
+tail -f /tmp/bastionclaw.stdout.log
+tail -f /tmp/bastionclaw.stderr.log
 ```
 
 ---
@@ -268,7 +268,7 @@ tail -f /tmp/ironclaw.stderr.log
 
 <CardGroup cols={3}>
   <Card title="VPS Hardening" icon="shield" href="/platforms/vps">
-    Securing IronClaw on a public-facing server
+    Securing BastionClaw on a public-facing server
   </Card>
   <Card title="Docker Compose" icon="layers" href="/platforms/docker-compose">
     Production Docker Compose with PostgreSQL

@@ -4,14 +4,14 @@ sidebarTitle: Troubleshooting
 description: Common issues and solutions
 ---
 
-Solutions for common IronClaw issues.
+Solutions for common BastionClaw issues.
 
 ## Diagnostic Tool
 
 Run diagnostics first:
 
 ```bash
-ironclaw doctor
+bastionclaw doctor
 ```
 
 This checks:
@@ -42,10 +42,10 @@ This checks:
     **Solution:**
     ```bash
     # Fix ownership
-    sudo chown -R $USER:$USER ~/.local/bin/ironclaw
+    sudo chown -R $USER:$USER ~/.local/bin/bastionclaw
 
     # Or move to system path
-    sudo mv ~/.local/bin/ironclaw /usr/local/bin/
+    sudo mv ~/.local/bin/bastionclaw /usr/local/bin/
     ```
   </Accordion>
 </AccordionGroup>
@@ -60,16 +60,16 @@ This checks:
     sudo systemctl status postgresql
 
     # Verify connection
-    psql postgres://user:pass@localhost/ironclaw
+    psql postgres://user:pass@localhost/bastionclaw
     ```
 
     **libSQL:**
     ```bash
     # Check permissions
-    ls -la ~/.ironclaw/
+    ls -la ~/.bastionclaw/
 
     # Fix ownership
-    chmod 755 ~/.ironclaw
+    chmod 755 ~/.bastionclaw
     ```
   </Accordion>
 
@@ -80,7 +80,7 @@ This checks:
     sudo apt install postgresql-15-pgvector
 
     # Enable extension
-    sudo -u postgres psql -d ironclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
+    sudo -u postgres psql -d bastionclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
     ```
   </Accordion>
 
@@ -88,7 +88,7 @@ This checks:
     **Solution:**
     ```bash
     # Find and kill process
-    lsof ~/.ironclaw/ironclaw.db
+    lsof ~/.bastionclaw/bastionclaw.db
     kill -9 <pid>
 
     # Or wait for process to exit
@@ -107,7 +107,7 @@ This checks:
 
     ```bash
     # Set callback URL for remote servers
-    export IRONCLAW_OAUTH_CALLBACK_URL=https://your-server:9876
+    export BASTIONCLAW_OAUTH_CALLBACK_URL=https://your-server:9876
     ```
   </Accordion>
 
@@ -122,7 +122,7 @@ This checks:
     **Solution:**
     ```bash
     # Re-authenticate
-    ironclaw onboard --skip-auth
+    bastionclaw onboard --skip-auth
     # Select NEAR AI → re-authenticate
     ```
   </Accordion>
@@ -149,8 +149,8 @@ This checks:
   <Accordion title="Web Gateway not accessible" icon="globe">
     **Solutions:**
     ```bash
-    # Check IronClaw is running
-    ironclaw status
+    # Check BastionClaw is running
+    bastionclaw status
 
     # Verify port
     sudo ss -tlnp | grep 3000
@@ -165,7 +165,7 @@ This checks:
     **Solution:**
     ```bash
     # View logs
-    RUST_LOG=ironclaw=info ironclaw run 2>&1 | grep "Gateway auth token"
+    RUST_LOG=bastionclaw=info bastionclaw run 2>&1 | grep "Gateway auth token"
 
     # Or set persistent token
     export GATEWAY_AUTH_TOKEN=your-token
@@ -190,7 +190,7 @@ This checks:
   <Accordion title="Owner binding timeout" icon="clock">
     **Solutions:**
     1. Send `/start` to your bot in Telegram
-    2. Re-run `ironclaw onboard --channels-only`
+    2. Re-run `bastionclaw onboard --channels-only`
     3. Wait 120 seconds for first message
   </Accordion>
 </AccordionGroup>
@@ -260,7 +260,7 @@ This checks:
   <Accordion title="macOS Keychain dialogs" icon="apple">
     **Expected:** Two dialogs on first access:
     1. "Enter your password to unlock the keychain"
-    2. "Allow ironclaw to access this keychain item"
+    2. "Allow bastionclaw to access this keychain item"
 
     **Solution:** Click "Always Allow" to prevent repeated prompts.
   </Accordion>
@@ -279,27 +279,27 @@ Enable verbose logging:
 
 ```bash
 # All modules
-RUST_LOG=debug ironclaw run
+RUST_LOG=debug bastionclaw run
 
-# Just IronClaw
-RUST_LOG=ironclaw=debug ironclaw run
+# Just BastionClaw
+RUST_LOG=bastionclaw=debug bastionclaw run
 
 # Specific module
-RUST_LOG=ironclaw::agent=debug ironclaw run
+RUST_LOG=bastionclaw::agent=debug bastionclaw run
 
 # With HTTP requests
-RUST_LOG=ironclaw=debug,tower_http=debug ironclaw run
+RUST_LOG=bastionclaw=debug,tower_http=debug bastionclaw run
 ```
 
 ## Getting Help
 
 If your issue isn't listed:
 
-1. Run `ironclaw doctor --json`
+1. Run `bastionclaw doctor --json`
 2. Check logs with `RUST_LOG=debug`
-3. Search [GitHub Issues](https://github.com/ironclaw-ai/ironclaw/issues)
+3. Search [GitHub Issues](https://github.com/bastionclaw-ai/bastionclaw/issues)
 4. Create a new issue with:
-   - IronClaw version
+   - BastionClaw version
    - Operating system
    - Full error message
    - Steps to reproduce

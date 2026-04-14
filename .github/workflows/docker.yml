@@ -22,8 +22,8 @@ on:
     - cron: '0 6 * * *'
 
 env:
-  IMAGE_NAME: nearaidev/ironclaw
-  WORKER_IMAGE_NAME: nearaidev/ironclaw-worker
+  IMAGE_NAME: nearaidev/bastionclaw
+  WORKER_IMAGE_NAME: nearaidev/bastionclaw-worker
 
 jobs:
   build:
@@ -101,7 +101,7 @@ jobs:
           username: ${{ vars.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
 
-      - name: Build and push (ironclaw)
+      - name: Build and push (bastionclaw)
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
@@ -112,7 +112,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build and push (ironclaw-worker)
+      - name: Build and push (bastionclaw-worker)
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
@@ -131,9 +131,9 @@ jobs:
           app-id: ${{ secrets.GH_RELEASES_MANAGER_APP_ID }}
           private-key: ${{ secrets.GH_RELEASES_MANAGER_APP_PRIVATE_KEY }}
           owner: nearai
-          repositories: ironclaw-dind
+          repositories: bastionclaw-dind
 
-      - name: Trigger ironclaw-dind Build & Push
+      - name: Trigger bastionclaw-dind Build & Push
         if: steps.app-token.outcome == 'success'
         continue-on-error: true
         env:
@@ -143,14 +143,14 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           if [[ "${EVENT_NAME}" == "workflow_call" && -n "${VERSION}" ]]; then
-            gh api repos/nearai/ironclaw-dind/dispatches \
+            gh api repos/nearai/bastionclaw-dind/dispatches \
               --method POST \
-              -f event_type="ironclaw_image_published" \
+              -f event_type="bastionclaw_image_published" \
               -f client_payload[version]="${VERSION}"
           elif [[ "${EVENT_NAME}" == "schedule" ]] || [[ "${INPUT_TAG}" == "staging" ]]; then
-            gh api repos/nearai/ironclaw-dind/dispatches \
+            gh api repos/nearai/bastionclaw-dind/dispatches \
               --method POST \
-              -f event_type="ironclaw_image_published"
+              -f event_type="bastionclaw_image_published"
           fi
 
       - name: Summary
@@ -158,12 +158,12 @@ jobs:
           {
             echo "## Docker Images"
             echo ""
-            echo "**ironclaw:**"
+            echo "**bastionclaw:**"
             echo '```'
             echo "${{ steps.tags.outputs.tags }}" | tr ',' '\n'
             echo '```'
             echo ""
-            echo "**ironclaw-worker:**"
+            echo "**bastionclaw-worker:**"
             echo '```'
             echo "${{ steps.tags.outputs.worker_tags }}" | tr ',' '\n'
             echo '```'

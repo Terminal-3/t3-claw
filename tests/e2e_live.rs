@@ -11,7 +11,7 @@
 //!
 //! **Live mode** (real LLM calls, records/updates trace fixture):
 //! ```bash
-//! IRONCLAW_LIVE_TEST=1 cargo test --features libsql --test e2e_live -- --ignored
+//! BASTIONCLAW_LIVE_TEST=1 cargo test --features libsql --test e2e_live -- --ignored
 //! ```
 //!
 //! See `tests/support/live_harness.rs` for the harness documentation.
@@ -186,7 +186,7 @@ mod live_tests {
     /// trace fixtures contain only public conference content.
     #[tokio::test]
     #[ignore] // Live tier: requires real Google OAuth credentials in the
-    // developer's `~/.ironclaw/ironclaw.db`. Live-only on purpose: the
+    // developer's `~/.bastionclaw/bastionclaw.db`. Live-only on purpose: the
     // recorded trace would inevitably capture the bearer token, real
     // Drive file metadata, and HTTP headers — all of which are PII
     // that's hard to scrub safely. The test runs against the developer's
@@ -195,7 +195,7 @@ mod live_tests {
     // bug lives in `test_auth_wasm_tool_finds_legacy_hyphen_alias`.
     async fn drive_auth_gate_roundtrip() {
         use crate::support::live_harness::TestMode;
-        use ironclaw::channels::StatusUpdate;
+        use bastionclaw::channels::StatusUpdate;
 
         let harness = LiveTestHarnessBuilder::new("drive_auth_gate_roundtrip")
             .with_engine_v2(true)
@@ -238,7 +238,7 @@ mod live_tests {
         // (no recorded fixture, no LLM provider) and we exit early.
         if harness.mode() == TestMode::Replay {
             eprintln!(
-                "[DriveAuthGate] Live-only test — skipping outside `IRONCLAW_LIVE_TEST=1`. \
+                "[DriveAuthGate] Live-only test — skipping outside `BASTIONCLAW_LIVE_TEST=1`. \
                  Hermetic regression covered by \
                  `test_auth_wasm_tool_finds_legacy_hyphen_alias`."
             );
@@ -251,7 +251,7 @@ mod live_tests {
             .secrets_store()
             .expect(
                 "drive_auth_gate_roundtrip requires a secrets store; \
-                 ensure ~/.ironclaw/.env has SECRETS_MASTER_KEY or the OS keychain entry",
+                 ensure ~/.bastionclaw/.env has SECRETS_MASTER_KEY or the OS keychain entry",
             )
             .clone();
         let owner = rig.owner_id().to_string();
@@ -267,7 +267,7 @@ mod live_tests {
         // <= 2) still works in that case — the only thing we lose is
         // the actual Drive API call succeeding. The test prints which
         // mode it's running in so the developer can refresh their
-        // token via normal `ironclaw` usage if they want full coverage.
+        // token via normal `bastionclaw` usage if they want full coverage.
         let real_token_result = secrets.get_decrypted(&owner, "google_oauth_token").await;
         let (resume_token, real_token_used) = match real_token_result {
             Ok(decrypted) => {
@@ -277,13 +277,13 @@ mod live_tests {
                 );
                 (decrypted.expose().to_string(), true)
             }
-            Err(ironclaw::secrets::SecretError::Expired) => {
+            Err(bastionclaw::secrets::SecretError::Expired) => {
                 eprintln!(
                     "[DriveAuthGate] WARNING: stored google_oauth_token is EXPIRED. \
                      Falling back to a synthetic token for Phase B — the resume path \
                      will run end-to-end but the Drive API call will fail with 401, \
                      not return real data. To get full real-data coverage, run \
-                     `ironclaw` once normally (any prompt that touches Drive) so the \
+                     `bastionclaw` once normally (any prompt that touches Drive) so the \
                      OAuth refresh flow refreshes the token in your real DB, then \
                      re-run this test."
                 );
@@ -294,7 +294,7 @@ mod live_tests {
             }
             Err(e) => panic!(
                 "Unexpected error reading seeded google_oauth_token: {e}. \
-                 Ensure your developer DB at ~/.ironclaw/ironclaw.db has the credential."
+                 Ensure your developer DB at ~/.bastionclaw/bastionclaw.db has the credential."
             ),
         };
 
@@ -601,11 +601,11 @@ mod live_tests {
     /// `auth::tests::*` (the `maybe_refresh_before_read` unit tests).
     #[tokio::test]
     #[ignore] // Live tier: requires real Google OAuth credentials in the
-    // developer's `~/.ironclaw/ironclaw.db` (must include the refresh
+    // developer's `~/.bastionclaw/bastionclaw.db` (must include the refresh
     // token sibling so the wrapper can refresh server-side).
     async fn drive_transparent_oauth_refresh() {
         use crate::support::live_harness::TestMode;
-        use ironclaw::channels::StatusUpdate;
+        use bastionclaw::channels::StatusUpdate;
 
         let harness = LiveTestHarnessBuilder::new("drive_transparent_oauth_refresh")
             .with_engine_v2(true)
@@ -622,7 +622,7 @@ mod live_tests {
 
         if harness.mode() == TestMode::Replay {
             eprintln!(
-                "[DriveRefresh] Live-only test — skipping outside `IRONCLAW_LIVE_TEST=1`. \
+                "[DriveRefresh] Live-only test — skipping outside `BASTIONCLAW_LIVE_TEST=1`. \
                  Hermetic regression for the OAuth refresh layer lives in \
                  `auth::tests::*` and `test_auth_wasm_tool_finds_legacy_hyphen_alias`."
             );
@@ -655,7 +655,7 @@ mod live_tests {
             "drive_transparent_oauth_refresh requires both \
              `google_oauth_token` and `google_oauth_token_refresh_token` to be \
              seeded from the developer DB. access={access_present}, \
-             refresh={refresh_present}. Run `ironclaw` once with a Drive prompt \
+             refresh={refresh_present}. Run `bastionclaw` once with a Drive prompt \
              so the OAuth flow stores both records, then re-run this test."
         );
 

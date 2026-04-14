@@ -26,7 +26,7 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer, reload};
 
-use ironclaw_safety::LeakDetector;
+use bastionclaw_safety::LeakDetector;
 
 /// Maximum number of recent log entries kept for late-joining SSE subscribers.
 const HISTORY_CAP: usize = 500;
@@ -110,7 +110,7 @@ impl Default for LogBroadcaster {
 /// Handle for changing the tracing `EnvFilter` at runtime.
 ///
 /// Wraps a `reload::Handle` so the gateway can switch between log levels
-/// (e.g. `ironclaw=debug`) without restarting the process.
+/// (e.g. `bastionclaw=debug`) without restarting the process.
 pub struct LogLevelHandle {
     handle: reload::Handle<EnvFilter, tracing_subscriber::Registry>,
     current_level: Mutex<String>,
@@ -130,7 +130,7 @@ impl LogLevelHandle {
         }
     }
 
-    /// Change the `ironclaw=<level>` directive at runtime.
+    /// Change the `bastionclaw=<level>` directive at runtime.
     ///
     /// `level` must be one of: trace, debug, info, warn, error.
     pub fn set_level(&self, level: &str) -> Result<(), String> {
@@ -145,9 +145,9 @@ impl LogLevelHandle {
         }
 
         let filter_str = if self.base_filter.is_empty() {
-            format!("ironclaw={}", level)
+            format!("bastionclaw={}", level)
         } else {
-            format!("ironclaw={},{}", level, self.base_filter)
+            format!("bastionclaw={},{}", level, self.base_filter)
         };
 
         let new_filter = EnvFilter::new(&filter_str);
@@ -161,7 +161,7 @@ impl LogLevelHandle {
         Ok(())
     }
 
-    /// Returns the current ironclaw log level (e.g. "info", "debug").
+    /// Returns the current bastionclaw log level (e.g. "info", "debug").
     pub fn current_level(&self) -> String {
         self.current_level
             .lock()
@@ -183,17 +183,17 @@ pub fn init_tracing(
     suppress_stderr: bool,
 ) -> Arc<LogLevelHandle> {
     let raw_filter =
-        std::env::var("RUST_LOG").unwrap_or_else(|_| "ironclaw=info,tower_http=warn".to_string());
+        std::env::var("RUST_LOG").unwrap_or_else(|_| "bastionclaw=info,tower_http=warn".to_string());
 
-    // Split into the ironclaw directive and "everything else" (base_filter).
-    let mut ironclaw_level = String::from("info");
+    // Split into the bastionclaw directive and "everything else" (base_filter).
+    let mut bastionclaw_level = String::from("info");
     let mut base_parts: Vec<&str> = Vec::new();
 
     for part in raw_filter.split(',') {
         let trimmed = part.trim();
-        if trimmed.starts_with("ironclaw=") {
-            if let Some(lvl) = trimmed.strip_prefix("ironclaw=") {
-                ironclaw_level = lvl.to_string();
+        if trimmed.starts_with("bastionclaw=") {
+            if let Some(lvl) = trimmed.strip_prefix("bastionclaw=") {
+                bastionclaw_level = lvl.to_string();
             }
         } else if !trimmed.is_empty() {
             base_parts.push(trimmed);
@@ -206,7 +206,7 @@ pub fn init_tracing(
 
     let handle = Arc::new(LogLevelHandle::new(
         reload_handle,
-        ironclaw_level,
+        bastionclaw_level,
         base_filter,
     ));
 
@@ -233,7 +233,7 @@ pub fn init_tracing(
 /// fields from a tracing event.
 ///
 /// The terminal formatter shows something like:
-///   INFO ironclaw::agent: Request completed url="http://..." status=200
+///   INFO bastionclaw::agent: Request completed url="http://..." status=200
 ///
 /// We replicate that by capturing both the message and the extra fields.
 struct MessageVisitor {
@@ -349,7 +349,7 @@ mod tests {
 
         broadcaster.send(LogEntry {
             level: "WARN".to_string(),
-            target: "ironclaw::test".to_string(),
+            target: "bastionclaw::test".to_string(),
             message: "test warning".to_string(),
             timestamp: "2024-01-01T00:00:00.000Z".to_string(),
         });
@@ -363,7 +363,7 @@ mod tests {
     fn test_log_entry_serialization() {
         let entry = LogEntry {
             level: "ERROR".to_string(),
-            target: "ironclaw::agent".to_string(),
+            target: "bastionclaw::agent".to_string(),
             message: "something broke".to_string(),
             timestamp: "2024-01-01T00:00:00.000Z".to_string(),
         };
@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn test_leak_detector_scrubs_api_key_in_log() {
-        let detector = ironclaw_safety::LeakDetector::new();
+        let detector = bastionclaw_safety::LeakDetector::new();
         let msg = "Connecting with token sk-proj-test1234567890abcdefghij";
         let result = detector.scan_and_clean(msg);
         // Should be blocked (OpenAI key pattern)
@@ -476,7 +476,7 @@ mod tests {
 
     #[test]
     fn test_leak_detector_passes_clean_log() {
-        let detector = ironclaw_safety::LeakDetector::new();
+        let detector = bastionclaw_safety::LeakDetector::new();
         let msg = "Request completed status=200 url=https://api.example.com/data";
         let result = detector.scan_and_clean(msg);
         assert!(result.is_ok());

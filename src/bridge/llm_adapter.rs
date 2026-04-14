@@ -1,8 +1,8 @@
-//! LLM bridge adapter — wraps `LlmProvider` as `ironclaw_engine::LlmBackend`.
+//! LLM bridge adapter — wraps `LlmProvider` as `bastionclaw_engine::LlmBackend`.
 
 use std::sync::Arc;
 
-use ironclaw_engine::{
+use bastionclaw_engine::{
     ActionDef, EngineError, LlmBackend, LlmCallConfig, LlmOutput, LlmResponse, ThreadMessage,
     TokenUsage,
 };
@@ -127,7 +127,7 @@ impl LlmBackend for LlmBridgeAdapter {
                 calls: response
                     .tool_calls
                     .iter()
-                    .map(|tc| ironclaw_engine::ActionCall {
+                    .map(|tc| bastionclaw_engine::ActionCall {
                         id: tc.id.clone(),
                         action_name: tc.name.clone(),
                         parameters: tc.arguments.clone(),
@@ -167,7 +167,7 @@ impl LlmBackend for LlmBridgeAdapter {
 // ── Conversion helpers ──────────────────────────────────────
 
 fn thread_msg_to_chat(msg: &ThreadMessage) -> ChatMessage {
-    use ironclaw_engine::MessageRole;
+    use bastionclaw_engine::MessageRole;
 
     let role = match msg.role {
         MessageRole::System => Role::System,
@@ -372,7 +372,7 @@ mod tests {
     use async_trait::async_trait;
     use rust_decimal::Decimal;
 
-    use ironclaw_engine::{ActionCall, ActionDef, EffectType, LlmResponse, ThreadMessage};
+    use bastionclaw_engine::{ActionCall, ActionDef, EffectType, LlmResponse, ThreadMessage};
 
     use crate::error::LlmError;
     use crate::llm::ToolCompletionResponse;
@@ -573,7 +573,7 @@ mod tests {
         });
         let adapter = LlmBridgeAdapter::new(provider, None);
 
-        let config = ironclaw_engine::LlmCallConfig {
+        let config = bastionclaw_engine::LlmCallConfig {
             model: Some("gpt-4o".into()),
             ..Default::default()
         };
@@ -618,7 +618,7 @@ mod tests {
             .complete(
                 &[ThreadMessage::user("hi")],
                 &[],
-                &ironclaw_engine::LlmCallConfig::default(),
+                &bastionclaw_engine::LlmCallConfig::default(),
             )
             .await
             .unwrap();

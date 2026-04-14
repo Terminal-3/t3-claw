@@ -1,4 +1,4 @@
-//! Configuration for IronClaw.
+//! Configuration for BastionClaw.
 //!
 //! Settings are loaded with priority: **DB/TOML > env > default**.
 //!
@@ -15,7 +15,7 @@
 //!   cost limits, auth tokens): env-only
 //! - API keys: env/secrets store only
 //!
-//! `DATABASE_URL` lives in `~/.ironclaw/.env` (loaded via dotenvy early
+//! `DATABASE_URL` lives in `~/.bastionclaw/.env` (loaded via dotenvy early
 //! in startup).
 
 pub mod acp;
@@ -184,7 +184,7 @@ impl Config {
                 gateway: None,
                 signal: None,
                 tui: None,
-                wasm_channels_dir: std::env::temp_dir().join("ironclaw-test-channels"),
+                wasm_channels_dir: std::env::temp_dir().join("bastionclaw-test-channels"),
                 wasm_channels_enabled: false,
                 wasm_channel_owner_ids: HashMap::new(),
             },
@@ -278,7 +278,7 @@ impl Config {
         is_operator: bool,
     ) -> Result<Self, ConfigError> {
         let _ = dotenvy::dotenv();
-        crate::bootstrap::load_ironclaw_env();
+        crate::bootstrap::load_bastionclaw_env();
 
         // Resolution layers (lowest -> highest priority):
         //   defaults -> deployment profile -> TOML -> admin DB -> per-user DB
@@ -328,7 +328,7 @@ impl Config {
     /// and by CLI commands that don't have DB access.
     /// Falls back to legacy `settings.json` on disk if present.
     ///
-    /// Loads both `./.env` (standard, higher priority) and `~/.ironclaw/.env`
+    /// Loads both `./.env` (standard, higher priority) and `~/.bastionclaw/.env`
     /// (lower priority) via dotenvy, which never overwrites existing vars.
     pub async fn from_env() -> Result<Self, ConfigError> {
         Self::from_env_with_toml(None).await
@@ -345,7 +345,7 @@ impl Config {
     /// Load and merge a TOML config file into settings.
     ///
     /// If `explicit_path` is `Some`, loads from that path (errors are fatal).
-    /// If `None`, tries the default path `~/.ironclaw/config.toml` (missing
+    /// If `None`, tries the default path `~/.bastionclaw/config.toml` (missing
     /// file is silently ignored).
     fn apply_toml_overlay(
         settings: &mut Settings,
@@ -500,7 +500,7 @@ pub(crate) fn load_bootstrap_settings(
     toml_path: Option<&std::path::Path>,
 ) -> Result<Settings, ConfigError> {
     let _ = dotenvy::dotenv();
-    crate::bootstrap::load_ironclaw_env();
+    crate::bootstrap::load_bastionclaw_env();
 
     let mut settings = Settings::default();
     profile::apply_profile(&mut settings)?;
@@ -509,7 +509,7 @@ pub(crate) fn load_bootstrap_settings(
 }
 
 pub(crate) fn resolve_owner_id(settings: &Settings) -> Result<String, ConfigError> {
-    let env_owner_id = self::helpers::optional_env("IRONCLAW_OWNER_ID")?;
+    let env_owner_id = self::helpers::optional_env("BASTIONCLAW_OWNER_ID")?;
     let settings_owner_id = settings.owner_id.clone();
     let configured_owner_id = env_owner_id.clone().or(settings_owner_id.clone());
 
@@ -526,7 +526,7 @@ pub(crate) fn resolve_owner_id(settings: &Settings) -> Result<String, ConfigErro
     {
         WARNED_EXPLICIT_DEFAULT_OWNER_ID.call_once(|| {
             tracing::warn!(
-                "IRONCLAW_OWNER_ID resolved to the legacy 'default' scope explicitly; durable state will keep legacy owner behavior"
+                "BASTIONCLAW_OWNER_ID resolved to the legacy 'default' scope explicitly; durable state will keep legacy owner behavior"
             );
         });
     }
@@ -1024,7 +1024,7 @@ mod tests {
     }
 
     fn config_for_owner(owner_id: &str) -> Config {
-        let tmp = std::env::temp_dir().join(format!("ironclaw-resolve-test-{owner_id}"));
+        let tmp = std::env::temp_dir().join(format!("bastionclaw-resolve-test-{owner_id}"));
         let mut cfg = Config::for_testing(tmp.clone(), tmp.clone(), tmp);
         cfg.owner_id = owner_id.to_string();
         cfg

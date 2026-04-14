@@ -429,7 +429,7 @@ pub async fn store_oauth_tokens(
 ///
 /// **SSRF hardening.** `validation.url` is supply-chain controlled (it lives
 /// in the tool's capabilities JSON), so without validation a malicious tool
-/// author could redirect IronClaw to send the freshly-minted access token to
+/// author could redirect BastionClaw to send the freshly-minted access token to
 /// an internal endpoint as `Authorization: Bearer <token>`. We resolve and
 /// validate the URL through [`validate_and_resolve_http_target`] and pin
 /// reqwest to the validated address via [`ssrf_safe_client_builder_for_target`],
@@ -565,11 +565,11 @@ pub fn new_pending_oauth_registry() -> PendingOAuthRegistry {
 /// Returns `true` if OAuth callbacks should be routed through the web gateway
 /// instead of the local TCP listener.
 ///
-/// This is the case when `IRONCLAW_OAUTH_CALLBACK_URL` is set to a non-loopback
+/// This is the case when `BASTIONCLAW_OAUTH_CALLBACK_URL` is set to a non-loopback
 /// URL, meaning the user's browser will redirect to a hosted gateway rather than
 /// localhost.
 pub fn use_gateway_callback() -> bool {
-    crate::config::helpers::env_or_override("IRONCLAW_OAUTH_CALLBACK_URL")
+    crate::config::helpers::env_or_override("BASTIONCLAW_OAUTH_CALLBACK_URL")
         .map(|raw| {
             url::Url::parse(&raw)
                 .ok()
@@ -582,7 +582,7 @@ pub fn use_gateway_callback() -> bool {
 
 /// Returns the configured OAuth token-exchange proxy URL, if any.
 pub fn exchange_proxy_url() -> Option<String> {
-    crate::config::helpers::env_or_override("IRONCLAW_OAUTH_EXCHANGE_URL")
+    crate::config::helpers::env_or_override("BASTIONCLAW_OAUTH_EXCHANGE_URL")
         .map(|url| url.trim().to_string())
         .filter(|url| !url.is_empty())
 }
@@ -590,7 +590,7 @@ pub fn exchange_proxy_url() -> Option<String> {
 /// Returns the configured OAuth proxy auth token, if any.
 ///
 /// New hosted infra can inject a dedicated shared proxy secret via
-/// `IRONCLAW_OAUTH_PROXY_AUTH_TOKEN`. Existing hosted instances continue to
+/// `BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN`. Existing hosted instances continue to
 /// work by falling back to `GATEWAY_AUTH_TOKEN`.
 pub fn oauth_proxy_auth_token() -> Option<String> {
     fn normalized_env_value(key: &str) -> Option<String> {
@@ -599,7 +599,7 @@ pub fn oauth_proxy_auth_token() -> Option<String> {
             .filter(|value| !value.is_empty())
     }
 
-    normalized_env_value("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN")
+    normalized_env_value("BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN")
         .or_else(|| normalized_env_value("GATEWAY_AUTH_TOKEN"))
 }
 
@@ -672,7 +672,7 @@ struct HostedOAuthStatePayload {
 }
 
 fn current_instance_name() -> Option<String> {
-    crate::config::helpers::env_or_override("IRONCLAW_INSTANCE_NAME")
+    crate::config::helpers::env_or_override("BASTIONCLAW_INSTANCE_NAME")
         .or_else(|| crate::config::helpers::env_or_override("OPENCLAW_INSTANCE_NAME"))
         .filter(|v| !v.is_empty())
 }
@@ -685,7 +685,7 @@ fn hosted_state_checksum(payload_bytes: &[u8]) -> String {
 /// Build a versioned hosted OAuth state envelope.
 ///
 /// The encoded value is opaque to providers and can be decoded by both
-/// IronClaw and the external auth proxy for routing and callback lookup.
+/// BastionClaw and the external auth proxy for routing and callback lookup.
 pub fn encode_hosted_oauth_state(flow_id: &str, instance_name: Option<&str>) -> String {
     let payload = HostedOAuthStatePayload {
         flow_id: flow_id.to_string(),
@@ -1428,11 +1428,11 @@ mod tests {
     fn test_callback_host_env_override() {
         let _guard = lock_env();
         let original_host = std::env::var("OAUTH_CALLBACK_HOST").ok();
-        let original_url = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original_url = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
             std::env::set_var("OAUTH_CALLBACK_HOST", "203.0.113.10");
-            std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
         }
         assert_eq!(callback_host(), "203.0.113.10");
         // callback_url() fallback should incorporate the custom host
@@ -1446,7 +1446,7 @@ mod tests {
                 std::env::remove_var("OAUTH_CALLBACK_HOST");
             }
             if let Some(val) = original_url {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             }
         }
     }
@@ -1455,11 +1455,11 @@ mod tests {
     fn test_callback_url_default() {
         let _guard = lock_env();
         // Clear both env vars to test default behavior
-        let original_url = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original_url = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         let original_host = std::env::var("OAUTH_CALLBACK_HOST").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
             std::env::remove_var("OAUTH_CALLBACK_HOST");
         }
         let url = callback_url();
@@ -1467,7 +1467,7 @@ mod tests {
         // Restore
         unsafe {
             if let Some(val) = original_url {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             }
             if let Some(val) = original_host {
                 std::env::set_var("OAUTH_CALLBACK_HOST", val);
@@ -1478,11 +1478,11 @@ mod tests {
     #[test]
     fn test_callback_url_env_override() {
         let _guard = lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
             std::env::set_var(
-                "IRONCLAW_OAUTH_CALLBACK_URL",
+                "BASTIONCLAW_OAUTH_CALLBACK_URL",
                 "https://myserver.example.com:9876",
             );
         }
@@ -1491,9 +1491,9 @@ mod tests {
         // Restore
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             } else {
-                std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
             }
         }
     }
@@ -1517,7 +1517,7 @@ mod tests {
         let html = landing_html("Google", true);
         assert!(html.contains("Google Connected"));
         assert!(html.contains("charset"));
-        assert!(html.contains("IronClaw"));
+        assert!(html.contains("BastionClaw"));
         assert!(html.contains("#22c55e")); // green accent
         assert!(!html.contains("Failed"));
     }
@@ -1534,7 +1534,7 @@ mod tests {
         let html = landing_html("Notion", false);
         assert!(html.contains("Authorization Failed"));
         assert!(html.contains("charset"));
-        assert!(html.contains("IronClaw"));
+        assert!(html.contains("BastionClaw"));
         assert!(html.contains("#ef4444")); // red accent
         assert!(!html.contains("Connected"));
     }
@@ -1643,15 +1643,15 @@ mod tests {
     #[test]
     fn test_use_gateway_callback_false_by_default() {
         let _guard = lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
         }
         assert!(!crate::auth::oauth::use_gateway_callback());
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             }
         }
     }
@@ -1659,20 +1659,20 @@ mod tests {
     #[test]
     fn test_use_gateway_callback_true_for_hosted() {
         let _guard = lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
             std::env::set_var(
-                "IRONCLAW_OAUTH_CALLBACK_URL",
+                "BASTIONCLAW_OAUTH_CALLBACK_URL",
                 "https://kind-deer.agent1.near.ai",
             );
         }
         assert!(crate::auth::oauth::use_gateway_callback());
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             } else {
-                std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
             }
         }
     }
@@ -1680,17 +1680,17 @@ mod tests {
     #[test]
     fn test_use_gateway_callback_false_for_localhost() {
         let _guard = lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", "http://127.0.0.1:3001");
+            std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", "http://127.0.0.1:3001");
         }
         assert!(!crate::auth::oauth::use_gateway_callback());
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             } else {
-                std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
             }
         }
     }
@@ -1698,17 +1698,17 @@ mod tests {
     #[test]
     fn test_use_gateway_callback_false_for_empty() {
         let _guard = lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", "");
+            std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", "");
         }
         assert!(!crate::auth::oauth::use_gateway_callback());
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             } else {
-                std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
             }
         }
     }
@@ -1718,10 +1718,10 @@ mod tests {
         use crate::auth::oauth::{build_platform_state, decode_hosted_oauth_state};
 
         let _guard = lock_env();
-        let original = std::env::var("IRONCLAW_INSTANCE_NAME").ok();
+        let original = std::env::var("BASTIONCLAW_INSTANCE_NAME").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::set_var("IRONCLAW_INSTANCE_NAME", "kind-deer");
+            std::env::set_var("BASTIONCLAW_INSTANCE_NAME", "kind-deer");
         }
         let encoded = build_platform_state("abc123");
         let decoded = decode_hosted_oauth_state(&encoded).expect("decode hosted state");
@@ -1730,9 +1730,9 @@ mod tests {
         assert!(!decoded.is_legacy);
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_INSTANCE_NAME", val);
+                std::env::set_var("BASTIONCLAW_INSTANCE_NAME", val);
             } else {
-                std::env::remove_var("IRONCLAW_INSTANCE_NAME");
+                std::env::remove_var("BASTIONCLAW_INSTANCE_NAME");
             }
         }
     }
@@ -1742,11 +1742,11 @@ mod tests {
         use crate::auth::oauth::{build_platform_state, decode_hosted_oauth_state};
 
         let _guard = lock_env();
-        let original = std::env::var("IRONCLAW_INSTANCE_NAME").ok();
+        let original = std::env::var("BASTIONCLAW_INSTANCE_NAME").ok();
         let original_oc = std::env::var("OPENCLAW_INSTANCE_NAME").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::remove_var("IRONCLAW_INSTANCE_NAME");
+            std::env::remove_var("BASTIONCLAW_INSTANCE_NAME");
             std::env::remove_var("OPENCLAW_INSTANCE_NAME");
         }
         let encoded = build_platform_state("abc123");
@@ -1756,7 +1756,7 @@ mod tests {
         assert!(!decoded.is_legacy);
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_INSTANCE_NAME", val);
+                std::env::set_var("BASTIONCLAW_INSTANCE_NAME", val);
             }
             if let Some(val) = original_oc {
                 std::env::set_var("OPENCLAW_INSTANCE_NAME", val);
@@ -1769,11 +1769,11 @@ mod tests {
         use crate::auth::oauth::{build_platform_state, decode_hosted_oauth_state};
 
         let _guard = lock_env();
-        let original_ic = std::env::var("IRONCLAW_INSTANCE_NAME").ok();
+        let original_ic = std::env::var("BASTIONCLAW_INSTANCE_NAME").ok();
         let original_oc = std::env::var("OPENCLAW_INSTANCE_NAME").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::remove_var("IRONCLAW_INSTANCE_NAME");
+            std::env::remove_var("BASTIONCLAW_INSTANCE_NAME");
             std::env::set_var("OPENCLAW_INSTANCE_NAME", "quiet-lion");
         }
         let encoded = build_platform_state("xyz789");
@@ -1783,7 +1783,7 @@ mod tests {
         assert!(!decoded.is_legacy);
         unsafe {
             if let Some(val) = original_ic {
-                std::env::set_var("IRONCLAW_INSTANCE_NAME", val);
+                std::env::set_var("BASTIONCLAW_INSTANCE_NAME", val);
             }
             if let Some(val) = original_oc {
                 std::env::set_var("OPENCLAW_INSTANCE_NAME", val);
@@ -1797,7 +1797,7 @@ mod tests {
     fn test_oauth_proxy_auth_token_prefers_dedicated_env() {
         let _guard = lock_env();
         let _proxy_guard = set_env_var(
-            "IRONCLAW_OAUTH_PROXY_AUTH_TOKEN",
+            "BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN",
             Some("shared-proxy-secret"),
         );
         let _gateway_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-token"));
@@ -1811,7 +1811,7 @@ mod tests {
     #[test]
     fn test_oauth_proxy_auth_token_falls_back_to_gateway_token() {
         let _guard = lock_env();
-        let _proxy_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
+        let _proxy_guard = set_env_var("BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
         let _gateway_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-token"));
 
         assert_eq!(
@@ -1823,7 +1823,7 @@ mod tests {
     #[test]
     fn test_oauth_proxy_auth_token_whitespace_dedicated_env_falls_back_to_gateway_token() {
         let _guard = lock_env();
-        let _proxy_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", Some("   "));
+        let _proxy_guard = set_env_var("BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN", Some("   "));
         let _gateway_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-token"));
 
         assert_eq!(
@@ -1835,7 +1835,7 @@ mod tests {
     #[test]
     fn test_oauth_proxy_auth_token_returns_none_when_unset() {
         let _guard = lock_env();
-        let _proxy_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
+        let _proxy_guard = set_env_var("BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
         let _gateway_guard = set_env_var("GATEWAY_AUTH_TOKEN", None);
 
         assert_eq!(crate::auth::oauth::oauth_proxy_auth_token(), None);

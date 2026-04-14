@@ -3,7 +3,7 @@ title: Database Backends
 description: PostgreSQL vs libSQL — choosing your database
 ---
 
-IronClaw supports two database backends: **PostgreSQL** and **libSQL** (embedded SQLite). Choose based on your deployment needs.
+BastionClaw supports two database backends: **PostgreSQL** and **libSQL** (embedded SQLite). Choose based on your deployment needs.
 
 ## Quick Comparison
 
@@ -44,19 +44,19 @@ brew services start postgresql          # macOS
 
 ```bash
 # Create database
-sudo -u postgres psql -c "CREATE DATABASE ironclaw;"
-sudo -u postgres psql -c "CREATE USER ironclaw WITH PASSWORD 'your-password';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ironclaw TO ironclaw;"
+sudo -u postgres psql -c "CREATE DATABASE bastionclaw;"
+sudo -u postgres psql -c "CREATE USER bastionclaw WITH PASSWORD 'your-password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE bastionclaw TO bastionclaw;"
 
 # Enable pgvector
-sudo -u postgres psql -d ironclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
+sudo -u postgres psql -d bastionclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
 ```
 
-### IronClaw Configuration
+### BastionClaw Configuration
 
 ```bash
 export DATABASE_BACKEND=postgres
-export DATABASE_URL="postgres://ironclaw:your-password@localhost/ironclaw"
+export DATABASE_URL="postgres://bastionclaw:your-password@localhost/bastionclaw"
 ```
 
 Or in the wizard:
@@ -83,16 +83,16 @@ Recommended for personal use, development, and single-user deployments. Zero set
 ### How It Works
 
 libSQL is an embedded SQLite-compatible database:
-- Database is a single file (`~/.ironclaw/ironclaw.db`)
+- Database is a single file (`~/.bastionclaw/bastionclaw.db`)
 - No separate server process
 - Auto-created on first connection
 - Full SQLite feature set
 
-### IronClaw Configuration
+### BastionClaw Configuration
 
 ```bash
 export DATABASE_BACKEND=libsql
-export LIBSQL_PATH="/home/user/.ironclaw/ironclaw.db"
+export LIBSQL_PATH="/home/user/.bastionclaw/bastionclaw.db"
 ```
 
 Or just use the wizard defaults:
@@ -106,7 +106,7 @@ libSQL supports syncing to Turso for cloud backup:
 
 ```bash
 export DATABASE_BACKEND=libsql
-export LIBSQL_PATH="/home/user/.ironclaw/ironclaw.db"
+export LIBSQL_PATH="/home/user/.bastionclaw/bastionclaw.db"
 export LIBSQL_URL="libsql://your-db.turso.io"
 export LIBSQL_AUTH_TOKEN="your-auth-token"
 ```
@@ -149,38 +149,38 @@ Both backends support embeddings, but with different implementations:
 
 1. **Export from libSQL:**
    ```bash
-   sqlite3 ~/.ironclaw/ironclaw.db ".dump" > ironclaw.sql
+   sqlite3 ~/.bastionclaw/bastionclaw.db ".dump" > bastionclaw.sql
    ```
 
 2. **Import to PostgreSQL:**
    ```bash
-   psql -d ironclaw -f ironclaw.sql
+   psql -d bastionclaw -f bastionclaw.sql
    ```
 
-3. **Update IronClaw config:**
+3. **Update BastionClaw config:**
    ```bash
    export DATABASE_BACKEND=postgres
-   export DATABASE_URL="postgres://user:pass@localhost/ironclaw"
+   export DATABASE_URL="postgres://user:pass@localhost/bastionclaw"
    ```
 
-4. **Restart IronClaw**
+4. **Restart BastionClaw**
 
 ### From PostgreSQL to libSQL
 
 1. **Export:**
    ```bash
-   pg_dump -h localhost -U ironclaw ironclaw > ironclaw.sql
+   pg_dump -h localhost -U bastionclaw bastionclaw > bastionclaw.sql
    ```
 
 2. **Convert and import to SQLite** (requires conversion tools)
 
-3. **Update IronClaw config**
+3. **Update BastionClaw config**
 
 ## When to Choose Which
 
 ### Choose libSQL if:
 
-- Running IronClaw on a personal laptop/desktop
+- Running BastionClaw on a personal laptop/desktop
 - Single-user deployment
 - Want zero database administration
 - Don't need horizontal scaling
@@ -201,20 +201,20 @@ Both backends support embeddings, but with different implementations:
 
 ```bash
 # Backup
-pg_dump -h localhost -U ironclaw ironclaw > backup.sql
+pg_dump -h localhost -U bastionclaw bastionclaw > backup.sql
 
 # Restore
-psql -d ironclaw -f backup.sql
+psql -d bastionclaw -f backup.sql
 ```
 
 ### libSQL
 
 ```bash
 # Backup (simple file copy)
-cp ~/.ironclaw/ironclaw.db ~/.ironclaw/ironclaw.db.backup
+cp ~/.bastionclaw/bastionclaw.db ~/.bastionclaw/bastionclaw.db.backup
 
 # Restore
-cp ~/.ironclaw/ironclaw.db.backup ~/.ironclaw/ironclaw.db
+cp ~/.bastionclaw/bastionclaw.db.backup ~/.bastionclaw/bastionclaw.db
 
 # With Turso: automatic cloud backup
 ```
@@ -238,7 +238,7 @@ cp ~/.ironclaw/ironclaw.db.backup ~/.ironclaw/ironclaw.db
   <Accordion title="Database file is locked" icon="lock">
     ```bash
     # Find and kill process
-    lsof ~/.ironclaw/ironclaw.db
+    lsof ~/.bastionclaw/bastionclaw.db
     kill -9 <pid>
 
     # Or wait for it to release

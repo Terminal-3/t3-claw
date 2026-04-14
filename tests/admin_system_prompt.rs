@@ -14,11 +14,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use ironclaw::channels::web::auth::{MultiAuthState, UserIdentity};
-use ironclaw::channels::web::test_helpers::TestGatewayBuilder;
-use ironclaw::db::Database;
-use ironclaw::db::libsql::LibSqlBackend;
-use ironclaw::workspace::{ADMIN_SCOPE, Workspace, paths};
+use bastionclaw::channels::web::auth::{MultiAuthState, UserIdentity};
+use bastionclaw::channels::web::test_helpers::TestGatewayBuilder;
+use bastionclaw::db::Database;
+use bastionclaw::db::libsql::LibSqlBackend;
+use bastionclaw::workspace::{ADMIN_SCOPE, Workspace, paths};
 
 async fn setup() -> (Arc<dyn Database>, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("create temp dir");

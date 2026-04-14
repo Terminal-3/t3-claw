@@ -45,7 +45,7 @@ impl Default for SandboxModeConfig {
             timeout_secs: 120,
             memory_limit_mb: 2048,
             cpu_shares: 1024,
-            image: "ironclaw-worker:latest".to_string(),
+            image: "bastionclaw-worker:latest".to_string(),
             auto_pull_image: true,
             extra_allowed_domains: Vec::new(),
             reaper_interval_secs: 300,
@@ -361,7 +361,7 @@ fn parse_oauth_access_token(json: &str) -> Option<String> {
 ///
 /// Controls whether ACP agent delegation is available. Agent definitions
 /// are stored separately in a DB blob (key `"acp_agents"`) or disk file
-/// (`~/.ironclaw/acp-agents.json`), following the MCP server pattern.
+/// (`~/.bastionclaw/acp-agents.json`), following the MCP server pattern.
 #[derive(Debug, Clone)]
 pub struct AcpModeConfig {
     /// Whether ACP agent mode is available.
@@ -428,7 +428,7 @@ mod tests {
         assert_eq!(cfg.timeout_secs, 120);
         assert_eq!(cfg.memory_limit_mb, 2048);
         assert_eq!(cfg.cpu_shares, 1024);
-        assert_eq!(cfg.image, "ironclaw-worker:latest");
+        assert_eq!(cfg.image, "bastionclaw-worker:latest");
         assert!(cfg.auto_pull_image);
         assert!(cfg.extra_allowed_domains.is_empty());
     }

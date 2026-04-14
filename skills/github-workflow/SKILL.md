@@ -60,7 +60,7 @@ Before installing missions, verify:
 1. Open [`workflow-routines.md`](references/workflow-routines.md).
 2. For each template block:
    - Replace placeholders (`{{repository}}`, `{{maintainers}}`, branch names)
-   - Namespace mission names with the repo slug (e.g. `wf-issue-plan-nearai-ironclaw`)
+   - Namespace mission names with the repo slug (e.g. `wf-issue-plan-nearai-bastionclaw`)
    - Call `mission_create` with `name`, `goal` (the prompt), and `cadence` (cron expression or `event:<pattern>`)
 3. If a mission already exists (check `mission_list`), update rather than duplicate.
 4. If `staging_branch` is null, skip `wf-staging-batch-review`.

@@ -1,11 +1,11 @@
 # Slack Local Smoke Test
 
-Exercises the real Slack WASM channel integration against a running IronClaw instance using live Slack API calls.
+Exercises the real Slack WASM channel integration against a running BastionClaw instance using live Slack API calls.
 
 ## Prerequisites
 
 - **Python 3.11+**
-- **Running IronClaw** instance with the Slack channel configured and activated
+- **Running BastionClaw** instance with the Slack channel configured and activated
 - **Slack App** with:
   - Bot token (`xoxb-`) with scopes: `chat:write`, `channels:history`, `groups:history`, `im:history`, `files:read`
   - User token (`xoxp-`) with scopes: `chat:write`, `files:write`, `channels:history`, `im:history`
@@ -59,13 +59,13 @@ python run_smoke.py --list-cases
 
 Unlike Telegram (which uses a user-client library like Telethon), Slack smoke uses two tokens:
 
-1. **User token** (`xoxp-`): Sends messages as a real Slack user, which triggers Slack to send webhook events to IronClaw
+1. **User token** (`xoxp-`): Sends messages as a real Slack user, which triggers Slack to send webhook events to BastionClaw
 2. **Bot token** (`xoxb-`): Reads `conversations.history` / `conversations.replies` to find the bot's replies
 
 Flow per case:
 1. Send message via user token
-2. Slack sends webhook event to IronClaw
-3. IronClaw processes event and calls `chat.postMessage`
+2. Slack sends webhook event to BastionClaw
+3. BastionClaw processes event and calls `chat.postMessage`
 4. Smoke runner polls conversation history with bot token to find the reply
 
 ## Recommended Release Workflow

@@ -27,16 +27,16 @@
       },
       {
         "action": "search_code",
-        "query": "repo:nearai/ironclaw tool_info",
+        "query": "repo:nearai/bastionclaw tool_info",
         "limit": 5
       },
       {
         "action": "create_or_update_file",
         "owner": "nearai",
-        "repo": "ironclaw",
+        "repo": "bastionclaw",
         "path": "docs/example.txt",
         "message": "docs: add example",
-        "content": "Hello from IronClaw"
+        "content": "Hello from BastionClaw"
       }
     ]
   },

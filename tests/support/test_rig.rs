@@ -9,21 +9,21 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use ironclaw::agent::{Agent, AgentDeps};
-use ironclaw::app::{AppBuilder, AppBuilderFlags};
-use ironclaw::channels::web::log_layer::LogBroadcaster;
-use ironclaw::channels::{OutgoingResponse, StatusUpdate};
-use ironclaw::config::Config;
-use ironclaw::db::Database;
-use ironclaw::llm::{LlmProvider, SessionConfig, SessionManager};
-use ironclaw::tools::Tool;
+use bastionclaw::agent::{Agent, AgentDeps};
+use bastionclaw::app::{AppBuilder, AppBuilderFlags};
+use bastionclaw::channels::web::log_layer::LogBroadcaster;
+use bastionclaw::channels::{OutgoingResponse, StatusUpdate};
+use bastionclaw::config::Config;
+use bastionclaw::db::Database;
+use bastionclaw::llm::{LlmProvider, SessionConfig, SessionManager};
+use bastionclaw::tools::Tool;
 
 use crate::support::instrumented_llm::InstrumentedLlm;
 use crate::support::metrics::{ToolInvocation, TraceMetrics};
 use crate::support::test_channel::{CapturedEvent, TestChannel, TestChannelHandle};
 use crate::support::trace_llm::{LlmTrace, TraceLlm};
 
-use ironclaw::llm::recording::{HttpExchange, HttpInterceptor, ReplayingHttpInterceptor};
+use bastionclaw::llm::recording::{HttpExchange, HttpInterceptor, ReplayingHttpInterceptor};
 
 // ---------------------------------------------------------------------------
 // TestRig
@@ -38,14 +38,14 @@ const BOOTSTRAP_GREETING_MARKER: &str = "always-on chief of staff";
 /// rig database from an existing libSQL file.
 ///
 /// Live tests use this to pull *only* the credentials they need (e.g. a
-/// Google OAuth token) out of the developer's real `~/.ironclaw/ironclaw.db`
+/// Google OAuth token) out of the developer's real `~/.bastionclaw/bastionclaw.db`
 /// without cloning the rest of the database. Memory, history, secrets the
 /// test didn't ask for — none of it crosses the boundary. The destination
 /// DB starts empty, the listed secret rows are inserted under the test
 /// rig's owner user, and the test must seed any other state itself.
 #[derive(Clone, Debug)]
 pub struct SeededSecretsConfig {
-    /// Path to the source libSQL file (typically `~/.ironclaw/ironclaw.db`).
+    /// Path to the source libSQL file (typically `~/.bastionclaw/bastionclaw.db`).
     pub source_path: std::path::PathBuf,
     /// User ID to filter the source rows on (typically the developer's
     /// owner_id from the live config).
@@ -89,7 +89,7 @@ async fn seed_secrets_into(
     );
 
     // Open the source via a separate libSQL connection. We never write to
-    // it. The source process (the developer's running ironclaw) can keep
+    // it. The source process (the developer's running bastionclaw) can keep
     // running concurrently — libSQL's WAL mode permits a reader from
     // another connection.
     let src_db = libsql::Builder::new_local(&config.source_path)
@@ -199,22 +199,22 @@ pub struct TestRig {
     db: Arc<dyn Database>,
     /// Workspace handle for direct memory operations in tests.
     #[cfg(feature = "libsql")]
-    workspace: Option<Arc<ironclaw::workspace::Workspace>>,
+    workspace: Option<Arc<bastionclaw::workspace::Workspace>>,
     /// The underlying TraceLlm for inspecting captured requests.
     #[cfg(feature = "libsql")]
     trace_llm: Option<Arc<TraceLlm>>,
     /// Extension manager for direct extension operations in tests.
     #[cfg(feature = "libsql")]
-    extension_manager: Option<Arc<ironclaw::extensions::ExtensionManager>>,
+    extension_manager: Option<Arc<bastionclaw::extensions::ExtensionManager>>,
     /// Session manager for direct session/thread access in tests.
     #[cfg(feature = "libsql")]
-    session_manager: Arc<ironclaw::agent::SessionManager>,
+    session_manager: Arc<bastionclaw::agent::SessionManager>,
     /// Secrets store for direct credential manipulation in tests.
     /// Live tests that exercise the auth gate flow use this to delete
     /// credentials before sending a tool-using prompt and re-insert
     /// them after to simulate the user completing OAuth.
     #[cfg(feature = "libsql")]
-    secrets_store: Option<Arc<dyn ironclaw::secrets::SecretsStore + Send + Sync>>,
+    secrets_store: Option<Arc<dyn bastionclaw::secrets::SecretsStore + Send + Sync>>,
     /// Owner identity resolved from `Config::owner_id`. Tests that
     /// manipulate the secrets store directly need this so their
     /// `secrets.create(owner_id, ..)` / `secrets.delete(owner_id, ..)`
@@ -238,14 +238,14 @@ impl TestRig {
     }
 
     /// Inject a raw `IncomingMessage` (for tests that need attachments, etc.).
-    pub async fn send_incoming(&self, msg: ironclaw::channels::IncomingMessage) {
+    pub async fn send_incoming(&self, msg: bastionclaw::channels::IncomingMessage) {
         self.channel.send_incoming(msg).await;
     }
 
     /// Return all message lists that were sent to the LLM provider.
     ///
     /// Only available when the rig was built with a `TraceLlm` (i.e., via `.with_trace()`).
-    pub fn captured_llm_requests(&self) -> Vec<Vec<ironclaw::llm::ChatMessage>> {
+    pub fn captured_llm_requests(&self) -> Vec<Vec<bastionclaw::llm::ChatMessage>> {
         self.trace_llm
             .as_ref()
             .map(|t| t.captured_requests())
@@ -253,13 +253,13 @@ impl TestRig {
     }
 
     /// Return the extension manager for direct extension operations in tests.
-    pub fn extension_manager(&self) -> Option<&Arc<ironclaw::extensions::ExtensionManager>> {
+    pub fn extension_manager(&self) -> Option<&Arc<bastionclaw::extensions::ExtensionManager>> {
         self.extension_manager.as_ref()
     }
 
     /// Return the session manager for direct session/thread access in tests.
     #[cfg(feature = "libsql")]
-    pub fn session_manager(&self) -> &Arc<ironclaw::agent::SessionManager> {
+    pub fn session_manager(&self) -> &Arc<bastionclaw::agent::SessionManager> {
         &self.session_manager
     }
 
@@ -479,7 +479,7 @@ impl TestRig {
             let completed = self.tool_calls_completed();
             let mut results = self.tool_results();
             for status in self.channel.captured_status_events() {
-                if let ironclaw::channels::StatusUpdate::ToolCompleted {
+                if let bastionclaw::channels::StatusUpdate::ToolCompleted {
                     name,
                     success: false,
                     error,
@@ -523,7 +523,7 @@ impl TestRig {
         let completed = self.tool_calls_completed();
         let mut results = self.tool_results();
         for status in self.channel.captured_status_events() {
-            if let ironclaw::channels::StatusUpdate::ToolCompleted {
+            if let bastionclaw::channels::StatusUpdate::ToolCompleted {
                 name,
                 success: false,
                 error,
@@ -637,7 +637,7 @@ impl TestRigBuilder {
     ///
     /// Live tests use this to pull just the credentials they need (e.g.
     /// `google_oauth_token`) out of the developer's real
-    /// `~/.ironclaw/ironclaw.db` so OAuth-backed flows work end-to-end —
+    /// `~/.bastionclaw/bastionclaw.db` so OAuth-backed flows work end-to-end —
     /// without cloning conversation history, workspace memory, or any
     /// secret the test didn't ask for. The destination DB starts empty;
     /// the listed rows are inserted under the test rig's owner user; any
@@ -790,8 +790,8 @@ impl TestRigBuilder {
     /// Requires the `libsql` feature for the embedded test database.
     #[cfg(feature = "libsql")]
     pub async fn build(self) -> TestRig {
-        use ironclaw::channels::ChannelManager;
-        use ironclaw::db::libsql::LibSqlBackend;
+        use bastionclaw::channels::ChannelManager;
+        use bastionclaw::db::libsql::LibSqlBackend;
 
         // Destructure self up front to avoid partial-move issues.
         let TestRigBuilder {
@@ -836,13 +836,13 @@ impl TestRigBuilder {
         // which silently disables `SecretsStore` and breaks every test
         // that needs OAuth/encrypted credentials. `with_database_and_handles()`
         // is the right pairing.
-        let db_handles = ironclaw::db::DatabaseHandles {
+        let db_handles = bastionclaw::db::DatabaseHandles {
             #[cfg(feature = "libsql")]
             libsql_db: Some(backend.shared_db()),
             #[cfg(feature = "postgres")]
             pg_pool: None,
         };
-        let db: Arc<dyn ironclaw::db::Database> = Arc::new(backend);
+        let db: Arc<dyn bastionclaw::db::Database> = Arc::new(backend);
 
         // 2. Build Config.
         let has_config_override = config_override.is_some();
@@ -852,7 +852,7 @@ impl TestRigBuilder {
         let _ = std::fs::create_dir_all(&installed_skills_dir);
         let mut config = if let Some(mut cfg) = config_override {
             // Override database to use temp libSQL, but preserve agent/llm settings.
-            cfg.database.backend = ironclaw::config::DatabaseBackend::LibSql;
+            cfg.database.backend = bastionclaw::config::DatabaseBackend::LibSql;
             cfg.database.libsql_path = Some(db_path);
             cfg.skills.local_dir = skills_dir;
             cfg.skills.installed_dir = installed_skills_dir;
@@ -973,10 +973,10 @@ impl TestRigBuilder {
 
         // Reset engine v2 global state so each test gets a clean engine instance.
         if components.config.agent.engine_v2 {
-            ironclaw::bridge::reset_engine_state().await;
+            bastionclaw::bridge::reset_engine_state().await;
         }
 
-        let scheduler_slot: ironclaw::tools::builtin::SchedulerSlot =
+        let scheduler_slot: bastionclaw::tools::builtin::SchedulerSlot =
             Arc::new(tokio::sync::RwLock::new(None));
 
         // Build HTTP interceptor once — shared by both AgentDeps and WASM tools.
@@ -1020,14 +1020,14 @@ impl TestRigBuilder {
 
             // Routine tools: create a RoutineEngine with the LLM and workspace.
             if let (Some(db_arc), Some(ws)) = (&components.db, &components.workspace) {
-                use ironclaw::agent::routine_engine::RoutineEngine;
-                use ironclaw::config::RoutineConfig;
+                use bastionclaw::agent::routine_engine::RoutineEngine;
+                use bastionclaw::config::RoutineConfig;
 
                 let routine_config = RoutineConfig::default();
                 let (notify_tx, _notify_rx) = tokio::sync::mpsc::channel(16);
                 let engine = Arc::new(RoutineEngine::new(
                     routine_config,
-                    ironclaw::tenant::SystemScope::new(Arc::clone(db_arc)),
+                    bastionclaw::tenant::SystemScope::new(Arc::clone(db_arc)),
                     components.llm.clone(),
                     Arc::clone(ws),
                     notify_tx,
@@ -1035,7 +1035,7 @@ impl TestRigBuilder {
                     None,
                     components.tools.clone(),
                     components.safety.clone(),
-                    ironclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
+                    bastionclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
                 ));
                 components
                     .tools
@@ -1046,10 +1046,10 @@ impl TestRigBuilder {
             // AppBuilder did not wire them for this environment.
             if enable_skills {
                 let registry = Arc::new(std::sync::RwLock::new(
-                    ironclaw_skills::SkillRegistry::new(temp_dir.path().join("skills"))
+                    bastionclaw_skills::SkillRegistry::new(temp_dir.path().join("skills"))
                         .with_installed_dir(temp_dir.path().join("installed_skills")),
                 ));
-                let catalog = ironclaw_skills::catalog::shared_catalog();
+                let catalog = bastionclaw_skills::catalog::shared_catalog();
                 components
                     .tools
                     .register_skill_tools(Arc::clone(&registry), Arc::clone(&catalog));
@@ -1064,7 +1064,7 @@ impl TestRigBuilder {
 
             // Register WASM tools with the shared HTTP interceptor.
             if !wasm_tools.is_empty() {
-                use ironclaw::tools::wasm::{
+                use bastionclaw::tools::wasm::{
                     Capabilities, CapabilitiesFile, WasmRuntimeConfig, WasmToolRuntime,
                     WasmToolWrapper,
                 };
@@ -1125,7 +1125,7 @@ impl TestRigBuilder {
         let ext_mgr_ref = components.extension_manager.clone();
         let secrets_store_ref = components.secrets_store.clone();
         let owner_id_ref = components.config.owner_id.clone();
-        let session_manager_ref = Arc::new(ironclaw::agent::SessionManager::new());
+        let session_manager_ref = Arc::new(bastionclaw::agent::SessionManager::new());
 
         // 7. Construct AgentDeps from AppComponents (mirrors main.rs).
         let deps = AgentDeps {
@@ -1147,10 +1147,10 @@ impl TestRigBuilder {
             http_interceptor,
             transcription: None,
             document_extraction: None,
-            sandbox_readiness: ironclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
+            sandbox_readiness: bastionclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
             builder: None,
             llm_backend: "nearai".to_string(),
-            tenant_rates: std::sync::Arc::new(ironclaw::tenant::TenantRateRegistry::new(4, 3)),
+            tenant_rates: std::sync::Arc::new(bastionclaw::tenant::TenantRateRegistry::new(4, 3)),
         };
 
         // 7. Create TestChannel and ChannelManager.
@@ -1192,7 +1192,7 @@ impl TestRigBuilder {
 
         // 8. Create Agent.
         let routine_config = if enable_routines {
-            Some(ironclaw::config::RoutineConfig {
+            Some(bastionclaw::config::RoutineConfig {
                 enabled: true,
                 cron_check_interval_secs: 60,
                 max_concurrent_routines: 3,
@@ -1264,7 +1264,7 @@ impl TestRig {
 
     /// Get the workspace handle for direct memory operations.
     #[cfg(feature = "libsql")]
-    pub fn workspace(&self) -> Option<&Arc<ironclaw::workspace::Workspace>> {
+    pub fn workspace(&self) -> Option<&Arc<bastionclaw::workspace::Workspace>> {
         self.workspace.as_ref()
     }
 
@@ -1283,7 +1283,7 @@ impl TestRig {
     /// key. Most test rigs now have a working secrets store because
     /// `Config::for_testing()` generates a random master key per call.
     #[cfg(feature = "libsql")]
-    pub fn secrets_store(&self) -> Option<&Arc<dyn ironclaw::secrets::SecretsStore + Send + Sync>> {
+    pub fn secrets_store(&self) -> Option<&Arc<dyn bastionclaw::secrets::SecretsStore + Send + Sync>> {
         self.secrets_store.as_ref()
     }
 

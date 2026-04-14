@@ -1,4 +1,4 @@
-//! Generic adapter that bridges rig-core's `CompletionModel` trait to IronClaw's `LlmProvider`.
+//! Generic adapter that bridges rig-core's `CompletionModel` trait to BastionClaw's `LlmProvider`.
 //!
 //! This lets us use any rig-core provider (OpenAI, Anthropic, Ollama, etc.) as an
 //! `Arc<dyn LlmProvider>` without changing any of the agent, reasoning, or tool code.
@@ -622,7 +622,7 @@ fn make_nullable(schema: &mut JsonValue) {
     }
 }
 
-/// Convert IronClaw messages to rig-core format.
+/// Convert BastionClaw messages to rig-core format.
 ///
 /// Returns `(preamble, chat_history)` where preamble is extracted from
 /// any System message and chat_history contains the rest.
@@ -798,7 +798,7 @@ fn normalized_tool_call_id(raw: Option<&str>, seed: usize) -> String {
     super::provider::generate_tool_call_id(seed, 0)
 }
 
-/// Convert IronClaw tool definitions to rig-core format.
+/// Convert BastionClaw tool definitions to rig-core format.
 ///
 /// Applies `normalize_schema_strict` at the boundary, which both
 /// strict-normalizes nested objects AND flattens any top-level
@@ -821,7 +821,7 @@ fn convert_tools(tools: &[IronToolDefinition]) -> Vec<RigToolDefinition> {
         .collect()
 }
 
-/// Convert IronClaw tool_choice string to rig-core ToolChoice.
+/// Convert BastionClaw tool_choice string to rig-core ToolChoice.
 fn convert_tool_choice(choice: Option<&str>) -> Option<RigToolChoice> {
     match choice.map(|s| s.to_lowercase()).as_deref() {
         Some("auto") => Some(RigToolChoice::Auto),
@@ -854,7 +854,7 @@ fn extract_response(
                     reasoning: None,
                 });
             }
-            // Reasoning and Image variants are not mapped to IronClaw types
+            // Reasoning and Image variants are not mapped to BastionClaw types
             _ => {}
         }
     }

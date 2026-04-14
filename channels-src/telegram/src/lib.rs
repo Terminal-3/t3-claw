@@ -1,7 +1,7 @@
 // Telegram API types have fields reserved for future use (entities, reply threading, etc.)
 #![allow(dead_code)]
 
-//! Telegram Bot API channel for IronClaw.
+//! Telegram Bot API channel for BastionClaw.
 //!
 //! This WASM component implements the channel interface for handling Telegram
 //! webhooks and sending messages back via the Bot API.
@@ -1231,7 +1231,7 @@ fn send_multipart_upload(
 ) -> Result<(), String> {
     let message_thread_id = normalize_thread_id(message_thread_id);
 
-    let boundary = format!("ironclaw-{}", channel_host::now_millis());
+    let boundary = format!("bastionclaw-{}", channel_host::now_millis());
     let mut body = Vec::new();
 
     write_multipart_field(&mut body, &boundary, "chat_id", &chat_id.to_string());
@@ -1689,7 +1689,7 @@ fn send_pairing_reply(chat_id: i64, code: &str) -> Result<(), String> {
     send_message(
         chat_id,
         &format!(
-            "Enter this code in IronClaw to pair your telegram account: `{}`. CLI fallback: `ironclaw pairing approve telegram {}`",
+            "Enter this code in BastionClaw to pair your telegram account: `{}`. CLI fallback: `bastionclaw pairing approve telegram {}`",
             code, code
         ),
         None,

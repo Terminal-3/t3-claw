@@ -4,7 +4,7 @@ description: "将本地智能体暴露到互联网"
 icon: cloud
 ---
 
-隧道将您本地的 IronClaw 智能体暴露到互联网。当您需要基于 webhook 的频道或希望实现即时消息传递而非轮询时，就需要它。
+隧道将您本地的 BastionClaw 智能体暴露到互联网。当您需要基于 webhook 的频道或希望实现即时消息传递而非轮询时，就需要它。
 
 <Note>
 如果您还没有设置智能体，请先查看我们的[快速开始指南](./quickstart)
@@ -17,12 +17,12 @@ icon: cloud
 通过引导命令配置隧道：
 
 ```bash
-ironclaw onboard --channels-only
+bastionclaw onboard --channels-only
 ```
 
 ### ngrok
 
-`ngrok` 是一个托管隧道服务，设置简单，非常适合刚开始使用 `ironclaw` 的用户。使用前需要从 [ngrok 控制台](https://dashboard.ngrok.com/get-started/your-authtoken) 获取认证令牌。
+`ngrok` 是一个托管隧道服务，设置简单，非常适合刚开始使用 `bastionclaw` 的用户。使用前需要从 [ngrok 控制台](https://dashboard.ngrok.com/get-started/your-authtoken) 获取认证令牌。
 
 ### Cloudflare
 
@@ -65,8 +65,8 @@ brew install cloudflared
 
 提供带有占位符的 shell 命令：
 
-- `{port}` 表示 IronClaw 的本地端口
-- `{host}` 表示 IronClaw 的本地主机
+- `{port}` 表示 BastionClaw 的本地端口
+- `{host}` 表示 BastionClaw 的本地主机
 
 示例：
 
@@ -76,9 +76,9 @@ bore local {port} --to bore.pub
 
 ### 静态 URL
 
-当隧道在 IronClaw 外部管理且您已有稳定的公共 URL 时使用此选项。
+当隧道在 BastionClaw 外部管理且您已有稳定的公共 URL 时使用此选项。
 
-IronClaw 将直接使用该 URL，不会启动或管理任何隧道进程。
+BastionClaw 将直接使用该 URL，不会启动或管理任何隧道进程。
 
 ---
 

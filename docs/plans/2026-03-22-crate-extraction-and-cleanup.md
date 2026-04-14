@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-22
 **Status:** Recommendations (some already completed)
-**Context:** Architectural analysis of IronClaw's module boundaries, coupling, and organization. These recommendations emerged from the engine v2 design process.
+**Context:** Architectural analysis of BastionClaw's module boundaries, coupling, and organization. These recommendations emerged from the engine v2 design process.
 
 ---
 
@@ -34,17 +34,17 @@ These modules have no `crate::` imports from the rest of the codebase:
 
 | Module | Lines | Coupling | How to break |
 |--------|-------|----------|-------------|
-| `src/transcription/` | ~727 | `crate::channels::{AttachmentKind, IncomingMessage}` | **DONE** — moved to `src/llm/transcription/` in staging (PR #1559). Could further extract to `ironclaw_media` crate |
+| `src/transcription/` | ~727 | `crate::channels::{AttachmentKind, IncomingMessage}` | **DONE** — moved to `src/llm/transcription/` in staging (PR #1559). Could further extract to `bastionclaw_media` crate |
 | `src/document_extraction/` | ~798 | `crate::channels::{AttachmentKind, IncomingMessage}` | Extract `AttachmentKind` to shared types |
-| `src/pairing/` | ~917 | `crate::bootstrap::ironclaw_base_dir` | Pass base_dir as parameter instead of importing |
+| `src/pairing/` | ~917 | `crate::bootstrap::bastionclaw_base_dir` | Pass base_dir as parameter instead of importing |
 | `src/hooks/` | ~84 | Light | Define Hook trait in shared types |
 
-### Tier 3: Medium coupling — need `ironclaw_types` crate first
+### Tier 3: Medium coupling — need `bastionclaw_types` crate first
 
 | Module | Lines | Dependencies to untangle |
 |--------|-------|--------------------------|
 | `src/secrets/` | ~88 | Encryption is self-contained, needs config types |
-| `src/tools/mcp/` | ~3K | Generic MCP protocol client. **Highly reusable** outside IronClaw |
+| `src/tools/mcp/` | ~3K | Generic MCP protocol client. **Highly reusable** outside BastionClaw |
 | `src/db/` | ~256 | Trait-based (`Database`), needs shared types for schema |
 | `src/workspace/` | ~240 | Depends on db + embedding, but has clean `Workspace` trait |
 | `src/llm/` | ~888 | Trait-based (`LlmProvider`), depends on config types |
@@ -145,17 +145,17 @@ Discord, Slack, Telegram, Feishu, WhatsApp channels + 11 tools. Mature WIT inter
 
 ## Priority Order
 
-1. **`ironclaw_types`** — shared traits + types. Keystone for all extractions
+1. **`bastionclaw_types`** — shared traits + types. Keystone for all extractions
 2. **Tier 1** (estimation, observability, tunnel) — immediate wins, zero risk
-3. **`ironclaw_mcp`** — generic MCP client, independently useful
-4. **`ironclaw_llm`** (with transcription) — large module, clean trait boundary
-5. **`ironclaw_db`** + **`ironclaw_workspace`** — persistence layer
-6. **`ironclaw_gateway`** — extract 160K-line web gateway (biggest compile time win)
+3. **`bastionclaw_mcp`** — generic MCP client, independently useful
+4. **`bastionclaw_llm`** (with transcription) — large module, clean trait boundary
+5. **`bastionclaw_db`** + **`bastionclaw_workspace`** — persistence layer
+6. **`bastionclaw_gateway`** — extract 160K-line web gateway (biggest compile time win)
 
 ---
 
 ## Completed
 
-- [x] `ironclaw_safety` — extracted to `crates/ironclaw_safety/` (already existed)
-- [x] `ironclaw_engine` — new crate at `crates/ironclaw_engine/` (engine v2)
+- [x] `bastionclaw_safety` — extracted to `crates/bastionclaw_safety/` (already existed)
+- [x] `bastionclaw_engine` — new crate at `crates/bastionclaw_engine/` (engine v2)
 - [x] Transcription moved to `src/llm/transcription/` (PR #1559 on staging)

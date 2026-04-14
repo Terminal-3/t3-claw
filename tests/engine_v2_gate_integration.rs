@@ -18,8 +18,8 @@ use async_trait::async_trait;
 use chrono::Utc;
 use tokio::sync::RwLock;
 
-use ironclaw_engine::types::capability::{EffectType, LeaseId};
-use ironclaw_engine::{
+use bastionclaw_engine::types::capability::{EffectType, LeaseId};
+use bastionclaw_engine::{
     ActionDef, ActionResult, Capability, CapabilityLease, CapabilityRegistry, DocId,
     EffectExecutor, EngineError, GrantedActions, LeaseManager, LlmBackend, LlmCallConfig,
     LlmOutput, LlmResponse, MemoryDoc, Mission, MissionId, MissionStatus, PolicyEngine, Project,
@@ -27,13 +27,13 @@ use ironclaw_engine::{
     ThreadMessage, ThreadOutcome, ThreadState, ThreadType, TokenUsage,
 };
 
-use ironclaw::bridge::EffectBridgeAdapter;
-use ironclaw::context::JobContext;
-use ironclaw::gate::pending::{PendingGate, PendingGateKey};
-use ironclaw::gate::store::{GateStoreError, PendingGateStore, TRUSTED_GATE_CHANNELS};
-use ironclaw::hooks::HookRegistry;
-use ironclaw::tools::{ApprovalRequirement, Tool, ToolError, ToolOutput, ToolRegistry};
-use ironclaw_safety::{SafetyConfig, SafetyLayer};
+use bastionclaw::bridge::EffectBridgeAdapter;
+use bastionclaw::context::JobContext;
+use bastionclaw::gate::pending::{PendingGate, PendingGateKey};
+use bastionclaw::gate::store::{GateStoreError, PendingGateStore, TRUSTED_GATE_CHANNELS};
+use bastionclaw::hooks::HookRegistry;
+use bastionclaw::tools::{ApprovalRequirement, Tool, ToolError, ToolOutput, ToolRegistry};
+use bastionclaw_safety::{SafetyConfig, SafetyLayer};
 
 // ── Scripted LLM ─────────────────────────────────────────────
 
@@ -174,7 +174,7 @@ impl EffectExecutor for GateMockEffects {
         action_name: &str,
         parameters: serde_json::Value,
         _lease: &CapabilityLease,
-        _context: &ironclaw_engine::ThreadExecutionContext,
+        _context: &bastionclaw_engine::ThreadExecutionContext,
     ) -> Result<ActionResult, EngineError> {
         self.calls
             .write()
@@ -521,7 +521,7 @@ fn sample_pending_gate(
         user_id: user_id.into(),
         thread_id,
         scope_thread_id: None,
-        conversation_id: ironclaw_engine::ConversationId::new(),
+        conversation_id: bastionclaw_engine::ConversationId::new(),
         source_channel: channel.into(),
         action_name: "http".into(),
         call_id: "call_1".into(),
@@ -558,7 +558,7 @@ async fn gate_paused_transitions_thread_to_waiting() {
     // LLM returns a structured tool call for http
     let llm = ScriptedLlm::new(vec![LlmOutput {
         response: LlmResponse::ActionCalls {
-            calls: vec![ironclaw_engine::ActionCall {
+            calls: vec![bastionclaw_engine::ActionCall {
                 id: "call_1".into(),
                 action_name: "http".into(),
                 parameters: serde_json::json!({"url": "https://example.com"}),
@@ -626,7 +626,7 @@ async fn gate_paused_authentication_carries_credential_name() {
 
     let llm = ScriptedLlm::new(vec![LlmOutput {
         response: LlmResponse::ActionCalls {
-            calls: vec![ironclaw_engine::ActionCall {
+            calls: vec![bastionclaw_engine::ActionCall {
                 id: "call_1".into(),
                 action_name: "http".into(),
                 parameters: serde_json::json!({"url": "https://api.example.com"}),
@@ -689,7 +689,7 @@ async fn gate_paused_thread_resumes_to_completion() {
     let llm = ScriptedLlm::new(vec![
         LlmOutput {
             response: LlmResponse::ActionCalls {
-                calls: vec![ironclaw_engine::ActionCall {
+                calls: vec![bastionclaw_engine::ActionCall {
                     id: "call_1".into(),
                     action_name: "http".into(),
                     parameters: serde_json::json!({"url": "https://example.com"}),
@@ -753,7 +753,7 @@ async fn gate_paused_thread_resumes_to_completion() {
     assert!(
         saved.events.iter().any(|event| matches!(
             event.kind,
-            ironclaw_engine::types::event::EventKind::ApprovalReceived { .. }
+            bastionclaw_engine::types::event::EventKind::ApprovalReceived { .. }
         )),
         "resume should record ApprovalReceived"
     );
@@ -777,7 +777,7 @@ async fn approval_resolution_executes_pending_call_directly() {
     let llm = ScriptedLlm::new(vec![
         LlmOutput {
             response: LlmResponse::ActionCalls {
-                calls: vec![ironclaw_engine::ActionCall {
+                calls: vec![bastionclaw_engine::ActionCall {
                     id: "call_approval_1".into(),
                     action_name: "approval_test".into(),
                     parameters: serde_json::json!({"value": "hello"}),
@@ -843,12 +843,12 @@ async fn approval_resolution_executes_pending_call_directly() {
         .find_lease_for_action(tid, "approval_test")
         .await
         .expect("lease for approval_test");
-    let exec_ctx = ironclaw_engine::ThreadExecutionContext {
+    let exec_ctx = bastionclaw_engine::ThreadExecutionContext {
         thread_id: tid,
         thread_type: thread.thread_type,
         project_id: thread.project_id,
         user_id: "test-user".into(),
-        step_id: ironclaw_engine::StepId::new(),
+        step_id: bastionclaw_engine::StepId::new(),
         current_call_id: Some("call_approval_1".into()),
         source_channel: None,
         user_timezone: None,
@@ -892,7 +892,7 @@ async fn approval_resolution_executes_pending_call_directly() {
         .filter(|event| {
             matches!(
                 event.kind,
-                ironclaw_engine::types::event::EventKind::ApprovalRequested { .. }
+                bastionclaw_engine::types::event::EventKind::ApprovalRequested { .. }
             )
         })
         .count();
@@ -903,7 +903,7 @@ async fn approval_resolution_executes_pending_call_directly() {
     assert!(
         saved.events.iter().any(|event| matches!(
             event.kind,
-            ironclaw_engine::types::event::EventKind::ApprovalReceived { .. }
+            bastionclaw_engine::types::event::EventKind::ApprovalReceived { .. }
         )),
         "resume should record ApprovalReceived"
     );
@@ -917,7 +917,7 @@ async fn auth_resolution_retries_same_pending_action_without_second_pause() {
     let llm = ScriptedLlm::new(vec![
         LlmOutput {
             response: LlmResponse::ActionCalls {
-                calls: vec![ironclaw_engine::ActionCall {
+                calls: vec![bastionclaw_engine::ActionCall {
                     id: "call_auth_1".into(),
                     action_name: "http".into(),
                     parameters: serde_json::json!({"url": "https://example.com/private"}),
@@ -928,7 +928,7 @@ async fn auth_resolution_retries_same_pending_action_without_second_pause() {
         },
         LlmOutput {
             response: LlmResponse::ActionCalls {
-                calls: vec![ironclaw_engine::ActionCall {
+                calls: vec![bastionclaw_engine::ActionCall {
                     id: "call_auth_2".into(),
                     action_name: "http".into(),
                     parameters: serde_json::json!({"url": "https://example.com/private"}),
@@ -978,12 +978,12 @@ async fn auth_resolution_retries_same_pending_action_without_second_pause() {
         .find_lease_for_action(tid, "http")
         .await
         .expect("lease for http");
-    let exec_ctx = ironclaw_engine::ThreadExecutionContext {
+    let exec_ctx = bastionclaw_engine::ThreadExecutionContext {
         thread_id: tid,
         thread_type: thread.thread_type,
         project_id: thread.project_id,
         user_id: "test-user".into(),
-        step_id: ironclaw_engine::StepId::new(),
+        step_id: bastionclaw_engine::StepId::new(),
         current_call_id: Some("call_auth_1".into()),
         source_channel: None,
         user_timezone: None,
@@ -1026,7 +1026,7 @@ async fn auth_resolution_retries_same_pending_action_without_second_pause() {
         .filter(|event| {
             matches!(
                 event.kind,
-                ironclaw_engine::types::event::EventKind::ApprovalRequested { .. }
+                bastionclaw_engine::types::event::EventKind::ApprovalRequested { .. }
             )
         })
         .count();
@@ -1042,7 +1042,7 @@ async fn approval_chains_directly_into_auth_for_install_flow() {
     let llm = ScriptedLlm::new(vec![
         LlmOutput {
             response: LlmResponse::ActionCalls {
-                calls: vec![ironclaw_engine::ActionCall {
+                calls: vec![bastionclaw_engine::ActionCall {
                     id: "call_install_1".into(),
                     action_name: "tool_install".into(),
                     parameters: install_params.clone(),
@@ -1088,12 +1088,12 @@ async fn approval_chains_directly_into_auth_for_install_flow() {
         .find_lease_for_action(tid, "tool_install")
         .await
         .expect("lease for tool_install");
-    let exec_ctx = ironclaw_engine::ThreadExecutionContext {
+    let exec_ctx = bastionclaw_engine::ThreadExecutionContext {
         thread_id: tid,
         thread_type: thread.thread_type,
         project_id: thread.project_id,
         user_id: "test-user".into(),
-        step_id: ironclaw_engine::StepId::new(),
+        step_id: bastionclaw_engine::StepId::new(),
         current_call_id: Some("call_install_1".into()),
         source_channel: None,
         user_timezone: None,
@@ -1373,7 +1373,7 @@ async fn persistence_round_trip_survives_restart() {
     }
 
     #[async_trait]
-    impl ironclaw::gate::store::GatePersistence for FakePersistence {
+    impl bastionclaw::gate::store::GatePersistence for FakePersistence {
         async fn save(&self, gate: &PendingGate) -> Result<(), GateStoreError> {
             self.gates.lock().unwrap().push(gate.clone());
             Ok(())
@@ -1422,7 +1422,7 @@ async fn persistence_round_trip_survives_restart() {
 /// Research threads cannot access Privileged or Administrative tools.
 #[tokio::test]
 async fn lease_planner_research_excludes_privileged() {
-    use ironclaw_engine::LeasePlanner;
+    use bastionclaw_engine::LeasePlanner;
 
     let planner = LeasePlanner::new();
     let caps = make_caps(true); // http has requires_approval=true → Privileged
@@ -1446,7 +1446,7 @@ async fn lease_planner_research_excludes_privileged() {
 /// Mission threads exclude Administrative tools (denylist).
 #[tokio::test]
 async fn lease_planner_mission_excludes_denylisted() {
-    use ironclaw_engine::LeasePlanner;
+    use bastionclaw_engine::LeasePlanner;
 
     let mut caps = CapabilityRegistry::new();
     caps.register(Capability {
@@ -1591,8 +1591,8 @@ async fn wildcard_parent_lease_gives_requested_subset_not_wildcard() {
 /// LeaseGate denies actions without a valid lease.
 #[tokio::test]
 async fn lease_gate_denies_without_lease() {
-    use ironclaw_engine::gate::lease::LeaseGate;
-    use ironclaw_engine::gate::{ExecutionGate, ExecutionMode, GateContext, GateDecision};
+    use bastionclaw_engine::gate::lease::LeaseGate;
+    use bastionclaw_engine::gate::{ExecutionGate, ExecutionMode, GateContext, GateDecision};
 
     let mgr = Arc::new(LeaseManager::new());
     let tid = ThreadId::new();
@@ -1629,8 +1629,8 @@ async fn lease_gate_denies_without_lease() {
 /// LeaseGate allows actions covered by a valid lease.
 #[tokio::test]
 async fn lease_gate_allows_with_valid_lease() {
-    use ironclaw_engine::gate::lease::LeaseGate;
-    use ironclaw_engine::gate::{ExecutionGate, ExecutionMode, GateContext, GateDecision};
+    use bastionclaw_engine::gate::lease::LeaseGate;
+    use bastionclaw_engine::gate::{ExecutionGate, ExecutionMode, GateContext, GateDecision};
 
     let mgr = Arc::new(LeaseManager::new());
     let tid = ThreadId::new();
@@ -1677,8 +1677,8 @@ async fn lease_gate_allows_with_valid_lease() {
 /// Pipeline evaluates gates in priority order; first Deny wins.
 #[tokio::test]
 async fn pipeline_first_deny_wins() {
-    use ironclaw_engine::gate::pipeline::GatePipeline;
-    use ironclaw_engine::gate::{ExecutionGate, ExecutionMode, GateContext, GateDecision};
+    use bastionclaw_engine::gate::pipeline::GatePipeline;
+    use bastionclaw_engine::gate::{ExecutionGate, ExecutionMode, GateContext, GateDecision};
 
     struct AlwaysAllow;
     #[async_trait::async_trait]
@@ -1758,7 +1758,7 @@ async fn auto_approve_mode_skips_approval_for_standard_tools() {
 
     let llm = ScriptedLlm::new(vec![LlmOutput {
         response: LlmResponse::ActionCalls {
-            calls: vec![ironclaw_engine::ActionCall {
+            calls: vec![bastionclaw_engine::ActionCall {
                 id: "call_1".into(),
                 action_name: "echo".into(),
                 parameters: serde_json::json!({"text": "hello"}),
@@ -1802,7 +1802,7 @@ async fn auto_approve_mode_skips_approval_for_standard_tools() {
 /// Auto-approve mode: Always-gated tools still pause for explicit approval.
 #[tokio::test]
 async fn auto_approve_mode_still_pauses_always_tools() {
-    use ironclaw_engine::gate::{ExecutionMode, GateContext};
+    use bastionclaw_engine::gate::{ExecutionMode, GateContext};
 
     // Test the ApprovalGate directly since we need the mode check
     // without a full ThreadManager setup.

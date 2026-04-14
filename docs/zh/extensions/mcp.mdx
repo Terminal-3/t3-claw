@@ -1,10 +1,10 @@
 ---
 title: MCP 服务器
 sidebarTitle: MCP 服务器
-description: 连接 Model Context Protocol 服务器扩展 IronClaw
+description: 连接 Model Context Protocol 服务器扩展 BastionClaw
 ---
 
-IronClaw 可连接任意 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 服务器，并把其工具暴露给代理。MCP 是开放标准，生态中已有大量数据库、API、云服务连接器。
+BastionClaw 可连接任意 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 服务器，并把其工具暴露给代理。MCP 是开放标准，生态中已有大量数据库、API、云服务连接器。
 
 <Info>
 当前通过 **HTTP 传输**（JSON-RPC 2.0）连接 MCP。`stdio` 传输暂不支持。
@@ -17,7 +17,7 @@ IronClaw 可连接任意 [Model Context Protocol (MCP)](https://modelcontextprot
 可直接要求代理使用 MCP，或通过 CLI 添加：
 
 ```bash
-ironclaw mcp add <server_name> <server_url>
+bastionclaw mcp add <server_name> <server_url>
 ```
 
 ---
@@ -27,7 +27,7 @@ ironclaw mcp add <server_name> <server_url>
 如果服务器需要认证：
 
 ```bash
-ironclaw mcp auth <server_name>
+bastionclaw mcp auth <server_name>
 ```
 
 ---
@@ -35,7 +35,7 @@ ironclaw mcp auth <server_name>
 ## 查看已连接服务器
 
 ```bash
-ironclaw mcp list
+bastionclaw mcp list
 ```
 
 连接成功后，MCP 工具会出现在代理工具列表中。
@@ -45,7 +45,7 @@ ironclaw mcp list
 ## 移除服务器
 
 ```bash
-ironclaw mcp remove <server_name>
+bastionclaw mcp remove <server_name>
 ```
 
 ---

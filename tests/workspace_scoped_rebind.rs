@@ -1,6 +1,6 @@
 //! Direct regression tests for `Workspace::scoped_to_user()` rebinding.
 //!
-//! Issue: <https://github.com/nearai/ironclaw/issues/1652>
+//! Issue: <https://github.com/nearai/bastionclaw/issues/1652>
 //!
 //! `scoped_to_user()` rebinds a workspace to a different primary user while
 //! preserving shared read scopes. These 7 tests verify the rebinding contracts
@@ -15,10 +15,10 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use ironclaw::db::Database;
-use ironclaw::db::libsql::LibSqlBackend;
-use ironclaw::workspace::layer::{LayerSensitivity, MemoryLayer};
-use ironclaw::workspace::{Workspace, paths};
+use bastionclaw::db::Database;
+use bastionclaw::db::libsql::LibSqlBackend;
+use bastionclaw::workspace::layer::{LayerSensitivity, MemoryLayer};
+use bastionclaw::workspace::{Workspace, paths};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 

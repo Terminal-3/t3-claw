@@ -4,9 +4,9 @@ sidebarTitle: Sandboxed Tools
 description: Sandboxed tool execution via WebAssembly (wasmtime)
 ---
 
-WASM tools run inside a WebAssembly sandbox powered by [wasmtime](https://wasmtime.dev/). They have access to IronClaw's host functions (logging, time, workspace), but all other capabilities — network, filesystem, credentials — must be explicitly declared in a `capabilities.json` file.
+WASM tools run inside a WebAssembly sandbox powered by [wasmtime](https://wasmtime.dev/). They have access to BastionClaw's host functions (logging, time, workspace), but all other capabilities — network, filesystem, credentials — must be explicitly declared in a `capabilities.json` file.
 
-This is IronClaw's recommended approach for custom integrations that need stronger isolation than a built-in Rust tool provides.
+This is BastionClaw's recommended approach for custom integrations that need stronger isolation than a built-in Rust tool provides.
 
 ---
 
@@ -15,7 +15,7 @@ This is IronClaw's recommended approach for custom integrations that need strong
 ```
 LLM selects tool
     ↓
-IronClaw loads WASM module (from cache or disk)
+BastionClaw loads WASM module (from cache or disk)
     ↓
 Tool executes inside wasmtime sandbox
     ↓
@@ -128,11 +128,11 @@ The WASM module never sees the raw credential value — it only makes an unauthe
 
 ## Host Functions
 
-WASM modules can call the following host functions provided by IronClaw:
+WASM modules can call the following host functions provided by BastionClaw:
 
 | Function | Description |
 |----------|-------------|
-| `log(level, message)` | Write to the IronClaw log at the given severity level |
+| `log(level, message)` | Write to the BastionClaw log at the given severity level |
 | `now_unix_secs()` | Return the current Unix timestamp |
 | `workspace_read(path)` | Read a document from the workspace |
 | `workspace_write(path, content)` | Write a document to the workspace |
@@ -145,7 +145,7 @@ These are the only host capabilities available. A WASM tool cannot call arbitrar
 
 WASM tools are discovered at startup from two locations:
 
-- `~/.ironclaw/tools/` — User-installed tools
+- `~/.bastionclaw/tools/` — User-installed tools
 - `<workspace>/tools/` — Per-workspace tools
 
 Each tool directory must contain:
@@ -158,13 +158,13 @@ Each tool directory must contain:
 
 ```bash
 # Install from a local file
-ironclaw tool install ./my-tool.wasm
+bastionclaw tool install ./my-tool.wasm
 
 # Install from a URL
-ironclaw tool install https://example.com/tools/my-tool.wasm
+bastionclaw tool install https://example.com/tools/my-tool.wasm
 
 # List installed tools
-ironclaw tool list
+bastionclaw tool list
 ```
 
 Or via the `extension_install` tool in chat:
@@ -176,7 +176,7 @@ Or via the `extension_install` tool in chat:
 
 WASM modules are compiled by wasmtime on first load and cached. Subsequent loads use the compiled artifact, so only the first invocation of a new tool incurs compilation overhead.
 
-The cache is stored at `~/.ironclaw/wasm-cache/`.
+The cache is stored at `~/.bastionclaw/wasm-cache/`.
 
 ---
 

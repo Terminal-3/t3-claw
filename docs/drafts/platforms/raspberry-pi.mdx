@@ -1,10 +1,10 @@
 ---
 title: Raspberry Pi
 sidebarTitle: Raspberry Pi
-description: Running IronClaw on Raspberry Pi with ARM64 and local inference
+description: Running BastionClaw on Raspberry Pi with ARM64 and local inference
 ---
 
-IronClaw runs well on Raspberry Pi 4 and Pi 5 with a 64-bit OS. Pair it with Ollama for fully local inference — no cloud dependency, no API keys required.
+BastionClaw runs well on Raspberry Pi 4 and Pi 5 with a 64-bit OS. Pair it with Ollama for fully local inference — no cloud dependency, no API keys required.
 
 <Note>
 Raspberry Pi 4 (4 GB RAM) and Pi 5 (4/8 GB) are the recommended hardware. Pi 3 and earlier models lack sufficient memory for comfortable operation. A 64-bit OS (Raspberry Pi OS 64-bit or Ubuntu 22.04 ARM64) is required.
@@ -29,7 +29,7 @@ Raspberry Pi 4 (4 GB RAM) and Pi 5 (4/8 GB) are the recommended hardware. Pi 3 a
 ### Shell Script
 
 ```bash
-curl -fsSL https://install.ironclaw.ai | bash
+curl -fsSL https://install.bastionclaw.ai | bash
 ```
 
 This downloads the ARM64 binary automatically. Add to PATH:
@@ -43,21 +43,21 @@ source ~/.bashrc
 
 ```bash
 uname -m  # Should print: aarch64
-ironclaw --version
+bastionclaw --version
 ```
 
 ---
 
 ## Recommended Configuration
 
-The libSQL backend is strongly recommended for Raspberry Pi — it requires no separate database server and runs embedded in the IronClaw process.
+The libSQL backend is strongly recommended for Raspberry Pi — it requires no separate database server and runs embedded in the BastionClaw process.
 
-Create `~/.ironclaw/.env`:
+Create `~/.bastionclaw/.env`:
 
 ```bash
 # Database: embedded SQLite (no server needed)
 DATABASE_BACKEND=libsql
-LIBSQL_PATH=~/.ironclaw/ironclaw.db
+LIBSQL_PATH=~/.bastionclaw/bastionclaw.db
 
 # LLM: local Ollama inference
 LLM_BACKEND=ollama
@@ -102,7 +102,7 @@ curl -fsSL https://ollama.ai/install.sh | sh
     ollama pull llama3.2:3b
     ```
 
-    This model uses ~2 GB RAM and leaves headroom for the OS and IronClaw.
+    This model uses ~2 GB RAM and leaves headroom for the OS and BastionClaw.
   </Accordion>
 
   <Accordion title="8 GB RAM (Pi 5 8 GB)" icon="cpu">
@@ -132,7 +132,7 @@ curl http://127.0.0.1:11434/api/chat -d '{
 }'
 ```
 
-### IronClaw Configuration for Ollama
+### BastionClaw Configuration for Ollama
 
 ```bash
 LLM_BACKEND=ollama
@@ -191,26 +191,26 @@ Avoid heavy swap usage on microSD cards — the write cycles degrade cards quick
 
 ## systemd Service
 
-Run IronClaw as a background service on the Pi.
+Run BastionClaw as a background service on the Pi.
 
-Create `/etc/systemd/system/ironclaw.service`:
+Create `/etc/systemd/system/bastionclaw.service`:
 
 ```ini
 [Unit]
-Description=IronClaw AI Assistant
+Description=BastionClaw AI Assistant
 After=network-online.target ollama.service
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=pi
-EnvironmentFile=/home/pi/.ironclaw/.env
-ExecStart=/home/pi/.local/bin/ironclaw run
+EnvironmentFile=/home/pi/.bastionclaw/.env
+ExecStart=/home/pi/.local/bin/bastionclaw run
 Restart=on-failure
 RestartSec=10s
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=ironclaw
+SyslogIdentifier=bastionclaw
 
 [Install]
 WantedBy=multi-user.target
@@ -220,8 +220,8 @@ Enable and start:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now ironclaw
-journalctl -u ironclaw -f
+sudo systemctl enable --now bastionclaw
+journalctl -u bastionclaw -f
 ```
 
 ---
@@ -243,7 +243,7 @@ newgrp docker
 ```bash
 # Enable sandbox (requires Docker)
 SANDBOX_ENABLED=true
-SANDBOX_IMAGE=ironclaw-worker:latest
+SANDBOX_IMAGE=bastionclaw-worker:latest
 SANDBOX_MEMORY_LIMIT_MB=256   # Keep low on Pi
 SANDBOX_TIMEOUT_SECS=300
 ```
@@ -296,9 +296,9 @@ On a 4 GB Pi, each sandbox container takes ~200-300 MB RAM. With Ollama also run
 
 ---
 
-## Accessing IronClaw from Your Network
+## Accessing BastionClaw from Your Network
 
-By default IronClaw binds to `127.0.0.1`. To access it from another device on your LAN:
+By default BastionClaw binds to `127.0.0.1`. To access it from another device on your LAN:
 
 ```bash
 GATEWAY_HOST=0.0.0.0

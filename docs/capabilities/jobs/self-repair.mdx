@@ -4,7 +4,7 @@ sidebarTitle: Self-Repair
 description: Automatic detection and recovery of stuck jobs
 ---
 
-IronClaw monitors all running jobs and automatically recovers those that stop making progress — without requiring human intervention.
+BastionClaw monitors all running jobs and automatically recovers those that stop making progress — without requiring human intervention.
 
 ---
 
@@ -121,14 +121,14 @@ This history is available to the worker on retry, allowing it to avoid repeating
 Stuck and recovered jobs are visible in:
 
 - **Job history** — The web gateway's job list shows state transitions with timestamps
-- **Logs** — `RUST_LOG=ironclaw::agent::self_repair=debug` for detailed repair events
+- **Logs** — `RUST_LOG=bastionclaw::agent::self_repair=debug` for detailed repair events
 - **`list_jobs` tool** — Shows current state including Stuck jobs
 
 ## Troubleshooting
 
 <AccordionGroup>
   <Accordion title="Job repeatedly gets stuck" icon="refresh-cw">
-    - Check `RUST_LOG=ironclaw::agent::self_repair=debug` for failure reasons
+    - Check `RUST_LOG=bastionclaw::agent::self_repair=debug` for failure reasons
     - Inspect tool failure records via `job_status` tool
     - Consider increasing `SELF_REPAIR_TIMEOUT_SECS` if the job is legitimately long-running
     - Check network connectivity to LLM provider and external services

@@ -505,7 +505,7 @@ pub enum DefaultFallback {
 /// Validate an OAuth refresh-proxy URL against SSRF.
 ///
 /// Wraps [`validate_and_resolve_http_target`] but optionally allows loopback
-/// targets when `IRONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK=1` is set in the
+/// targets when `BASTIONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK=1` is set in the
 /// environment. The escape hatch exists so unit tests that stand up a mock
 /// proxy on `127.0.0.1` can still exercise the refresh path.
 ///
@@ -515,7 +515,7 @@ pub enum DefaultFallback {
 /// regardless of what the variable says.
 async fn validate_oauth_proxy_url(proxy_url: &str) -> Result<(), String> {
     let allow_loopback = if cfg!(any(test, debug_assertions)) {
-        std::env::var("IRONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK")
+        std::env::var("BASTIONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK")
             .map(|v| matches!(v.as_str(), "1" | "true" | "TRUE"))
             .unwrap_or(false)
     } else {
@@ -533,7 +533,7 @@ async fn validate_oauth_proxy_url(proxy_url: &str) -> Result<(), String> {
             {
                 tracing::debug!(
                     proxy_url = %proxy_url,
-                    "Loopback OAuth proxy permitted via IRONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK"
+                    "Loopback OAuth proxy permitted via BASTIONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK"
                 );
                 return Ok(());
             }
@@ -562,17 +562,17 @@ pub async fn refresh_oauth_access_token(
 
         // SSRF guard for the proxy path. The direct refresh path validates
         // `token_url` below; the proxy path was previously trusting whatever
-        // the operator put in `IRONCLAW_OAUTH_EXCHANGE_URL`. Without this,
+        // the operator put in `BASTIONCLAW_OAUTH_EXCHANGE_URL`. Without this,
         // a misconfigured/compromised proxy URL could be pointed at internal
         // infrastructure and the refresh request (carrying the user's
         // refresh token) would happily POST there.
         //
         // Loopback (`127.0.0.0/8`, `::1`) is conditionally exempt: in normal
         // production this is still blocked, but tests that spin up a local
-        // mock proxy can set `IRONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK=1` to
+        // mock proxy can set `BASTIONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK=1` to
         // exercise the refresh path end-to-end. Loopback exemption is gated
         // explicitly so an operator does not silently widen the SSRF surface
-        // by setting `IRONCLAW_OAUTH_EXCHANGE_URL=http://localhost/...`.
+        // by setting `BASTIONCLAW_OAUTH_EXCHANGE_URL=http://localhost/...`.
         if let Err(error) = validate_oauth_proxy_url(proxy_url).await {
             tracing::warn!(
                 proxy_url = %proxy_url,

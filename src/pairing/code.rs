@@ -20,7 +20,7 @@ impl PairingCodeChallenge {
 
     pub fn instructions(&self, code: &str) -> String {
         format!(
-            "Enter this code in IronClaw to pair your {} account: `{}`. CLI fallback: `ironclaw pairing approve {} {}`",
+            "Enter this code in BastionClaw to pair your {} account: `{}`. CLI fallback: `bastionclaw pairing approve {} {}`",
             self.channel, code, self.channel, code
         )
     }

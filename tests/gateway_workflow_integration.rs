@@ -16,12 +16,12 @@ mod tests {
 
     use async_trait::async_trait;
     use chrono::Utc;
-    use ironclaw::agent::routine::{
+    use bastionclaw::agent::routine::{
         NotifyConfig, Routine, RoutineAction, RoutineGuardrails, Trigger,
         reset_routine_verification_state, routine_verification_fingerprint,
     };
-    use ironclaw::context::JobContext;
-    use ironclaw::tools::{Tool, ToolError, ToolOutput};
+    use bastionclaw::context::JobContext;
+    use bastionclaw::tools::{Tool, ToolError, ToolOutput};
     use uuid::Uuid;
 
     use crate::support::gateway_workflow_harness::GatewayWorkflowHarness;
@@ -69,7 +69,7 @@ mod tests {
                         "trigger_type": "system_event",
                         "event_source": "github",
                         "event_type": "issue.opened",
-                        "event_filters": {"repository": "nearai/ironclaw"},
+                        "event_filters": {"repository": "nearai/bastionclaw"},
                         // This test fires the same routine via event_emit and then the
                         // webhook endpoint back-to-back, so cooldown must not suppress
                         // the second path.
@@ -88,7 +88,7 @@ mod tests {
                         "source": "github",
                         "event_type": "issue.opened",
                         "payload": {
-                            "repository": "nearai/ironclaw",
+                            "repository": "nearai/bastionclaw",
                             "issue": {"number": 777, "title": "Infra test"}
                         }
                     }),
@@ -149,7 +149,7 @@ mod tests {
                 "issues",
                 serde_json::json!({
                     "action": "opened",
-                    "repository": {"full_name": "nearai/ironclaw"},
+                    "repository": {"full_name": "nearai/bastionclaw"},
                     "issue": {"number": 778, "title": "Webhook endpoint test"}
                 }),
             )
@@ -501,7 +501,7 @@ mod tests {
                         "trigger_type": "system_event",
                         "event_source": "github",
                         "event_type": "issue.opened",
-                        "event_filters": {"repository": "nearai/ironclaw"},
+                        "event_filters": {"repository": "nearai/bastionclaw"},
                         "action_type": "lightweight",
                         "prompt": "summarize issue"
                     }),
@@ -564,7 +564,7 @@ mod tests {
                 "issues",
                 serde_json::json!({
                     "action": "opened",
-                    "repository": {"full_name": "nearai/ironclaw"},
+                    "repository": {"full_name": "nearai/bastionclaw"},
                     "issue": {"number": 881, "title": "Toggle disable regression"}
                 }),
             )

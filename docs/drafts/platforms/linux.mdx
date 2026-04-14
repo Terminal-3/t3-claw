@@ -1,20 +1,20 @@
 ---
 title: Linux
 sidebarTitle: Linux
-description: Running IronClaw on Linux with systemd, GNOME Keyring, and UFW
+description: Running BastionClaw on Linux with systemd, GNOME Keyring, and UFW
 ---
 
-IronClaw runs natively on Linux with full support for systemd service management, GNOME Keyring for secure key storage, and UFW/fail2ban for host hardening.
+BastionClaw runs natively on Linux with full support for systemd service management, GNOME Keyring for secure key storage, and UFW/fail2ban for host hardening.
 
 ## Installation
 
 ### Shell Script (Recommended)
 
 ```bash
-curl -fsSL https://install.ironclaw.ai | bash
+curl -fsSL https://install.bastionclaw.ai | bash
 ```
 
-Installs to `~/.local/bin/ironclaw`. Add to PATH if not already present:
+Installs to `~/.local/bin/bastionclaw`. Add to PATH if not already present:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -25,17 +25,17 @@ source ~/.bashrc
 ### Package Manager (Ubuntu / Debian)
 
 ```bash
-curl -fsSL https://repo.ironclaw.ai/gpg | sudo gpg --dearmor -o /usr/share/keyrings/ironclaw.gpg
-echo "deb [signed-by=/usr/share/keyrings/ironclaw.gpg] https://repo.ironclaw.ai stable main" \
-  | sudo tee /etc/apt/sources.list.d/ironclaw.list
+curl -fsSL https://repo.bastionclaw.ai/gpg | sudo gpg --dearmor -o /usr/share/keyrings/bastionclaw.gpg
+echo "deb [signed-by=/usr/share/keyrings/bastionclaw.gpg] https://repo.bastionclaw.ai stable main" \
+  | sudo tee /etc/apt/sources.list.d/bastionclaw.list
 
-sudo apt update && sudo apt install ironclaw
+sudo apt update && sudo apt install bastionclaw
 ```
 
 ### Cargo (Build from Source)
 
 ```bash
-cargo install ironclaw
+cargo install bastionclaw
 ```
 
 Requires Rust 1.78+. Install Rust via [rustup.rs](https://rustup.rs).
@@ -44,25 +44,25 @@ Requires Rust 1.78+. Install Rust via [rustup.rs](https://rustup.rs).
 
 ## systemd Service
 
-Run IronClaw as a managed background service that restarts on failure and launches on boot.
+Run BastionClaw as a managed background service that restarts on failure and launches on boot.
 
 ### Unit File
 
-Create `/etc/systemd/system/ironclaw.service`:
+Create `/etc/systemd/system/bastionclaw.service`:
 
 ```ini
 [Unit]
-Description=IronClaw AI Assistant
-Documentation=https://docs.ironclaw.ai
+Description=BastionClaw AI Assistant
+Documentation=https://docs.bastionclaw.ai
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=ironclaw
-Group=ironclaw
-EnvironmentFile=/etc/ironclaw/ironclaw.env
-ExecStart=/usr/local/bin/ironclaw run
+User=bastionclaw
+Group=bastionclaw
+EnvironmentFile=/etc/bastionclaw/bastionclaw.env
+ExecStart=/usr/local/bin/bastionclaw run
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5s
@@ -73,12 +73,12 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/var/lib/ironclaw /home/ironclaw/.ironclaw
+ReadWritePaths=/var/lib/bastionclaw /home/bastionclaw/.bastionclaw
 
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=ironclaw
+SyslogIdentifier=bastionclaw
 
 [Install]
 WantedBy=multi-user.target
@@ -86,13 +86,13 @@ WantedBy=multi-user.target
 
 ### Environment File
 
-Create `/etc/ironclaw/ironclaw.env` (mode 640, owned by root:ironclaw):
+Create `/etc/bastionclaw/bastionclaw.env` (mode 640, owned by root:bastionclaw):
 
 ```bash
-sudo mkdir -p /etc/ironclaw
-sudo touch /etc/ironclaw/ironclaw.env
-sudo chmod 640 /etc/ironclaw/ironclaw.env
-sudo chown root:ironclaw /etc/ironclaw/ironclaw.env
+sudo mkdir -p /etc/bastionclaw
+sudo touch /etc/bastionclaw/bastionclaw.env
+sudo chmod 640 /etc/bastionclaw/bastionclaw.env
+sudo chown root:bastionclaw /etc/bastionclaw/bastionclaw.env
 ```
 
 Example contents:
@@ -105,24 +105,24 @@ GATEWAY_ENABLED=true
 GATEWAY_HOST=127.0.0.1
 GATEWAY_PORT=3000
 GATEWAY_AUTH_TOKEN=change_this_to_a_random_secret
-RUST_LOG=ironclaw=info
+RUST_LOG=bastionclaw=info
 ```
 
 ### Enable and Start
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now ironclaw
+sudo systemctl enable --now bastionclaw
 
 # Verify
-sudo systemctl status ironclaw
+sudo systemctl status bastionclaw
 ```
 
 ---
 
 ## GNOME Keyring Integration
 
-IronClaw uses the system keyring to store the encryption master key for secrets. On GNOME-based desktops, this is GNOME Keyring.
+BastionClaw uses the system keyring to store the encryption master key for secrets. On GNOME-based desktops, this is GNOME Keyring.
 
 ### Install libsecret
 
@@ -139,19 +139,19 @@ sudo pacman -S gnome-keyring libsecret
 
 ### Store the Master Key Manually (optional)
 
-IronClaw handles this automatically on first run, but you can pre-seed the key:
+BastionClaw handles this automatically on first run, but you can pre-seed the key:
 
 ```bash
 secret-tool store \
-  --label="IronClaw Master Key" \
-  application ironclaw \
+  --label="BastionClaw Master Key" \
+  application bastionclaw \
   key master
 ```
 
 Retrieve it later:
 
 ```bash
-secret-tool lookup application ironclaw key master
+secret-tool lookup application bastionclaw key master
 ```
 
 ### Headless / Server Environments
@@ -159,7 +159,7 @@ secret-tool lookup application ironclaw key master
 GNOME Keyring requires a D-Bus session. On headless servers, use the environment variable fallback instead:
 
 ```bash
-IRONCLAW_MASTER_KEY=<base64-encoded-32-byte-key>
+BASTIONCLAW_MASTER_KEY=<base64-encoded-32-byte-key>
 ```
 
 Generate a secure key:
@@ -194,7 +194,7 @@ sudo ufw status verbose
 ```
 
 <Note>
-If you expose IronClaw via a reverse proxy (Caddy, nginx), the proxy listens on 443 and forwards to 127.0.0.1:3000 internally. Port 3000 never needs to be public-facing. See [VPS Hardening](/platforms/vps) for the full reverse proxy setup.
+If you expose BastionClaw via a reverse proxy (Caddy, nginx), the proxy listens on 443 and forwards to 127.0.0.1:3000 internally. Port 3000 never needs to be public-facing. See [VPS Hardening](/platforms/vps) for the full reverse proxy setup.
 </Note>
 
 ---
@@ -203,7 +203,7 @@ If you expose IronClaw via a reverse proxy (Caddy, nginx), the proxy listens on 
 
 Protect against repeated authentication failures against the Web Gateway.
 
-Create `/etc/fail2ban/filter.d/ironclaw.conf`:
+Create `/etc/fail2ban/filter.d/bastionclaw.conf`:
 
 ```ini
 [Definition]
@@ -212,14 +212,14 @@ failregex = ^.*401 Unauthorized.*from <HOST>.*$
 ignoreregex =
 ```
 
-Create `/etc/fail2ban/jail.d/ironclaw.conf`:
+Create `/etc/fail2ban/jail.d/bastionclaw.conf`:
 
 ```ini
-[ironclaw]
+[bastionclaw]
 enabled  = true
 port     = 3000
-filter   = ironclaw
-logpath  = /var/log/ironclaw/access.log
+filter   = bastionclaw
+logpath  = /var/log/bastionclaw/access.log
 maxretry = 5
 bantime  = 3600
 findtime = 600
@@ -230,7 +230,7 @@ Reload fail2ban:
 
 ```bash
 sudo systemctl reload fail2ban
-sudo fail2ban-client status ironclaw
+sudo fail2ban-client status bastionclaw
 ```
 
 ---
@@ -239,43 +239,43 @@ sudo fail2ban-client status ironclaw
 
 ```bash
 # Follow live logs
-journalctl -u ironclaw -f
+journalctl -u bastionclaw -f
 
 # Last 100 lines
-journalctl -u ironclaw -n 100
+journalctl -u bastionclaw -n 100
 
 # Logs from the past hour
-journalctl -u ironclaw --since "1 hour ago"
+journalctl -u bastionclaw --since "1 hour ago"
 
-# With debug output (set RUST_LOG=ironclaw=debug in env file first)
-journalctl -u ironclaw -f --output=short-precise
+# With debug output (set RUST_LOG=bastionclaw=debug in env file first)
+journalctl -u bastionclaw -f --output=short-precise
 
 # Export to file
-journalctl -u ironclaw --since today > ironclaw-today.log
+journalctl -u bastionclaw --since today > bastionclaw-today.log
 ```
 
 ---
 
 ## AppArmor Profile (Optional)
 
-An AppArmor profile can constrain IronClaw's filesystem and network access at the kernel level.
+An AppArmor profile can constrain BastionClaw's filesystem and network access at the kernel level.
 
-Create `/etc/apparmor.d/usr.local.bin.ironclaw`:
+Create `/etc/apparmor.d/usr.local.bin.bastionclaw`:
 
 ```
 #include <tunables/global>
 
-/usr/local/bin/ironclaw {
+/usr/local/bin/bastionclaw {
   #include <abstractions/base>
   #include <abstractions/nameservice>
 
   # Binary
-  /usr/local/bin/ironclaw mr,
+  /usr/local/bin/bastionclaw mr,
 
   # Config and data
-  /home/ironclaw/.ironclaw/** rw,
-  /var/lib/ironclaw/** rw,
-  /etc/ironclaw/ironclaw.env r,
+  /home/bastionclaw/.bastionclaw/** rw,
+  /var/lib/bastionclaw/** rw,
+  /etc/bastionclaw/bastionclaw.env r,
 
   # Keyring
   /run/user/*/keyring/** rw,
@@ -296,12 +296,12 @@ Create `/etc/apparmor.d/usr.local.bin.ironclaw`:
 Load the profile:
 
 ```bash
-sudo apparmor_parser -r /etc/apparmor.d/usr.local.bin.ironclaw
-sudo aa-status | grep ironclaw
+sudo apparmor_parser -r /etc/apparmor.d/usr.local.bin.bastionclaw
+sudo aa-status | grep bastionclaw
 ```
 
 <Note>
-The AppArmor profile is optional. IronClaw's own sandbox (Docker containers with dropped capabilities) provides defense-in-depth regardless of whether AppArmor is configured.
+The AppArmor profile is optional. BastionClaw's own sandbox (Docker containers with dropped capabilities) provides defense-in-depth regardless of whether AppArmor is configured.
 </Note>
 
 ---

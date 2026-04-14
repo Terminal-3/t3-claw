@@ -15,7 +15,7 @@ use chrono::Utc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use crate::bootstrap::ironclaw_base_dir;
+use crate::bootstrap::bastionclaw_base_dir;
 use crate::channels::IncomingMessage;
 use crate::context::{ContextManager, JobContext, JobState};
 use crate::db::Database;
@@ -27,7 +27,7 @@ use crate::secrets::SecretsStore;
 use crate::tools::tool::{
     ApprovalRequirement, EngineCompatibility, Tool, ToolError, ToolOutput, require_str,
 };
-use ironclaw_common::AppEvent;
+use bastionclaw_common::AppEvent;
 
 /// Lazy scheduler reference, filled after Agent::new creates the Scheduler.
 ///
@@ -170,7 +170,7 @@ impl CreateJobTool {
 
     fn mode_description(&self) -> String {
         let mut desc =
-            String::from("Execution mode. 'worker' (default) uses the IronClaw sub-agent.");
+            String::from("Execution mode. 'worker' (default) uses the BastionClaw sub-agent.");
         if self.claude_code_enabled() {
             desc.push_str(
                 " 'claude_code' uses Claude Code CLI — prefer this for complex software engineering tasks.",
@@ -238,7 +238,7 @@ impl CreateJobTool {
 
             if !exists {
                 return Err(ToolError::ExecutionFailed(format!(
-                    "secret '{}' not found. Store it first via 'ironclaw tool auth' or the web UI.",
+                    "secret '{}' not found. Store it first via 'bastionclaw tool auth' or the web UI.",
                     secret_name
                 )));
             }
@@ -755,16 +755,16 @@ fn validate_env_var_name(name: &str) -> Result<(), ToolError> {
 }
 
 fn projects_base() -> PathBuf {
-    ironclaw_base_dir().join("projects")
+    bastionclaw_base_dir().join("projects")
 }
 
 /// Resolve the project directory, creating it if it doesn't exist.
 ///
-/// Auto-creates `~/.ironclaw/projects/{project_id}/` so every sandbox job has a
+/// Auto-creates `~/.bastionclaw/projects/{project_id}/` so every sandbox job has a
 /// persistent bind mount that survives container teardown.
 ///
 /// When an explicit path is provided (e.g. job restarts reusing the old dir),
-/// it is validated to fall within `~/.ironclaw/projects/` after canonicalization.
+/// it is validated to fall within `~/.bastionclaw/projects/` after canonicalization.
 fn resolve_project_dir(
     explicit: Option<PathBuf>,
     project_id: Uuid,
@@ -901,12 +901,12 @@ impl Tool for CreateJobTool {
             props.insert("project_dir".into(), serde_json::json!({
                 "type": "string",
                 "description": "Path to an existing project directory to mount into the container. \
-                                Must be under ~/.ironclaw/projects/. If omitted, a fresh directory is created."
+                                Must be under ~/.bastionclaw/projects/. If omitted, a fresh directory is created."
             }));
             props.insert("credentials".into(), serde_json::json!({
                 "type": "object",
                 "description": "Map of secret names to env var names. Each secret must exist in the \
-                                secrets store (via 'ironclaw tool auth' or web UI). Example: \
+                                secrets store (via 'bastionclaw tool auth' or web UI). Example: \
                                 {\"github_token\": \"GITHUB_TOKEN\", \"npm_token\": \"NPM_TOKEN\"}",
                 "additionalProperties": { "type": "string" }
             }));
@@ -938,7 +938,7 @@ impl Tool for CreateJobTool {
                     "agent_name".into(),
                     serde_json::json!({
                         "type": "string",
-                        "description": "Name of the ACP agent to use (from 'ironclaw acp list'). \
+                        "description": "Name of the ACP agent to use (from 'bastionclaw acp list'). \
                                         Required when mode is 'acp'."
                     }),
                 );

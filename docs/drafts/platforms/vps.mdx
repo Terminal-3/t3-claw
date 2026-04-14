@@ -1,32 +1,32 @@
 ---
 title: VPS Hardening
 sidebarTitle: VPS Hardening
-description: Securing IronClaw on a VPS with UFW, Caddy, and fail2ban
+description: Securing BastionClaw on a VPS with UFW, Caddy, and fail2ban
 ---
 
-Deploying IronClaw on a public VPS requires additional hardening. Never expose the Web Gateway port directly to the internet — route all external traffic through a TLS-terminating reverse proxy and restrict direct port access with a firewall.
+Deploying BastionClaw on a public VPS requires additional hardening. Never expose the Web Gateway port directly to the internet — route all external traffic through a TLS-terminating reverse proxy and restrict direct port access with a firewall.
 
 ---
 
 ## Create a Dedicated User
 
-Run IronClaw as a non-root user with Docker access:
+Run BastionClaw as a non-root user with Docker access:
 
 ```bash
 # Create user
-sudo adduser --disabled-password --gecos "" ironclaw
+sudo adduser --disabled-password --gecos "" bastionclaw
 
 # Add to docker group (for sandbox)
-sudo usermod -aG docker ironclaw
+sudo usermod -aG docker bastionclaw
 
 # Create config directory
-sudo mkdir -p /etc/ironclaw
-sudo chown root:ironclaw /etc/ironclaw
-sudo chmod 750 /etc/ironclaw
+sudo mkdir -p /etc/bastionclaw
+sudo chown root:bastionclaw /etc/bastionclaw
+sudo chmod 750 /etc/bastionclaw
 
 # Create data directory
-sudo mkdir -p /var/lib/ironclaw
-sudo chown ironclaw:ironclaw /var/lib/ironclaw
+sudo mkdir -p /var/lib/bastionclaw
+sudo chown bastionclaw:bastionclaw /var/lib/bastionclaw
 ```
 
 ---
@@ -50,7 +50,7 @@ sudo ufw allow 443/tcp
 # Allow HTTP (for Let's Encrypt / ACME challenge only)
 sudo ufw allow 80/tcp
 
-# Block direct access to IronClaw from public internet
+# Block direct access to BastionClaw from public internet
 # Port 3000 (Web Gateway) — internal only
 sudo ufw deny 3000/tcp
 
@@ -88,10 +88,10 @@ sudo apt update && sudo apt install caddy
 
 ### Caddyfile
 
-Replace `ironclaw.yourdomain.com` with your actual domain. Edit `/etc/caddy/Caddyfile`:
+Replace `bastionclaw.yourdomain.com` with your actual domain. Edit `/etc/caddy/Caddyfile`:
 
 ```caddy
-ironclaw.yourdomain.com {
+bastionclaw.yourdomain.com {
   # TLS via Let's Encrypt (automatic)
   # Requires port 80 to be reachable for ACME challenge
 
@@ -128,7 +128,7 @@ ironclaw.yourdomain.com {
 
   # Access log
   log {
-    output file /var/log/caddy/ironclaw-access.log
+    output file /var/log/caddy/bastionclaw-access.log
     format json
   }
 }
@@ -139,7 +139,7 @@ Apply the configuration:
 ```bash
 sudo systemctl reload caddy
 # Verify TLS provisioning
-curl -I https://ironclaw.yourdomain.com/api/health
+curl -I https://bastionclaw.yourdomain.com/api/health
 ```
 
 ---
@@ -152,21 +152,21 @@ If you prefer nginx:
 sudo apt install nginx certbot python3-certbot-nginx
 ```
 
-Create `/etc/nginx/sites-available/ironclaw`:
+Create `/etc/nginx/sites-available/bastionclaw`:
 
 ```nginx
 server {
     listen 80;
-    server_name ironclaw.yourdomain.com;
+    server_name bastionclaw.yourdomain.com;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name ironclaw.yourdomain.com;
+    server_name bastionclaw.yourdomain.com;
 
-    ssl_certificate /etc/letsencrypt/live/ironclaw.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/ironclaw.yourdomain.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/bastionclaw.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/bastionclaw.yourdomain.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
     ssl_prefer_server_ciphers off;
@@ -199,18 +199,18 @@ server {
         proxy_read_timeout 300s;
     }
 
-    access_log /var/log/nginx/ironclaw.access.log;
-    error_log /var/log/nginx/ironclaw.error.log;
+    access_log /var/log/nginx/bastionclaw.access.log;
+    error_log /var/log/nginx/bastionclaw.error.log;
 }
 ```
 
 Enable and obtain a certificate:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/ironclaw /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/bastionclaw /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
-sudo certbot --nginx -d ironclaw.yourdomain.com
+sudo certbot --nginx -d bastionclaw.yourdomain.com
 ```
 
 ---
@@ -231,21 +231,21 @@ sudo apt update && sudo apt install cloudflared
 cloudflared tunnel login
 
 # Create tunnel
-cloudflared tunnel create ironclaw
+cloudflared tunnel create bastionclaw
 
 # Configure: ~/.cloudflared/config.yml
 cat > ~/.cloudflared/config.yml <<'EOF'
 tunnel: <tunnel-id>
-credentials-file: /home/ironclaw/.cloudflared/<tunnel-id>.json
+credentials-file: /home/bastionclaw/.cloudflared/<tunnel-id>.json
 
 ingress:
-  - hostname: ironclaw.yourdomain.com
+  - hostname: bastionclaw.yourdomain.com
     service: http://localhost:3000
   - service: http_status:404
 EOF
 
 # Route DNS
-cloudflared tunnel route dns ironclaw ironclaw.yourdomain.com
+cloudflared tunnel route dns bastionclaw bastionclaw.yourdomain.com
 
 # Run as service
 sudo cloudflared service install
@@ -271,9 +271,9 @@ bantime  = 3600
 findtime = 600
 ```
 
-### IronClaw Auth Protection
+### BastionClaw Auth Protection
 
-Create `/etc/fail2ban/filter.d/ironclaw.conf`:
+Create `/etc/fail2ban/filter.d/bastionclaw.conf`:
 
 ```ini
 [Definition]
@@ -282,15 +282,15 @@ failregex = ^.*"status":401.*"remote_ip":"<HOST>".*$
 ignoreregex =
 ```
 
-Create `/etc/fail2ban/jail.d/ironclaw.conf`:
+Create `/etc/fail2ban/jail.d/bastionclaw.conf`:
 
 ```ini
-[ironclaw]
+[bastionclaw]
 enabled  = true
 port     = 443,3000
-filter   = ironclaw
-logpath  = /var/log/caddy/ironclaw-access.log
-           /var/log/nginx/ironclaw.access.log
+filter   = bastionclaw
+logpath  = /var/log/caddy/bastionclaw-access.log
+           /var/log/nginx/bastionclaw.access.log
 maxretry = 10
 bantime  = 1800
 findtime = 300
@@ -302,7 +302,7 @@ Apply:
 ```bash
 sudo systemctl restart fail2ban
 sudo fail2ban-client status
-sudo fail2ban-client status ironclaw
+sudo fail2ban-client status bastionclaw
 ```
 
 ---
@@ -347,7 +347,7 @@ AuthorizedKeysFile .ssh/authorized_keys
 
 # Restrict login
 PermitRootLogin no
-AllowUsers ironclaw youruser
+AllowUsers bastionclaw youruser
 
 # Connection limits
 MaxAuthTries 3

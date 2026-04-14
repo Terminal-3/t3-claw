@@ -23,17 +23,17 @@ To use the Github extension, you need to obtain an API key from Brave Search. Yo
 To install the Web Search extension, run the following command in your terminal:
 
 ```bash
-ironclaw registry install github
+bastionclaw registry install github
 ```
 
 </Step>
 
 <Step title="Configure the API Key">
 
-After installing the extension, you need to configure your Github API key in IronClaw. You can do this by running:
+After installing the extension, you need to configure your Github API key in BastionClaw. You can do this by running:
 
 ```bash
-ironclaw tool auth github
+bastionclaw tool auth github
 ```
 
 Then follow the prompts to enter your API key.
@@ -98,7 +98,7 @@ On the agent's Github account, go to [Settings -> Developer settings -> Personal
 Now that you have the token, you can authenticate the Github extension by running:
 
 ```bash
-ironclaw tool auth github
+bastionclaw tool auth github
 ```
 
 Then follow the prompts to enter the token you just generated.

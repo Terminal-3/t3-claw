@@ -14,7 +14,7 @@ use axum::{
     response::IntoResponse,
 };
 
-use ironclaw_gateway::{LayoutConfig, ResolvedWidget, WidgetManifest, is_safe_widget_id};
+use bastionclaw_gateway::{LayoutConfig, ResolvedWidget, WidgetManifest, is_safe_widget_id};
 
 use crate::channels::web::auth::{AdminUser, AuthenticatedUser};
 use crate::channels::web::handlers::memory::resolve_workspace;

@@ -1,4 +1,4 @@
-# IronClaw Profile: local-sandbox
+# BastionClaw Profile: local-sandbox
 #
 # Solo developer setup with Docker sandbox enabled for secure tool execution.
 # Same as 'local' but tools run inside isolated containers.
@@ -6,7 +6,7 @@
 # Prerequisites:
 #   - Docker daemon running
 #
-# Usage: set IRONCLAW_PROFILE=local-sandbox in your environment or .env file.
+# Usage: set BASTIONCLAW_PROFILE=local-sandbox in your environment or .env file.
 
 database_backend = "libsql"
 

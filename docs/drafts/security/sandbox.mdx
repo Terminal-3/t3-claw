@@ -4,7 +4,7 @@ sidebarTitle: Sandbox
 description: WASM and Docker sandbox isolation
 ---
 
-IronClaw uses two sandbox layers for tool execution: WASM sandbox for tools, and Docker sandbox for jobs.
+BastionClaw uses two sandbox layers for tool execution: WASM sandbox for tools, and Docker sandbox for jobs.
 
 ## Two Sandboxes
 
@@ -88,7 +88,7 @@ export SANDBOX_CPU_SHARES=1024
 export SANDBOX_TIMEOUT_SECS=120
 
 # Docker image
-export SANDBOX_IMAGE=ironclaw-worker:latest
+export SANDBOX_IMAGE=bastionclaw-worker:latest
 ```
 
 ## Network Proxy
@@ -163,7 +163,7 @@ USER 1000
 
 ## Docker-in-Docker
 
-IronClaw can run inside Docker and still sandbox jobs:
+BastionClaw can run inside Docker and still sandbox jobs:
 
 ```bash
 # Mount Docker socket
@@ -205,13 +205,13 @@ Containers are siblings, not children.
 ## Important Distinction
 
 <Warning>
-**IronClaw runs alongside Docker** (for job sandboxing), not inside Docker by default.
+**BastionClaw runs alongside Docker** (for job sandboxing), not inside Docker by default.
 
-- **Default**: IronClaw binary → spawns containers for jobs
-- **Optional**: IronClaw inside container → still spawns sibling containers
+- **Default**: BastionClaw binary → spawns containers for jobs
+- **Optional**: BastionClaw inside container → still spawns sibling containers
 </Warning>
 
-See [Docker Install](/install/docker) for running IronClaw itself in a container.
+See [Docker Install](/install/docker) for running BastionClaw itself in a container.
 
 ## Next Steps
 

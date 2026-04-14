@@ -114,7 +114,7 @@ pub async fn skills_search_handler(
     let catalog_json: Vec<serde_json::Value> = entries
         .into_iter()
         .map(|e| {
-            let is_installed = ironclaw_skills::catalog::catalog_entry_is_installed(
+            let is_installed = bastionclaw_skills::catalog::catalog_entry_is_installed(
                 &e.slug,
                 &e.name,
                 &installed_names,
@@ -183,7 +183,7 @@ pub async fn skills_install_handler(
             req.name.clone()
         } else {
             let outcome = catalog.search(&req.name).await;
-            match ironclaw_skills::catalog::resolve_catalog_slug_for_name(
+            match bastionclaw_skills::catalog::resolve_catalog_slug_for_name(
                 &req.name,
                 &outcome.results,
             ) {
@@ -204,7 +204,7 @@ pub async fn skills_install_handler(
             }
         };
         let url =
-            ironclaw_skills::catalog::skill_download_url(catalog.registry_url(), &download_key);
+            bastionclaw_skills::catalog::skill_download_url(catalog.registry_url(), &download_key);
         resolved_download_key = Some(download_key);
         crate::tools::builtin::skill_tools::fetch_skill_content(&url)
             .await
@@ -215,7 +215,7 @@ pub async fn skills_install_handler(
         )));
     };
 
-    let normalized = ironclaw_skills::normalize_line_endings(&content);
+    let normalized = bastionclaw_skills::normalize_line_endings(&content);
     let requested_identifier = install_requested_identifier(
         &req.name,
         req.slug.as_deref(),
@@ -232,7 +232,7 @@ pub async fn skills_install_handler(
         })?;
 
         let (skill_name, install_content) =
-            ironclaw_skills::registry::SkillRegistry::resolve_install_content(
+            bastionclaw_skills::registry::SkillRegistry::resolve_install_content(
                 &normalized,
                 Some(requested_identifier),
             )
@@ -254,7 +254,7 @@ pub async fn skills_install_handler(
 
     // Perform async I/O (write to disk, load) with no lock held.
     let (skill_name, loaded_skill) =
-        ironclaw_skills::registry::SkillRegistry::prepare_install_to_disk(
+        bastionclaw_skills::registry::SkillRegistry::prepare_install_to_disk(
             &user_dir,
             &skill_name_from_parse,
             &install_content,
@@ -318,7 +318,7 @@ pub async fn skills_remove_handler(
     };
 
     // Delete files from disk (async I/O, no lock held)
-    ironclaw_skills::registry::SkillRegistry::delete_skill_files(&skill_path)
+    bastionclaw_skills::registry::SkillRegistry::delete_skill_files(&skill_path)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
@@ -345,7 +345,7 @@ mod tests {
     fn catalog_entry_matches_installed_slug_suffix() {
         let installed = vec!["mortgage-calculator".to_string()];
 
-        assert!(ironclaw_skills::catalog::catalog_entry_is_installed(
+        assert!(bastionclaw_skills::catalog::catalog_entry_is_installed(
             "finance/mortgage-calculator",
             "Mortgage Calculator",
             &installed,
@@ -356,7 +356,7 @@ mod tests {
     fn catalog_entry_matches_installed_display_name() {
         let installed = vec!["Mortgage Calculator".to_string()];
 
-        assert!(ironclaw_skills::catalog::catalog_entry_is_installed(
+        assert!(bastionclaw_skills::catalog::catalog_entry_is_installed(
             "finance/mortgage-calculator",
             "Mortgage Calculator",
             &installed,
@@ -367,7 +367,7 @@ mod tests {
     fn catalog_entry_does_not_match_unrelated_installed_skill() {
         let installed = vec!["budget-planner".to_string()];
 
-        assert!(!ironclaw_skills::catalog::catalog_entry_is_installed(
+        assert!(!bastionclaw_skills::catalog::catalog_entry_is_installed(
             "finance/mortgage-calculator",
             "Mortgage Calculator",
             &installed,
@@ -378,7 +378,7 @@ mod tests {
     fn catalog_entry_matches_owner_aware_normalized_install_name() {
         let installed = vec!["finance-mortgage-calculator".to_string()];
 
-        assert!(ironclaw_skills::catalog::catalog_entry_is_installed(
+        assert!(bastionclaw_skills::catalog::catalog_entry_is_installed(
             "finance/mortgage-calculator",
             "Mortgage Calculator",
             &installed,

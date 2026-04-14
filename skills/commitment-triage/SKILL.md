@@ -3,7 +3,7 @@ name: commitment-triage
 version: 0.2.0
 description: Recognize obligations in conversation, extract signals with immediacy and expiration, create and manage commitments in the workspace.
 activation:
-  # Limits enforced by `ironclaw_skills::types::ActivationCriteria::enforce_limits`:
+  # Limits enforced by `bastionclaw_skills::types::ActivationCriteria::enforce_limits`:
   # MAX_KEYWORDS_PER_SKILL=20, MAX_PATTERNS_PER_SKILL=5. The lists below are
   # intentionally trimmed to those caps; entries past the cap are silently
   # dropped at parse time.

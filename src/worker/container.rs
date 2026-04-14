@@ -30,7 +30,7 @@ use crate::worker::autonomous_recovery::{
     EMPTY_TOOL_COMPLETION_NUDGE, FORCE_TEXT_RECOVERY_PROMPT,
 };
 use crate::worker::proxy_llm::ProxyLlmProvider;
-use ironclaw_safety::SafetyLayer;
+use bastionclaw_safety::SafetyLayer;
 
 /// Configuration for the worker runtime.
 pub struct WorkerConfig {
@@ -72,7 +72,7 @@ pub struct WorkerRuntime {
 impl WorkerRuntime {
     /// Create a new worker runtime.
     ///
-    /// Reads `IRONCLAW_WORKER_TOKEN` from the environment for auth.
+    /// Reads `BASTIONCLAW_WORKER_TOKEN` from the environment for auth.
     pub fn new(config: WorkerConfig) -> Result<Self, WorkerError> {
         let client = Arc::new(WorkerHttpClient::from_env(
             config.orchestrator_url.clone(),

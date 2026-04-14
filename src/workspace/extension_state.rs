@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 
 use crate::extensions::naming::canonicalize_extension_name;
 use crate::workspace::document::system_paths;
-use ironclaw_skills::validation::validate_skill_name;
+use bastionclaw_skills::validation::validate_skill_name;
 
 /// Error returned when a name cannot be used to construct a workspace path.
 #[derive(Debug, thiserror::Error)]

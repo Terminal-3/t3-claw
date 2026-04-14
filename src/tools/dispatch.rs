@@ -25,7 +25,7 @@ use crate::db::Database;
 use crate::tools::registry::ToolRegistry;
 use crate::tools::tool::{ToolError, ToolOutput};
 use crate::tools::{prepare_tool_params, redact_params};
-use ironclaw_safety::SafetyLayer;
+use bastionclaw_safety::SafetyLayer;
 
 /// Identifies where a tool dispatch originated.
 ///
@@ -285,7 +285,7 @@ mod integration_tests {
     use crate::db::libsql::LibSqlBackend;
     use crate::tools::tool::{Tool, ToolError, ToolOutput};
     use async_trait::async_trait;
-    use ironclaw_safety::SafetyLayer;
+    use bastionclaw_safety::SafetyLayer;
     use std::time::Duration;
 
     // ── Stub tools ──────────────────────────────────────────

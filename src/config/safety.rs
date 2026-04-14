@@ -1,7 +1,7 @@
 use crate::config::helpers::{db_first_bool, db_first_or_default};
 use crate::error::ConfigError;
 
-pub use ironclaw_safety::SafetyConfig;
+pub use bastionclaw_safety::SafetyConfig;
 
 pub(crate) fn resolve_safety_config(
     settings: &crate::settings::Settings,

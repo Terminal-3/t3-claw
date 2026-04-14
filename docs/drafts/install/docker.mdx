@@ -1,38 +1,38 @@
 ---
 title: Docker Installation
 sidebarTitle: Docker
-description: Run IronClaw in a Docker container
+description: Run BastionClaw in a Docker container
 ---
 
-Run IronClaw inside a Docker container. This provides isolation and consistency across environments.
+Run BastionClaw inside a Docker container. This provides isolation and consistency across environments.
 
 <Warning>
-**Important distinction:** IronClaw runs **alongside** Docker (for job sandboxing), not inside Docker by default. This page covers running IronClaw itself in a container — a different use case from the default installation.
+**Important distinction:** BastionClaw runs **alongside** Docker (for job sandboxing), not inside Docker by default. This page covers running BastionClaw itself in a container — a different use case from the default installation.
 </Warning>
 
 ## When to Use Docker
 
 - **Testing**: Quick experiments without modifying your system
 - **Consistent environments**: Same configuration across dev/staging/prod
-- **Multi-tenant**: Run multiple IronClaw instances on one host
+- **Multi-tenant**: Run multiple BastionClaw instances on one host
 - **CI/CD**: Automated deployments
 
 ## Quick Start
 
 ```bash
 # Create data directory
-mkdir -p ~/.ironclaw
+mkdir -p ~/.bastionclaw
 
-# Run IronClaw
+# Run BastionClaw
 docker run -d \
-  --name ironclaw \
-  -v ~/.ironclaw:/home/ironclaw/.ironclaw \
+  --name bastionclaw \
+  -v ~/.bastionclaw:/home/bastionclaw/.bastionclaw \
   # enabling this mount will allow the container to control the docker daemon, use at own risk
   # -v /var/run/docker.sock:/var/run/docker.sock \
   -p 3000:3000 \
   -p 8080:8080 \
-  # Pin to a specific IronClaw version for reproducible, rollback-friendly deployments.
-  nearai/ironclaw:latest 
+  # Pin to a specific BastionClaw version for reproducible, rollback-friendly deployments.
+  nearai/bastionclaw:latest 
 ```
 
 ## Docker Compose
@@ -43,15 +43,15 @@ Save as `docker-compose.yml`:
 version: '3.8'
 
 services:
-  ironclaw:
-    # Pin to a specific IronClaw version for reproducible, rollback-friendly deployments.
-    image: nearai/ironclaw:latest
-    container_name: ironclaw
+  bastionclaw:
+    # Pin to a specific BastionClaw version for reproducible, rollback-friendly deployments.
+    image: nearai/bastionclaw:latest
+    container_name: bastionclaw
     restart: unless-stopped
 
     volumes:
       # Persistent data
-      - ~/.ironclaw:/home/ironclaw/.ironclaw
+      - ~/.bastionclaw:/home/bastionclaw/.bastionclaw
 
       # Docker socket for sandbox jobs, also exposes your docker host to this container!
       - /var/run/docker.sock:/var/run/docker.sock
@@ -84,9 +84,9 @@ services:
 #  postgres:
 #    image: pgvector/pgvector:pg15
 #    environment:
-#      POSTGRES_USER: ironclaw
+#      POSTGRES_USER: bastionclaw
 #      POSTGRES_PASSWORD: changeme
-#      POSTGRES_DB: ironclaw
+#      POSTGRES_DB: bastionclaw
 #    volumes:
 #      - postgres_data:/var/lib/postgresql/data
 #
@@ -104,7 +104,7 @@ docker compose up -d
 
 | Host Path | Container Path | Purpose |
 |-----------|---------------|---------|
-| `~/.ironclaw` | `/home/ironclaw/.ironclaw` | Config, database, logs |
+| `~/.bastionclaw` | `/home/bastionclaw/.bastionclaw` | Config, database, logs |
 | `/var/run/docker.sock` | `/var/run/docker.sock` | Launch sandbox containers |
 
 ## Environment Variables
@@ -113,32 +113,32 @@ Pass configuration via environment variables:
 
 ```bash
 docker run -d \
-  --name ironclaw \
+  --name bastionclaw \
   -e DATABASE_BACKEND=libsql \
   -e LLM_BACKEND=nearai \
   -e NEARAI_SESSION_TOKEN=sess_xxx \
   -e GATEWAY_ENABLED=true \
-  -v ~/.ironclaw:/home/ironclaw/.ironclaw \
+  -v ~/.bastionclaw:/home/bastionclaw/.bastionclaw \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -p 3000:3000 \
-  nearai/ironclaw:latest
+  nearai/bastionclaw:latest
 ```
 
 See [Configuration Reference](/setup/configuration) for all options.
 
 ## Docker-in-Docker Considerations
 
-IronClaw can launch sandbox containers. In Docker, this requires:
+BastionClaw can launch sandbox containers. In Docker, this requires:
 
-1. **Docker socket mount** (shown above): Allows IronClaw to launch sibling containers
+1. **Docker socket mount** (shown above): Allows BastionClaw to launch sibling containers
 2. **Privileged mode** (optional): Only if sandbox jobs need elevated permissions
 
 ```bash
 # With privileged mode (not recommended unless needed)
 docker run -d \
-  --name ironclaw \
+  --name bastionclaw \
   --privileged \
-  -v ~/.ironclaw:/home/ironclaw/.ironclaw \
+  -v ~/.bastionclaw:/home/bastionclaw/.bastionclaw \
   -v /var/run/docker.sock:/var/run/docker.sock \
   ...
 ```
@@ -148,12 +148,12 @@ docker run -d \
 To use a different data location:
 
 ```bash
-mkdir -p /opt/ironclaw/data
+mkdir -p /opt/bastionclaw/data
 
 docker run -d \
-  --name ironclaw \
-  -e IRONCLAW_BASE_DIR=/data \
-  -v /opt/ironclaw/data:/data \
+  --name bastionclaw \
+  -e BASTIONCLAW_BASE_DIR=/data \
+  -v /opt/bastionclaw/data:/data \
   ...
 ```
 
@@ -195,17 +195,17 @@ server {
 
 ```bash
 # Pull latest image
-docker pull nearai/ironclaw:latest
+docker pull nearai/bastionclaw:latest
 
 # Recreate container
-docker stop ironclaw
-docker rm ironclaw
+docker stop bastionclaw
+docker rm bastionclaw
 docker run -d \
-  --name ironclaw \
-  -v ~/.ironclaw:/home/ironclaw/.ironclaw \
+  --name bastionclaw \
+  -v ~/.bastionclaw:/home/bastionclaw/.bastionclaw \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -p 3000:3000 \
-  nearai/ironclaw:latest
+  nearai/bastionclaw:latest
 
 # Or with docker compose
 docker compose pull
@@ -225,7 +225,7 @@ docker compose up -d
   <Accordion title="Permission denied on data directory" icon="lock">
     Fix ownership:
     ```bash
-    sudo chown -R 1000:1000 ~/.ironclaw
+    sudo chown -R 1000:1000 ~/.bastionclaw
     ```
   </Accordion>
 

@@ -9,7 +9,7 @@
 //!
 //! Run live (records a trace fixture):
 //! ```bash
-//! IRONCLAW_LIVE_TEST=1 cargo test --features libsql --test e2e_live_mission -- --ignored
+//! BASTIONCLAW_LIVE_TEST=1 cargo test --features libsql --test e2e_live_mission -- --ignored
 //! ```
 //!
 //! Replay (deterministic, after a fixture has been recorded):

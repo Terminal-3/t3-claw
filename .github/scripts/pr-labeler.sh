@@ -4,7 +4,7 @@
 #
 # Inputs (env vars):
 #   PR_NUMBER  — pull request number
-#   REPO       — owner/repo (e.g. "user/ironclaw")
+#   REPO       — owner/repo (e.g. "user/bastionclaw")
 #
 # Requires: gh CLI, jq
 

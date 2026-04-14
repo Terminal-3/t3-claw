@@ -2,8 +2,8 @@
 //!
 //! # Modes
 //!
-//! - **Live mode** (`IRONCLAW_LIVE_TEST=1`): Uses real LLM provider from
-//!   `~/.ironclaw/.env`, records traces to `tests/fixtures/llm_traces/live/`.
+//! - **Live mode** (`BASTIONCLAW_LIVE_TEST=1`): Uses real LLM provider from
+//!   `~/.bastionclaw/.env`, records traces to `tests/fixtures/llm_traces/live/`.
 //! - **Replay mode** (default): Loads saved trace JSON, deterministic, no API keys.
 //!
 //! # Usage
@@ -30,8 +30,8 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use ironclaw::llm::recording::RecordingLlm;
-use ironclaw::llm::{ChatMessage, CompletionRequest, LlmProvider, SessionConfig, SessionManager};
+use bastionclaw::llm::recording::RecordingLlm;
+use bastionclaw::llm::{ChatMessage, CompletionRequest, LlmProvider, SessionConfig, SessionManager};
 
 use crate::support::test_rig::{TestRig, TestRigBuilder};
 use crate::support::trace_llm::LlmTrace;
@@ -117,7 +117,7 @@ impl LiveTestHarness {
     /// Live mode writes to `tests/fixtures/llm_traces/live/{name}.log` (committed).
     /// Replay mode writes to a temp file so it can be diffed against the live log.
     fn save_session_log(&self, turns: &[(String, Vec<String>)]) {
-        use ironclaw::channels::StatusUpdate;
+        use bastionclaw::channels::StatusUpdate;
 
         let (log_path, live_log_path) = match self.mode {
             TestMode::Live => {
@@ -125,7 +125,7 @@ impl LiveTestHarness {
                 (p, None)
             }
             TestMode::Replay => {
-                let replay_dir = std::env::temp_dir().join("ironclaw-live-tests");
+                let replay_dir = std::env::temp_dir().join("bastionclaw-live-tests");
                 let _ = std::fs::create_dir_all(&replay_dir);
                 let p = replay_dir.join(format!("{}.replay.log", self.test_name));
                 let live = trace_fixture_path(&self.test_name).with_extension("log");
@@ -269,7 +269,7 @@ impl LiveTestHarnessBuilder {
     /// `tests/fixtures/llm_traces/live/{test_name}.json`
     ///
     /// **Live test contract:** the test rig starts from a *clean* libSQL
-    /// database. It does NOT clone the developer's `~/.ironclaw/ironclaw.db`.
+    /// database. It does NOT clone the developer's `~/.bastionclaw/bastionclaw.db`.
     /// Tests that need real credentials must declare them explicitly via
     /// [`with_secrets`](Self::with_secrets); tests that need workspace
     /// memory or conversation history must seed it themselves through
@@ -307,7 +307,7 @@ impl LiveTestHarnessBuilder {
     }
 
     /// Declare secret names to copy from the developer's real
-    /// `~/.ironclaw/ironclaw.db` (or whatever `LIBSQL_PATH` resolves to)
+    /// `~/.bastionclaw/bastionclaw.db` (or whatever `LIBSQL_PATH` resolves to)
     /// into the test rig under the same owner_user_id. Only the named
     /// rows are copied; nothing else (memory, history, other secrets)
     /// crosses the boundary.
@@ -350,11 +350,11 @@ impl LiveTestHarnessBuilder {
         self
     }
 
-    /// Build the harness, auto-detecting mode from the `IRONCLAW_LIVE_TEST` env var.
+    /// Build the harness, auto-detecting mode from the `BASTIONCLAW_LIVE_TEST` env var.
     #[cfg(feature = "libsql")]
     pub async fn build(self) -> LiveTestHarness {
         let trace_path = trace_fixture_path(&self.test_name);
-        let is_live = std::env::var("IRONCLAW_LIVE_TEST")
+        let is_live = std::env::var("BASTIONCLAW_LIVE_TEST")
             .ok()
             .filter(|v| !v.is_empty() && v != "0")
             .is_some();
@@ -418,20 +418,20 @@ impl LiveTestHarnessBuilder {
         let _ = tracing_subscriber::fmt()
             .with_env_filter(
                 tracing_subscriber::EnvFilter::try_from_default_env()
-                    .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("ironclaw=info")),
+                    .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("bastionclaw=info")),
             )
             .with_test_writer()
             .try_init();
 
-        // Load env from ~/.ironclaw/.env so LLM API keys are available.
+        // Load env from ~/.bastionclaw/.env so LLM API keys are available.
         let _ = dotenvy::dotenv();
-        ironclaw::bootstrap::load_ironclaw_env();
+        bastionclaw::bootstrap::load_bastionclaw_env();
 
         // Resolve full config (reads LLM_BACKEND, ENGINE_V2, ALLOW_LOCAL_TOOLS, etc.)
-        // This mirrors the exact config the real `ironclaw` binary would use.
-        let mut config = ironclaw::config::Config::from_env().await.expect(
+        // This mirrors the exact config the real `bastionclaw` binary would use.
+        let mut config = bastionclaw::config::Config::from_env().await.expect(
             "Failed to load config for live test. \
-                 Ensure ~/.ironclaw/.env has valid LLM credentials.",
+                 Ensure ~/.bastionclaw/.env has valid LLM credentials.",
         );
 
         // Apply builder overrides.
@@ -449,7 +449,7 @@ impl LiveTestHarnessBuilder {
 
         // If the test asked for specific secrets via `with_secrets(...)`
         // and the resolved config points at a local libSQL file (the
-        // typical `~/.ironclaw/ironclaw.db` setup), figure out the source
+        // typical `~/.bastionclaw/bastionclaw.db` setup), figure out the source
         // path now. We do NOT clone the file. The test rig will copy
         // *only* the named rows out of the source `secrets` table after
         // its own migrations run. Memory, conversation history, and any
@@ -459,7 +459,7 @@ impl LiveTestHarnessBuilder {
             None
         } else {
             match config.database.backend {
-                ironclaw::config::DatabaseBackend::LibSql
+                bastionclaw::config::DatabaseBackend::LibSql
                     if config.database.libsql_url.is_none() =>
                 {
                     config
@@ -468,7 +468,7 @@ impl LiveTestHarnessBuilder {
                         .clone()
                         .filter(|p| p.exists())
                         .or_else(|| {
-                            let default = ironclaw::config::default_libsql_path();
+                            let default = bastionclaw::config::default_libsql_path();
                             default.exists().then_some(default)
                         })
                 }
@@ -499,7 +499,7 @@ impl LiveTestHarnessBuilder {
         let source_user_id = config.owner_id.clone();
 
         let session = Arc::new(SessionManager::new(SessionConfig::default()));
-        let (provider, cheap_llm, _) = ironclaw::llm::build_provider_chain(&config.llm, session)
+        let (provider, cheap_llm, _) = bastionclaw::llm::build_provider_chain(&config.llm, session)
             .await
             .expect("Failed to build LLM provider chain for live test");
 
@@ -563,7 +563,7 @@ impl LiveTestHarnessBuilder {
         let trace = LlmTrace::from_file(&trace_path).unwrap_or_else(|e| {
             panic!(
                 "Failed to load trace fixture '{}': {e}\n\
-                 Hint: Run with IRONCLAW_LIVE_TEST=1 to record the trace first.",
+                 Hint: Run with BASTIONCLAW_LIVE_TEST=1 to record the trace first.",
                 trace_path.display()
             )
         });

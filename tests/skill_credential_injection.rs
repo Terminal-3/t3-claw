@@ -22,14 +22,14 @@ use std::sync::Arc;
 
 use secrecy::SecretString;
 
-use ironclaw::context::JobContext;
-use ironclaw::secrets::{
+use bastionclaw::context::JobContext;
+use bastionclaw::secrets::{
     CreateSecretParams, CredentialMapping, InMemorySecretsStore, SecretsCrypto, SecretsStore,
 };
-use ironclaw::tools::builtin::HttpTool;
-use ironclaw::tools::wasm::SharedCredentialRegistry;
-use ironclaw::tools::{ApprovalRequirement, Tool, ToolError};
-use ironclaw_skills::types::*;
+use bastionclaw::tools::builtin::HttpTool;
+use bastionclaw::tools::wasm::SharedCredentialRegistry;
+use bastionclaw::tools::{ApprovalRequirement, Tool, ToolError};
+use bastionclaw_skills::types::*;
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -49,15 +49,15 @@ fn make_skill(
     name: &str,
     credentials: Vec<SkillCredentialSpec>,
     prompt: &str,
-) -> ironclaw_skills::LoadedSkill {
-    ironclaw_skills::LoadedSkill {
+) -> bastionclaw_skills::LoadedSkill {
+    bastionclaw_skills::LoadedSkill {
         manifest: SkillManifest {
             name: name.to_string(),
             version: "1.0.0".to_string(),
             description: format!("{} skill", name),
             activation: ActivationCriteria::default(),
             credentials,
-            requires: ironclaw_skills::GatingRequirements::default(),
+            requires: bastionclaw_skills::GatingRequirements::default(),
         },
         prompt_content: prompt.to_string(),
         trust: SkillTrust::Trusted,
@@ -281,7 +281,7 @@ fn test_validation_rejects_insecure_and_malformed_specs() {
         }),
         setup_instructions: None,
     };
-    let errors = ironclaw_skills::validate_credential_spec(&spec);
+    let errors = bastionclaw_skills::validate_credential_spec(&spec);
     assert!(!errors.is_empty());
     assert!(errors.iter().any(|e| e.contains("HTTPS")));
 
@@ -294,7 +294,7 @@ fn test_validation_rejects_insecure_and_malformed_specs() {
         oauth: None,
         setup_instructions: None,
     };
-    let errors = ironclaw_skills::validate_credential_spec(&spec);
+    let errors = bastionclaw_skills::validate_credential_spec(&spec);
     assert!(errors.iter().any(|e| e.contains("at least one host")));
 
     // Uppercase name
@@ -306,7 +306,7 @@ fn test_validation_rejects_insecure_and_malformed_specs() {
         oauth: None,
         setup_instructions: None,
     };
-    let errors = ironclaw_skills::validate_credential_spec(&spec);
+    let errors = bastionclaw_skills::validate_credential_spec(&spec);
     assert!(errors.iter().any(|e| e.contains("lowercase")));
 
     // Empty provider
@@ -318,7 +318,7 @@ fn test_validation_rejects_insecure_and_malformed_specs() {
         oauth: None,
         setup_instructions: None,
     };
-    let errors = ironclaw_skills::validate_credential_spec(&spec);
+    let errors = bastionclaw_skills::validate_credential_spec(&spec);
     assert!(errors.iter().any(|e| e.contains("provider")));
 
     // Multiple errors accumulate
@@ -330,7 +330,7 @@ fn test_validation_rejects_insecure_and_malformed_specs() {
         oauth: None,
         setup_instructions: None,
     };
-    let errors = ironclaw_skills::validate_credential_spec(&spec);
+    let errors = bastionclaw_skills::validate_credential_spec(&spec);
     assert_eq!(
         errors.len(),
         3,
@@ -370,7 +370,7 @@ fn test_register_skill_credentials_mixed_valid_invalid() {
     );
 
     let registry = SharedCredentialRegistry::new();
-    ironclaw::skills::register_skill_credentials(&[valid_skill, invalid_skill], &registry);
+    bastionclaw::skills::register_skill_credentials(&[valid_skill, invalid_skill], &registry);
 
     // Valid should be registered
     assert!(registry.has_credentials_for_host("api.weather.com"));
@@ -410,7 +410,7 @@ fn test_multi_skill_credential_registration() {
     let no_creds_skill = make_skill("writing", vec![], "Just a writing skill, no API access.");
 
     let registry = SharedCredentialRegistry::new();
-    ironclaw::skills::register_skill_credentials(
+    bastionclaw::skills::register_skill_credentials(
         &[github_skill, slack_skill, no_creds_skill],
         &registry,
     );
@@ -433,11 +433,11 @@ fn test_credential_spec_to_mapping_all_location_types() {
         oauth: None,
         setup_instructions: None,
     };
-    let mapping = ironclaw::skills::credential_spec_to_mapping(&spec);
+    let mapping = bastionclaw::skills::credential_spec_to_mapping(&spec);
     assert_eq!(mapping.secret_name, "token");
     assert!(matches!(
         mapping.location,
-        ironclaw::secrets::CredentialLocation::AuthorizationBearer
+        bastionclaw::secrets::CredentialLocation::AuthorizationBearer
     ));
     assert_eq!(mapping.host_patterns, vec!["api.test.com"]);
 
@@ -453,9 +453,9 @@ fn test_credential_spec_to_mapping_all_location_types() {
         oauth: None,
         setup_instructions: None,
     };
-    let mapping = ironclaw::skills::credential_spec_to_mapping(&spec);
+    let mapping = bastionclaw::skills::credential_spec_to_mapping(&spec);
     match &mapping.location {
-        ironclaw::secrets::CredentialLocation::Header { name, prefix } => {
+        bastionclaw::secrets::CredentialLocation::Header { name, prefix } => {
             assert_eq!(name, "X-API-Key");
             assert_eq!(prefix.as_deref(), Some("Token"));
         }
@@ -474,9 +474,9 @@ fn test_credential_spec_to_mapping_all_location_types() {
         oauth: None,
         setup_instructions: None,
     };
-    let mapping = ironclaw::skills::credential_spec_to_mapping(&spec);
+    let mapping = bastionclaw::skills::credential_spec_to_mapping(&spec);
     match &mapping.location {
-        ironclaw::secrets::CredentialLocation::AuthorizationBasic { username } => {
+        bastionclaw::secrets::CredentialLocation::AuthorizationBasic { username } => {
             assert_eq!(username, "admin");
         }
         _ => panic!("expected AuthorizationBasic location"),
@@ -493,9 +493,9 @@ fn test_credential_spec_to_mapping_all_location_types() {
         oauth: None,
         setup_instructions: None,
     };
-    let mapping = ironclaw::skills::credential_spec_to_mapping(&spec);
+    let mapping = bastionclaw::skills::credential_spec_to_mapping(&spec);
     match &mapping.location {
-        ironclaw::secrets::CredentialLocation::QueryParam { name } => {
+        bastionclaw::secrets::CredentialLocation::QueryParam { name } => {
             assert_eq!(name, "api_key");
         }
         _ => panic!("expected QueryParam location"),
@@ -517,7 +517,7 @@ fn test_http_tool_requires_approval_for_credentialed_host() {
 
     // Credentialed host → requires approval
     let params = serde_json::json!({
-        "url": "https://api.github.com/repos/nearai/ironclaw/issues",
+        "url": "https://api.github.com/repos/nearai/bastionclaw/issues",
         "method": "GET"
     });
     assert_eq!(
@@ -575,7 +575,7 @@ async fn test_per_user_credential_isolation() {
 
 /// Complete scenario: parse skill YAML → validate → register → verify HttpTool behavior.
 ///
-/// Simulates what happens when IronClaw discovers skills at startup:
+/// Simulates what happens when BastionClaw discovers skills at startup:
 /// 1. Parse frontmatter with credential specs
 /// 2. Validate specs (reject bad ones)
 /// 3. Register valid specs into SharedCredentialRegistry
@@ -608,7 +608,7 @@ credentials:
 
     // Step 2: Validate
     for spec in &manifest.credentials {
-        let errors = ironclaw_skills::validate_credential_spec(spec);
+        let errors = bastionclaw_skills::validate_credential_spec(spec);
         assert!(
             errors.is_empty(),
             "valid spec should pass validation: {:?}",
@@ -624,7 +624,7 @@ credentials:
     );
 
     let registry = Arc::new(SharedCredentialRegistry::new());
-    ironclaw::skills::register_skill_credentials(&[skill], &registry);
+    bastionclaw::skills::register_skill_credentials(&[skill], &registry);
 
     // Step 4: Verify registry state
     assert!(registry.has_credentials_for_host("api.github.com"));
@@ -640,7 +640,7 @@ credentials:
 
     // Before storing secret: credentialed host requires approval
     let params = serde_json::json!({
-        "url": "https://api.github.com/repos/nearai/ironclaw",
+        "url": "https://api.github.com/repos/nearai/bastionclaw",
         "method": "GET"
     });
     assert_eq!(
@@ -715,7 +715,7 @@ async fn test_credentialed_host_rejects_llm_authorization_header() {
     for (name, value) in cases {
         let params = serde_json::json!({
             "method": "GET",
-            "url": "https://api.github.com/repos/nearai/ironclaw/issues",
+            "url": "https://api.github.com/repos/nearai/bastionclaw/issues",
             "headers": [{ "name": *name, "value": *value }],
         });
         let err = tool
@@ -750,7 +750,7 @@ async fn test_credentialed_host_allows_non_auth_headers() {
 
     let params = serde_json::json!({
         "method": "GET",
-        "url": "https://api.github.com/repos/nearai/ironclaw/issues",
+        "url": "https://api.github.com/repos/nearai/bastionclaw/issues",
         "headers": [
             { "name": "Accept", "value": "application/vnd.github+json" },
             { "name": "Content-Type", "value": "application/json" },

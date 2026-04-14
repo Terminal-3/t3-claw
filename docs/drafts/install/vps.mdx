@@ -1,10 +1,10 @@
 ---
 title: VPS Installation
 sidebarTitle: VPS / Cloud
-description: Deploy IronClaw to a cloud server
+description: Deploy BastionClaw to a cloud server
 ---
 
-Deploy IronClaw to a remote VPS or cloud server for always-on operation.
+Deploy BastionClaw to a remote VPS or cloud server for always-on operation.
 
 ## Recommended Providers
 
@@ -26,11 +26,11 @@ ssh user@your-server-ip
 sudo apt update && sudo apt upgrade -y
 ```
 
-## Step 1: Install IronClaw
+## Step 1: Install BastionClaw
 
 ```bash
-# Install IronClaw
-curl -fsSL https://install.ironclaw.ai | bash
+# Install BastionClaw
+curl -fsSL https://install.bastionclaw.ai | bash
 
 # Add to PATH if needed
 export PATH="$HOME/.local/bin:$PATH"
@@ -50,16 +50,16 @@ sudo systemctl enable --now postgresql
 
 # Create database and user
 sudo -u postgres psql <<EOF
-CREATE USER ironclaw WITH PASSWORD 'your-secure-password';
-CREATE DATABASE ironclaw OWNER ironclaw;
+CREATE USER bastionclaw WITH PASSWORD 'your-secure-password';
+CREATE DATABASE bastionclaw OWNER bastionclaw;
 EOF
 
 # Detect PostgreSQL major version (e.g., 14, 15, 16)
 PG_MAJOR=$(psql -V | awk '{print $3}' | cut -d. -f1)
 # Install matching pgvector package for the detected PostgreSQL version
 sudo apt install "postgresql-$PG_MAJOR-pgvector"
-# Enable the vector extension in the ironclaw database
-sudo -u postgres psql -d ironclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
+# Enable the vector extension in the bastionclaw database
+sudo -u postgres psql -d bastionclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
 ```
 
 ## Step 3: Run the Wizard
@@ -68,18 +68,18 @@ sudo -u postgres psql -d ironclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
 **Browser OAuth blocked on VPS.** The default NEAR AI authentication requires a browser on the same machine. On a VPS, use:
 
 1. **NEAR AI Cloud API key** (recommended): Get an API key from https://cloud.near.ai and paste it into the wizard
-2. **Custom callback URL**: Set `IRONCLAW_OAUTH_CALLBACK_URL` to a publicly reachable URL
+2. **Custom callback URL**: Set `BASTIONCLAW_OAUTH_CALLBACK_URL` to a publicly reachable URL
 
 </Warning>
 
 ```bash
-ironclaw onboard
+bastionclaw onboard
 ```
 
 **Wizard selections:**
 
 1. **Database**: Select "PostgreSQL"
-   - Enter connection string: `postgres://ironclaw:your-secure-password@localhost/ironclaw`
+   - Enter connection string: `postgres://bastionclaw:your-secure-password@localhost/bastionclaw`
 
 2. **Security**: Select "OS Keychain" or "Environment Variable"
 
@@ -99,7 +99,7 @@ ironclaw onboard
 ## Step 4: Firewall Configuration
 
 <Warning>
-**Important:** IronClaw's orchestrator binds to `0.0.0.0:50051` on Linux for container communication. This port should **not** be exposed externally. The firewall configuration below includes rules to block external access to this port—do not add any UFW allow rules for `50051`.
+**Important:** BastionClaw's orchestrator binds to `0.0.0.0:50051` on Linux for container communication. This port should **not** be exposed externally. The firewall configuration below includes rules to block external access to this port—do not add any UFW allow rules for `50051`.
 </Warning>
 
 ```bash
@@ -161,7 +161,7 @@ sudo systemctl enable --now caddy
 sudo apt install nginx
 
 # Configure site
-sudo tee /etc/nginx/sites-available/ironclaw <<'EOF'
+sudo tee /etc/nginx/sites-available/bastionclaw <<'EOF'
 server {
   listen 443 ssl http2;
   server_name webg.example.com;
@@ -189,7 +189,7 @@ server {
 EOF
 
 # Enable site
-sudo ln -sf /etc/nginx/sites-available/ironclaw /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/bastionclaw /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo systemctl restart nginx
 ```
@@ -205,7 +205,7 @@ sudo dpkg -i cloudflared.deb
 cloudflared tunnel login
 
 # Create tunnel
-cloudflared tunnel create ironclaw
+cloudflared tunnel create bastionclaw
 
 # Configure
 sudo mkdir -p /etc/cloudflared
@@ -228,10 +228,10 @@ sudo systemctl enable --now cloudflared
 
 ```bash
 # Install systemd service
-ironclaw service install
+bastionclaw service install
 
 # Configure service
-sudo systemctl edit ironclaw
+sudo systemctl edit bastionclaw
 ```
 
 Add environment variables:
@@ -239,28 +239,28 @@ Add environment variables:
 ```ini
 [Service]
 Environment="DATABASE_BACKEND=postgres"
-Environment="DATABASE_URL=postgres://ironclaw:your-secure-password@localhost/ironclaw"
+Environment="DATABASE_URL=postgres://bastionclaw:your-secure-password@localhost/bastionclaw"
 Environment="GATEWAY_HOST=127.0.0.1"
 ```
 
 Start the service:
 
 ```bash
-sudo systemctl enable --now ironclaw
-sudo systemctl status ironclaw
+sudo systemctl enable --now bastionclaw
+sudo systemctl status bastionclaw
 ```
 
 ## Step 7: Verify
 
 ```bash
 # Check service status
-sudo systemctl status ironclaw
+sudo systemctl status bastionclaw
 
 # View logs
-sudo journalctl -u ironclaw -f
+sudo journalctl -u bastionclaw -f
 
 # Run diagnostics
-ironclaw doctor
+bastionclaw doctor
 ```
 
 ## Security Hardening
@@ -271,7 +271,7 @@ ironclaw doctor
 sudo apt install fail2ban
 
 # Create filter
-sudo tee /etc/fail2ban/filter.d/ironclaw.conf <<'EOF'
+sudo tee /etc/fail2ban/filter.d/bastionclaw.conf <<'EOF'
 [Definition]
 failregex = ^.*Unauthorized.*from <HOST>.*$
             ^.*Invalid token.*from <HOST>.*$
@@ -279,12 +279,12 @@ ignoreregex =
 EOF
 
 # Create jail
-sudo tee /etc/fail2ban/jail.d/ironclaw.conf <<EOF
-[ironclaw]
+sudo tee /etc/fail2ban/jail.d/bastionclaw.conf <<EOF
+[bastionclaw]
 enabled = true
 port = http,https
-filter = ironclaw
-logpath = /var/log/ironclaw/web.log
+filter = bastionclaw
+logpath = /var/log/bastionclaw/web.log
 maxretry = 5
 bantime = 3600
 EOF
@@ -325,7 +325,7 @@ sudo dpkg-reconfigure unattended-upgrades
     On VPS, use NEAR AI Cloud API key instead of browser OAuth:
     ```bash
     export NEARAI_API_KEY=your-api-key
-    ironclaw onboard
+    bastionclaw onboard
     ```
   </Accordion>
 </AccordionGroup>

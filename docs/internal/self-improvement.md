@@ -1,6 +1,6 @@
 # Self-Improving Engine
 
-This document describes how IronClaw improves itself at runtime — fixing bugs, evolving prompts, and patching its own execution loop without a Rust rebuild.
+This document describes how BastionClaw improves itself at runtime — fixing bugs, evolving prompts, and patching its own execution loop without a Rust rebuild.
 
 ## The Problem
 
@@ -136,9 +136,9 @@ The self-improvement thread can create git branches and modify engine defaults:
 ```python
 # In the self-improvement thread:
 shell("git checkout -b self-improve/increase-truncation")
-read_file("crates/ironclaw_engine/src/executor/scripting.rs")
+read_file("crates/bastionclaw_engine/src/executor/scripting.rs")
 apply_patch(...)
-result = shell("cargo test -p ironclaw_engine")
+result = shell("cargo test -p bastionclaw_engine")
 if "test result: ok" in result:
     shell("git commit -am 'Increase output truncation to 12000 chars'")
 else:
@@ -172,7 +172,7 @@ The database grows over time — after successfully fixing an issue, the self-im
 - Security-sensitive code (safety layer, policy engine, leak detection)
 - Database schemas / migrations
 - Test files (never weaken tests to make a fix pass)
-- Files outside `crates/ironclaw_engine/` and `src/bridge/` without human approval
+- Files outside `crates/bastionclaw_engine/` and `src/bridge/` without human approval
 
 **Orchestrator safety:**
 - Auto-rollback after 3 consecutive failures
@@ -195,23 +195,23 @@ The mission is capped at 5 threads per day (`max_threads_per_day: 5`).
 
 | File | Purpose |
 |------|---------|
-| `crates/ironclaw_engine/orchestrator/default.py` | The v0 orchestrator (self-modifiable) |
-| `crates/ironclaw_engine/src/executor/orchestrator.rs` | Loading, versioning, rollback, host functions |
-| `crates/ironclaw_engine/src/executor/prompt.rs` | Prompt overlay loading |
-| `crates/ironclaw_engine/src/runtime/mission.rs` | Self-improvement mission, OnSystemEvent wiring, fix patterns |
+| `crates/bastionclaw_engine/orchestrator/default.py` | The v0 orchestrator (self-modifiable) |
+| `crates/bastionclaw_engine/src/executor/orchestrator.rs` | Loading, versioning, rollback, host functions |
+| `crates/bastionclaw_engine/src/executor/prompt.rs` | Prompt overlay loading |
+| `crates/bastionclaw_engine/src/runtime/mission.rs` | Self-improvement mission, OnSystemEvent wiring, fix patterns |
 | `docs/plans/2026-03-23-self-improving-engine.md` | Original design doc |
 | `docs/plans/2026-03-25-python-orchestrator.md` | Python orchestrator design doc |
 
 ## Debugging Self-Improvement
 
 Enable trace logging to see the self-improvement loop in action.
-`IRONCLAW_RECORD_TRACE=1` is the unified flag — it enables `RecordingLlm`,
+`BASTIONCLAW_RECORD_TRACE=1` is the unified flag — it enables `RecordingLlm`,
 which captures every LLM interaction into a shared `trace_*.json` fixture
 file. Engine v2 reuses the same provider chain, so its LLM calls are recorded
 through the same mechanism (no separate engine trace file):
 
 ```bash
-ENGINE_V2=true IRONCLAW_RECORD_TRACE=1 RUST_LOG=ironclaw_engine=debug cargo run
+ENGINE_V2=true BASTIONCLAW_RECORD_TRACE=1 RUST_LOG=bastionclaw_engine=debug cargo run
 ```
 
 Look for:

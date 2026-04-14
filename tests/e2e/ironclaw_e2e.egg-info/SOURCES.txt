@@ -1,10 +1,10 @@
 README.md
 pyproject.toml
-ironclaw_e2e.egg-info/PKG-INFO
-ironclaw_e2e.egg-info/SOURCES.txt
-ironclaw_e2e.egg-info/dependency_links.txt
-ironclaw_e2e.egg-info/requires.txt
-ironclaw_e2e.egg-info/top_level.txt
+bastionclaw_e2e.egg-info/PKG-INFO
+bastionclaw_e2e.egg-info/SOURCES.txt
+bastionclaw_e2e.egg-info/dependency_links.txt
+bastionclaw_e2e.egg-info/requires.txt
+bastionclaw_e2e.egg-info/top_level.txt
 scenarios/__init__.py
 scenarios/test_agent_loop_recovery.py
 scenarios/test_chat.py

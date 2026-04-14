@@ -1,7 +1,7 @@
 //! MCP server configuration.
 //!
 //! Stores configuration for connecting to hosted MCP servers.
-//! Configuration is persisted at ~/.ironclaw/mcp-servers.json.
+//! Configuration is persisted at ~/.bastionclaw/mcp-servers.json.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
-use crate::bootstrap::ironclaw_base_dir;
+use crate::bootstrap::bastionclaw_base_dir;
 use crate::tools::mcp::McpTool;
 use crate::tools::tool::ToolError;
 
@@ -522,7 +522,7 @@ pub async fn load_mcp_servers_ready(
 
 /// Get the default MCP servers configuration path.
 pub fn default_config_path() -> PathBuf {
-    ironclaw_base_dir().join("mcp-servers.json")
+    bastionclaw_base_dir().join("mcp-servers.json")
 }
 
 /// Load MCP server configurations from the default location.

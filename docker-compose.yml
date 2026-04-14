@@ -1,20 +1,59 @@
-# Local development only — do NOT use these credentials in production.
+# Local development stack.
+#
+# Default (no profile): starts Postgres only — use when running `cargo run` locally.
+#
+# Full stack (app profile):
+#   cp .env.example .env
+#   # Set GATEWAY_AUTH_TOKEN, SECRETS_MASTER_KEY, and your LLM key in .env
+#   docker compose --profile app up --build
+#
+# Gateway: http://127.0.0.1:3000
+# For production put Caddy/nginx in front for TLS; Postgres is never exposed externally.
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
     ports:
       - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_DB: ironclaw
-      POSTGRES_USER: ironclaw
-      POSTGRES_PASSWORD: ironclaw  # dev-only, change for any non-local deployment
+      POSTGRES_DB: bastionclaw
+      POSTGRES_USER: bastionclaw
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bastionclaw}  # dev-only; set POSTGRES_PASSWORD in .env for any real deployment
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ironclaw"]
+      test: ["CMD-SHELL", "pg_isready -U bastionclaw"]
       interval: 5s
       timeout: 3s
       retries: 5
 
+  bastionclaw:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Overrides: these take precedence over anything in .env
+      DATABASE_URL: postgres://bastionclaw:${POSTGRES_PASSWORD:-bastionclaw}@postgres:5432/bastionclaw
+      GATEWAY_ENABLED: "true"
+      GATEWAY_HOST: "0.0.0.0"
+      GATEWAY_PORT: "3000"
+      CLI_ENABLED: "false"
+      ONBOARD_COMPLETED: "true"
+      BASTIONCLAW_IN_DOCKER: "true"
+      # Multi-tenancy: set AGENT_MULTI_TENANT=true in .env to enable per-user isolation
+      AGENT_MULTI_TENANT: ${AGENT_MULTI_TENANT:-false}
+    volumes:
+      - bastionclaw_data:/home/bastionclaw/.bastionclaw
+
 volumes:
   pgdata:
+  bastionclaw_data:

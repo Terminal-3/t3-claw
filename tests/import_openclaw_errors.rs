@@ -14,8 +14,8 @@ mod error_handling_tests {
     use std::path::PathBuf;
     use tempfile::TempDir;
 
-    use ironclaw::import::ImportError;
-    use ironclaw::import::openclaw::reader::OpenClawReader;
+    use bastionclaw::import::ImportError;
+    use bastionclaw::import::openclaw::reader::OpenClawReader;
 
     // ────────────────────────────────────────────────────────────────────
     // Missing Directory Tests

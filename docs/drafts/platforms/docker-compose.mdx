@@ -4,31 +4,31 @@ sidebarTitle: Docker Compose
 description: Production Docker Compose deployment with PostgreSQL and volumes
 ---
 
-This page covers a production Docker Compose setup for IronClaw with PostgreSQL, named volumes, and health checks. Use this when you want a fully containerized, self-contained deployment that is easy to back up and migrate.
+This page covers a production Docker Compose setup for BastionClaw with PostgreSQL, named volumes, and health checks. Use this when you want a fully containerized, self-contained deployment that is easy to back up and migrate.
 
 <Note>
-This is for running IronClaw itself inside Docker Compose alongside PostgreSQL. This is separate from IronClaw's Docker sandbox feature, which launches containers for job isolation. Both can coexist — see the Docker-in-Docker section below.
+This is for running BastionClaw itself inside Docker Compose alongside PostgreSQL. This is separate from BastionClaw's Docker sandbox feature, which launches containers for job isolation. Both can coexist — see the Docker-in-Docker section below.
 </Note>
 
 ---
 
 ## docker-compose.yml
 
-Save this as `docker-compose.yml` in your deployment directory (e.g., `/opt/ironclaw/`):
+Save this as `docker-compose.yml` in your deployment directory (e.g., `/opt/bastionclaw/`):
 
 ```yaml
 version: "3.9"
 
 services:
-  ironclaw:
-    image: nearai/ironclaw:latest
-    container_name: ironclaw
+  bastionclaw:
+    image: nearai/bastionclaw:latest
+    container_name: bastionclaw
     restart: unless-stopped
     env_file:
       - .env
     volumes:
-      # Persistent IronClaw data (skills, installed extensions, workspace files)
-      - ironclaw_data:/home/ironclaw/.ironclaw
+      # Persistent BastionClaw data (skills, installed extensions, workspace files)
+      - bastionclaw_data:/home/bastionclaw/.bastionclaw
       # OPTIONAL: Docker socket for sandbox job execution (Docker-in-Docker sibling containers).
       # Enabling this grants the container control over the host Docker daemon; uncomment only if required.
       # - /var/run/docker.sock:/var/run/docker.sock
@@ -47,7 +47,7 @@ services:
       retries: 3
       start_period: 15s
     networks:
-      - ironclaw_net
+      - bastionclaw_net
     logging:
       driver: "json-file"
       options:
@@ -56,11 +56,11 @@ services:
 
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: ironclaw-postgres
+    container_name: bastionclaw-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ironclaw
-      POSTGRES_USER: ironclaw
+      POSTGRES_DB: bastionclaw
+      POSTGRES_USER: bastionclaw
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
@@ -69,13 +69,13 @@ services:
       # Only expose to internal network — never bind to host
       - "5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ironclaw -d ironclaw"]
+      test: ["CMD-SHELL", "pg_isready -U bastionclaw -d bastionclaw"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     networks:
-      - ironclaw_net
+      - bastionclaw_net
     logging:
       driver: "json-file"
       options:
@@ -83,13 +83,13 @@ services:
         max-file: "3"
 
 volumes:
-  ironclaw_data:
+  bastionclaw_data:
     driver: local
   postgres_data:
     driver: local
 
 networks:
-  ironclaw_net:
+  bastionclaw_net:
     driver: bridge
     internal: false  # Set to true if you want to block all external network access from containers
 ```
@@ -103,7 +103,7 @@ Create `.env` in the same directory as `docker-compose.yml`:
 ```bash
 # ─── Database ─────────────────────────────────────────────────────────────────
 DATABASE_BACKEND=postgres
-DATABASE_URL=postgres://ironclaw:change_this_to_a_strong_password@postgres:5432/ironclaw
+DATABASE_URL=postgres://bastionclaw:change_this_to_a_strong_password@postgres:5432/bastionclaw
 POSTGRES_PASSWORD=change_this_to_a_strong_password  # Must match password in DATABASE_URL
 
 # ─── LLM Provider ─────────────────────────────────────────────────────────────
@@ -132,7 +132,7 @@ EMBEDDING_MODEL=text-embedding-3-small
 
 # ─── Docker Sandbox ───────────────────────────────────────────────────────────
 SANDBOX_ENABLED=true
-SANDBOX_IMAGE=ironclaw-worker:latest
+SANDBOX_IMAGE=bastionclaw-worker:latest
 SANDBOX_MEMORY_LIMIT_MB=512
 SANDBOX_TIMEOUT_SECS=1800
 SANDBOX_CPU_LIMIT=1.0
@@ -154,7 +154,7 @@ HEARTBEAT_INTERVAL_SECS=1800
 HEARTBEAT_NOTIFY_CHANNEL=web
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
-RUST_LOG=ironclaw=info,tower_http=warn
+RUST_LOG=bastionclaw=info,tower_http=warn
 ```
 
 <Warning>
@@ -174,8 +174,8 @@ docker compose ps
 
 # Expected output:
 # NAME                STATUS          PORTS
-# ironclaw            running         127.0.0.1:3000->3000/tcp
-# ironclaw-postgres   running (healthy)
+# bastionclaw            running         127.0.0.1:3000->3000/tcp
+# bastionclaw-postgres   running (healthy)
 ```
 
 ---
@@ -186,14 +186,14 @@ docker compose ps
 # All services
 docker compose logs -f
 
-# IronClaw only
-docker compose logs -f ironclaw
+# BastionClaw only
+docker compose logs -f bastionclaw
 
 # Postgres only
 docker compose logs -f postgres
 
 # Last 100 lines
-docker compose logs --tail=100 ironclaw
+docker compose logs --tail=100 bastionclaw
 ```
 
 ---
@@ -204,8 +204,8 @@ docker compose logs --tail=100 ironclaw
 # Pull latest images
 docker compose pull
 
-# Recreate containers with new images (zero-downtime for postgres; brief downtime for ironclaw)
-docker compose up -d --no-deps ironclaw
+# Recreate containers with new images (zero-downtime for postgres; brief downtime for bastionclaw)
+docker compose up -d --no-deps bastionclaw
 
 # Or restart everything
 docker compose up -d
@@ -220,16 +220,16 @@ docker compose up -d
 ```bash
 # Dump to file
 docker compose exec postgres pg_dump \
-  -U ironclaw \
-  -d ironclaw \
+  -U bastionclaw \
+  -d bastionclaw \
   --format=custom \
   --compress=9 \
   > backup-$(date +%Y%m%d-%H%M%S).dump
 
 # Restore from dump
 docker compose exec -T postgres pg_restore \
-  -U ironclaw \
-  -d ironclaw \
+  -U bastionclaw \
+  -d bastionclaw \
   --clean \
   --if-exists \
   < backup-20240101-120000.dump
@@ -238,31 +238,31 @@ docker compose exec -T postgres pg_restore \
 ### Volume Backup
 
 ```bash
-# Discover the ironclaw_data volume name (project prefix may vary)
-# This picks the first volume whose name contains "ironclaw_data"
+# Discover the bastionclaw_data volume name (project prefix may vary)
+# This picks the first volume whose name contains "bastionclaw_data"
 
-VOLUME_NAME=$(docker volume ls -q --filter name='ironclaw_data' | head -n 1)
+VOLUME_NAME=$(docker volume ls -q --filter name='bastionclaw_data' | head -n 1)
 
-# Back up ironclaw_data volume (workspace, skills, config)
+# Back up bastionclaw_data volume (workspace, skills, config)
 docker run --rm \
   -v "${VOLUME_NAME}":/source:ro \
   -v "$(pwd)"/backups:/dest \
-  alpine tar czf /dest/ironclaw-data-$(date +%Y%m%d).tar.gz -C /source .
+  alpine tar czf /dest/bastionclaw-data-$(date +%Y%m%d).tar.gz -C /source .
   
 # Restore
 docker run --rm \
   -v "${VOLUME_NAME}":/dest \
   -v "$(pwd)"/backups:/source:ro \
-  alpine tar xzf /source/ironclaw-data-20240101.tar.gz -C /dest
+  alpine tar xzf /source/bastionclaw-data-20240101.tar.gz -C /dest
 ```
 
 ---
 
 ## Docker-in-Docker for Sandbox
 
-IronClaw can launch Docker sandbox containers even when running inside Docker itself. This works by mounting the host Docker socket (`/var/run/docker.sock`). The sandbox containers become siblings on the host, not children of the IronClaw container.
+BastionClaw can launch Docker sandbox containers even when running inside Docker itself. This works by mounting the host Docker socket (`/var/run/docker.sock`). The sandbox containers become siblings on the host, not children of the BastionClaw container.
 
-To enable this, add the following mount to your `docker-compose.yml` (inside the IronClaw service):
+To enable this, add the following mount to your `docker-compose.yml` (inside the BastionClaw service):
 
 ```yaml
 volumes:
@@ -270,7 +270,7 @@ volumes:
 ```
 
 <Warning>
-Mounting the Docker socket gives IronClaw the ability to create and manage containers on the host. This is equivalent to root access on the host system. Only mount the socket if you trust the IronClaw process and have configured `SANDBOX_ENABLED=true` intentionally.
+Mounting the Docker socket gives BastionClaw the ability to create and manage containers on the host. This is equivalent to root access on the host system. Only mount the socket if you trust the BastionClaw process and have configured `SANDBOX_ENABLED=true` intentionally.
 </Warning>
 
 ---

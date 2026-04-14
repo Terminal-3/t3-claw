@@ -12,15 +12,15 @@
 
 use std::sync::Arc;
 
-use ironclaw_engine::traits::store::Store;
-use ironclaw_engine::types::error::EngineError;
-use ironclaw_engine::types::memory::{DocType, MemoryDoc};
-use ironclaw_engine::types::project::ProjectId;
-use ironclaw_engine::types::shared_owner_id;
+use bastionclaw_engine::traits::store::Store;
+use bastionclaw_engine::types::error::EngineError;
+use bastionclaw_engine::types::memory::{DocType, MemoryDoc};
+use bastionclaw_engine::types::project::ProjectId;
+use bastionclaw_engine::types::shared_owner_id;
 
-use ironclaw_skills::SkillRegistry;
-use ironclaw_skills::types::{LoadedSkill, SkillSource};
-use ironclaw_skills::v2::{SkillMetrics, V2SkillMetadata, V2SkillSource};
+use bastionclaw_skills::SkillRegistry;
+use bastionclaw_skills::types::{LoadedSkill, SkillSource};
+use bastionclaw_skills::v2::{SkillMetrics, V2SkillMetadata, V2SkillSource};
 
 /// Migrate v1 skills to v2 MemoryDocs.
 ///
@@ -130,7 +130,7 @@ fn v1_skill_to_memory_doc(skill: &LoadedSkill, project_id: ProjectId) -> MemoryD
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ironclaw_skills::types::{ActivationCriteria, SkillManifest, SkillTrust};
+    use bastionclaw_skills::types::{ActivationCriteria, SkillManifest, SkillTrust};
     use std::path::PathBuf;
 
     fn make_v1_skill(name: &str, content: &str) -> LoadedSkill {
@@ -144,12 +144,12 @@ mod tests {
                     ..Default::default()
                 },
                 credentials: vec![],
-                requires: ironclaw_skills::GatingRequirements::default(),
+                requires: bastionclaw_skills::GatingRequirements::default(),
             },
             prompt_content: content.to_string(),
             trust: SkillTrust::Trusted,
             source: SkillSource::User(PathBuf::from("/tmp/test")), // safety: dummy path in test, not used for I/O
-            content_hash: ironclaw_skills::compute_hash(content),
+            content_hash: bastionclaw_skills::compute_hash(content),
             compiled_patterns: vec![],
             lowercased_keywords: vec!["test".to_string()],
             lowercased_exclude_keywords: vec![],

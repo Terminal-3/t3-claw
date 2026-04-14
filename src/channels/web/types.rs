@@ -142,9 +142,9 @@ pub struct GateResolveRequest {
     pub resolution: GateResolutionPayload,
 }
 
-// --- App Event (re-exported from ironclaw_common) ---
+// --- App Event (re-exported from bastionclaw_common) ---
 
-pub use ironclaw_common::{AppEvent, ToolDecisionDto};
+pub use bastionclaw_common::{AppEvent, ToolDecisionDto};
 
 // --- Admin System Prompt ---
 

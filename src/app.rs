@@ -1,4 +1,4 @@
-//! Application builder for initializing core IronClaw components.
+//! Application builder for initializing core BastionClaw components.
 //!
 //! Extracts the mechanical initialization phases from `main.rs` into a
 //! reusable builder so that:
@@ -24,9 +24,9 @@ use crate::tools::mcp::{McpProcessManager, McpSessionManager};
 use crate::tools::wasm::SharedCredentialRegistry;
 use crate::tools::wasm::WasmToolRuntime;
 use crate::workspace::{EmbeddingCacheConfig, EmbeddingProvider, Workspace};
-use ironclaw_safety::SafetyLayer;
-use ironclaw_skills::SkillRegistry;
-use ironclaw_skills::catalog::SkillCatalog;
+use bastionclaw_safety::SafetyLayer;
+use bastionclaw_skills::SkillRegistry;
+use bastionclaw_skills::catalog::SkillCatalog;
 
 /// Fully initialized application components, ready for channel wiring
 /// and agent construction.
@@ -376,7 +376,7 @@ impl AppBuilder {
             registry = registry.with_credentials(Arc::clone(&credential_registry), Arc::clone(ss));
         }
         // Test-only HTTP host remapping. Gated to debug/test builds so a stray
-        // `IRONCLAW_TEST_HTTP_REMAP` env var on a release deployment cannot
+        // `BASTIONCLAW_TEST_HTTP_REMAP` env var on a release deployment cannot
         // silently redirect outbound HTTP from production to a test endpoint.
         let http_interceptor = if cfg!(any(test, debug_assertions)) {
             crate::http_intercept::remap_from_env()
@@ -724,7 +724,7 @@ impl AppBuilder {
                                             } else {
                                                 tracing::warn!(
                                                     "MCP server '{}' requires authentication. \
-                                                     Run: ironclaw mcp auth {}",
+                                                     Run: bastionclaw mcp auth {}",
                                                     server_name,
                                                     server_name
                                                 );
@@ -1062,7 +1062,7 @@ impl AppBuilder {
             }
 
             let registry = Arc::new(std::sync::RwLock::new(registry));
-            let catalog = ironclaw_skills::catalog::shared_catalog();
+            let catalog = bastionclaw_skills::catalog::shared_catalog();
             tools.register_skill_tools(Arc::clone(&registry), Arc::clone(&catalog));
             (Some(registry), Some(catalog))
         } else {

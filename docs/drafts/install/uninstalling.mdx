@@ -1,20 +1,20 @@
 ---
-title: Uninstalling IronClaw
+title: Uninstalling BastionClaw
 sidebarTitle: Uninstalling
-description: Completely remove IronClaw from your system
+description: Completely remove BastionClaw from your system
 ---
 
-How to completely remove IronClaw from your system.
+How to completely remove BastionClaw from your system.
 
-## Stop IronClaw
+## Stop BastionClaw
 
 ```bash
 # If running in terminal
 Ctrl+C
 
 # If running as a service
-sudo systemctl stop ironclaw   # systemd
-brew services stop ironclaw    # Homebrew
+sudo systemctl stop bastionclaw   # systemd
+brew services stop bastionclaw    # Homebrew
 ```
 
 ## Remove Binary
@@ -23,35 +23,35 @@ brew services stop ironclaw    # Homebrew
   <Tab title="Linux/macOS">
     ```bash
     # Remove binary
-    rm ~/.local/bin/ironclaw
+    rm ~/.local/bin/bastionclaw
 
     # Or if installed system-wide
-    sudo rm /usr/local/bin/ironclaw
+    sudo rm /usr/local/bin/bastionclaw
     ```
   </Tab>
 
   <Tab title="Ubuntu/Debian (APT)">
     ```bash
-    sudo apt remove ironclaw
+    sudo apt remove bastionclaw
     sudo apt autoremove
     ```
   </Tab>
 
   <Tab title="macOS (Homebrew)">
     ```bash
-    brew uninstall ironclaw
-    brew untap ironclaw-ai/tap
+    brew uninstall bastionclaw
+    brew untap bastionclaw-ai/tap
     ```
   </Tab>
 
   <Tab title="Docker">
     ```bash
     # Stop and remove container
-    docker stop ironclaw
-    docker rm ironclaw
+    docker stop bastionclaw
+    docker rm bastionclaw
 
     # Remove image
-    docker rmi nearai/ironclaw:latest
+    docker rmi nearai/bastionclaw:latest
     ```
   </Tab>
 </Tabs>
@@ -59,22 +59,22 @@ brew services stop ironclaw    # Homebrew
 ## Remove Data
 
 <Warning>
-This permanently deletes all IronClaw data including conversations, memory, and settings. This cannot be undone.
+This permanently deletes all BastionClaw data including conversations, memory, and settings. This cannot be undone.
 </Warning>
 
 ```bash
 # Remove data directory
-rm -rf ~/.ironclaw
+rm -rf ~/.bastionclaw
 
 # Remove service files
-sudo rm -f /etc/systemd/system/ironclaw.service
+sudo rm -f /etc/systemd/system/bastionclaw.service
 sudo systemctl daemon-reload
 
 # Remove launchd service (macOS)
-rm -f ~/Library/LaunchAgents/ai.ironclaw.service.plist
+rm -f ~/Library/LaunchAgents/ai.bastionclaw.service.plist
 
 # Remove logs
-sudo rm -rf /var/log/ironclaw
+sudo rm -rf /var/log/bastionclaw
 ```
 
 ## Remove PostgreSQL Database
@@ -84,8 +84,8 @@ If you used PostgreSQL:
 ```bash
 # Remove database (optional)
 sudo -u postgres psql <<EOF
-DROP DATABASE ironclaw;
-DROP USER ironclaw;
+DROP DATABASE bastionclaw;
+DROP USER bastionclaw;
 EOF
 ```
 
@@ -93,16 +93,16 @@ EOF
 
 ```bash
 # Check binary removed
-which ironclaw
+which bastionclaw
 # Should return nothing
 
 # Check data removed
-ls -la ~/.ironclaw
+ls -la ~/.bastionclaw
 # Should return: No such file or directory
 
 # Check service removed
-sudo systemctl status ironclaw
-# Should return: Unit ironclaw.service could not be found
+sudo systemctl status bastionclaw
+# Should return: Unit bastionclaw.service could not be found
 ```
 
 ## Partial Removal
@@ -111,13 +111,13 @@ To keep your data but remove the binary:
 
 ```bash
 # Just remove binary
-rm ~/.local/bin/ironclaw
+rm ~/.local/bin/bastionclaw
 
-# Data remains at ~/.ironclaw/
+# Data remains at ~/.bastionclaw/
 # Reinstall later and your data will be intact
 ```
 
 ## Next Steps
 
-- [Install IronClaw](/install) again if needed
-- Your data can be restored if you kept `~/.ironclaw/`
+- [Install BastionClaw](/install) again if needed
+- Your data can be restored if you kept `~/.bastionclaw/`

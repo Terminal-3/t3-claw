@@ -3,7 +3,7 @@ title: "Setup a Tunnel"
 description: "Expose your local agent to the internet"
 ---
 
-A tunnel exposes your local IronClaw agent to the internet. You need it for webhook-based channels and for instant message delivery where polling is not desired.
+A tunnel exposes your local BastionClaw agent to the internet. You need it for webhook-based channels and for instant message delivery where polling is not desired.
 
 <Note>
 If you haven't set up your agent yet, follow our [Quickstart guide](./quickstart)
@@ -16,12 +16,12 @@ If you haven't set up your agent yet, follow our [Quickstart guide](./quickstart
 Configure a tunnel through the onboarding command:
 
 ```bash
-ironclaw onboard --channels-only
+bastionclaw onboard --channels-only
 ```
 
 ### ngrok
 
-`ngrok` is a managed tunnel service with a minimal setup, ideal if you are just starting with `ironclaw`. To use it, you will need to get an auth token from the [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)
+`ngrok` is a managed tunnel service with a minimal setup, ideal if you are just starting with `bastionclaw`. To use it, you will need to get an auth token from the [ngrok dashboard](https://dashboard.ngrok.com/get-started/your-authtoken)
 
 ### Cloudflare
 
@@ -64,8 +64,8 @@ Use this option when you want full control over the tunnel command and process.
 
 Provide a shell command with placeholders:
 
-- `{port}` for IronClaw's local port
-- `{host}` for IronClaw's local host
+- `{port}` for BastionClaw's local port
+- `{host}` for BastionClaw's local host
 
 Example:
 
@@ -75,9 +75,9 @@ bore local {port} --to bore.pub
 
 ### Static URL
 
-Use this option when the tunnel is managed outside IronClaw and you already have a stable public URL.
+Use this option when the tunnel is managed outside BastionClaw and you already have a stable public URL.
 
-IronClaw will use that URL directly and will not start or manage any tunnel process.
+BastionClaw will use that URL directly and will not start or manage any tunnel process.
 
 ---
 

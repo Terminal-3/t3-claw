@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "almond",
-  "name": "IronClaw",
+  "name": "BastionClaw",
   "colors": {
     "primary": "#1191f0",
     "light": "#1191f0",
@@ -16,7 +16,7 @@
     "links": [
       {
         "label": "Get Support",
-        "href": "https://t.me/ironclawAI"
+        "href": "https://t.me/bastionclawAI"
       }
     ],
     "primary": {
@@ -133,7 +133,7 @@
                   "extensions/building-a-tool",
                   "channels/building-a-channel",
                   {
-                    "group": "How to host IronClaw on...",
+                    "group": "How to host BastionClaw on...",
                     "pages": [
                       "infrastructure/droplet",
                       "infrastructure/amazon"
@@ -151,7 +151,7 @@
           "links": [
             {
               "label": "支持",
-              "href": "https://t.me/ironclawAI"
+              "href": "https://t.me/bastionclawAI"
             }
           ],
           "primary": {
@@ -261,7 +261,7 @@
                 "pages": [
                   "zh/extensions/building-a-tool",
                   {
-                    "group": "在以下平台托管 IronClaw",
+                    "group": "在以下平台托管 BastionClaw",
                     "pages": [
                       "zh/infrastructure/droplet",
                       "zh/infrastructure/amazon"

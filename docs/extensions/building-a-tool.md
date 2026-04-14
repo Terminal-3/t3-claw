@@ -11,7 +11,7 @@ By the end you will have a working tool your agent can call like this:
 
 The complete source code for this tool is available on GitHub:
 
-<Card title="weather-tool source" icon="github" href="https://github.com/matiasbenary/ironclaw/tree/tools/weather/tools-src/weather">
+<Card title="weather-tool source" icon="github" href="https://github.com/matiasbenary/bastionclaw/tree/tools/weather/tools-src/weather">
   Browse the full implementation — `lib.rs`, `Cargo.toml`, and `weather-tool.capabilities.json`.
 </Card>
 
@@ -47,7 +47,7 @@ Replace the generated `Cargo.toml` with:
 name = "weather-tool"
 version = "0.1.0"
 edition = "2021"
-description = "Weather information tool for IronClaw (WASM component)"
+description = "Weather information tool for BastionClaw (WASM component)"
 
 [lib]
 crate-type = ["cdylib"]
@@ -74,7 +74,7 @@ codegen-units = 1
 
 ## 2. Wire up the WIT interface
 
-Every IronClaw tool is a WASM component that implements a WIT interface. The host provides HTTP, logging, and workspace capabilities; your tool exports `execute`, `schema`, and `description`.
+Every BastionClaw tool is a WASM component that implements a WIT interface. The host provides HTTP, logging, and workspace capabilities; your tool exports `execute`, `schema`, and `description`.
 
 Replace `src/lib.rs` with the following skeleton:
 
@@ -121,7 +121,7 @@ export!(WeatherTool);
 `execute_inner` is where the real logic lives — you will fill it in next.
 
 <Note>
-The `wit/tool.wit` file ships with IronClaw. If you are building inside the IronClaw repo (e.g. under `tools-src/my-tool/`), the path `../../wit/tool.wit` is correct. If you are building in a standalone directory, copy `wit/tool.wit` from the repo root and adjust the path accordingly.
+The `wit/tool.wit` file ships with BastionClaw. If you are building inside the BastionClaw repo (e.g. under `tools-src/my-tool/`), the path `../../wit/tool.wit` is correct. If you are building in a standalone directory, copy `wit/tool.wit` from the repo root and adjust the path accordingly.
 </Note>
 
 <Note>
@@ -194,7 +194,7 @@ You can still check for the presence of secrets if you want to return a custom e
 
 ```rust
 if !near::agent::host::secret_exists("example_api_token") {
-        return Err("Missing secret: example_api_token. Run: ironclaw tool auth <tool-name>".into());
+        return Err("Missing secret: example_api_token. Run: bastionclaw tool auth <tool-name>".into());
 }
 ```
 
@@ -252,7 +252,7 @@ fn geocode(city: &str, country_code: Option<&str>) -> Result<GeoResult, String> 
 }
 ```
 
-`near::agent::host::log` emits a structured log line visible in `ironclaw` output. The host collects all log entries and flushes them after the call completes.
+`near::agent::host::log` emits a structured log line visible in `bastionclaw` output. The host collects all log entries and flushes them after the call completes.
 
 ### API helper
 
@@ -260,7 +260,7 @@ fn geocode(city: &str, country_code: Option<&str>) -> Result<GeoResult, String> 
 fn api_get(url: &str) -> Result<String, String> {
     let headers = serde_json::json!({
         "Accept": "application/json",
-        "User-Agent": "IronClaw-Weather-Tool/0.1"
+        "User-Agent": "BastionClaw-Weather-Tool/0.1"
     }).to_string();
 
     let resp = near::agent::host::http_request("GET", url, &headers, None, None)
@@ -541,9 +541,9 @@ The weather tool needs three hosts because `get_current` and `get_forecast` make
 
 ## 7. Add secrets and auth (for tools that need credentials)
 
-This weather tool uses Open-Meteo, so it does not need a secret. If your tool calls an API that needs a token, declare that in the capabilities file so IronClaw can inject it at request time.
+This weather tool uses Open-Meteo, so it does not need a secret. If your tool calls an API that needs a token, declare that in the capabilities file so BastionClaw can inject it at request time.
 
-Example capability sections (pattern used in `tools-src/*` on the IronClaw repo):
+Example capability sections (pattern used in `tools-src/*` on the BastionClaw repo):
 
 ```json weather-tool.capabilities.json
 {
@@ -581,12 +581,12 @@ How this works:
 
 - `http.credentials` maps a stored secret to where it should be injected (`bearer`, custom header, query param, or URL placeholder).
 - `secrets.allowed_names` lets the tool check secret presence with `near::agent::host::secret_exists(...)`.
-- `auth` tells IronClaw how to collect credentials.
+- `auth` tells BastionClaw how to collect credentials.
 
 After installing the tool, run auth once:
 
 ```bash
-ironclaw tool auth <tool-name>
+bastionclaw tool auth <tool-name>
 ```
 
 Auth flow priority is:
@@ -598,7 +598,7 @@ Auth flow priority is:
 If your capabilities include `setup.required_secrets` (for example OAuth client id/client secret fields), run setup as well:
 
 ```bash
-ironclaw tool setup <tool-name>
+bastionclaw tool setup <tool-name>
 ```
 
 This keeps credentials outside agent-visible prompts and lets the host inject them only where allowlisted.
@@ -612,7 +612,7 @@ cargo build --target wasm32-wasip2 --release
 ```
 
 ```bash
-ironclaw tool install ./target/wasm32-wasip2/release/weather_tool.wasm \
+bastionclaw tool install ./target/wasm32-wasip2/release/weather_tool.wasm \
   --capabilities ./weather-tool.capabilities.json \
   --name weather-tool
 ```
@@ -620,26 +620,26 @@ ironclaw tool install ./target/wasm32-wasip2/release/weather_tool.wasm \
 Verify it loaded:
 
 ```bash
-ironclaw tool list
+bastionclaw tool list
 ```
 
 If your tool defines secret variables, authenticate now:
 
 ```bash
-ironclaw tool auth <tool-name>
+bastionclaw tool auth <tool-name>
 ```
 
 If your tool defines `setup.required_secrets`, run:
 
 ```bash
-ironclaw tool setup <tool-name>
+bastionclaw tool setup <tool-name>
 ```
 
 ---
 
 ## Try it out
 
-Start IronClaw and ask your agent:
+Start BastionClaw and ask your agent:
 
 - "What's the weather in Buenos Aires?"
 - "Give me a 5-day forecast for London, GB in imperial units."

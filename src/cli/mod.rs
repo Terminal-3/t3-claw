@@ -64,12 +64,12 @@ use std::sync::Arc;
 use clap::{ColorChoice, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
-#[command(name = "ironclaw")]
+#[command(name = "bastionclaw")]
 #[command(
     about = "Secure personal AI assistant that protects your data and expands its capabilities"
 )]
 #[command(
-    long_about = "IronClaw is a secure AI assistant. Use 'ironclaw <subcommand> --help' for details.\nExamples:\n  ironclaw run  # Start the agent\n  ironclaw config list  # List configs"
+    long_about = "BastionClaw is a secure AI assistant. Use 'bastionclaw <subcommand> --help' for details.\nExamples:\n  bastionclaw run  # Start the agent\n  bastionclaw config list  # List configs"
 )]
 #[command(version)]
 #[command(color = ColorChoice::Auto)] // Enable auto-color for help (if the terminal supports it)
@@ -111,14 +111,14 @@ pub enum Command {
     /// Run the agent (default if no subcommand given)
     #[command(
         about = "Run the AI agent",
-        long_about = "Starts the IronClaw agent in default mode.\nExample: ironclaw run"
+        long_about = "Starts the BastionClaw agent in default mode.\nExample: bastionclaw run"
     )]
     Run,
 
     /// Interactive onboarding wizard
     #[command(
         about = "Run interactive setup wizard",
-        long_about = "Guides through initial configuration.\nExamples:\n  ironclaw onboard --skip-auth  # Skip auth step\n  ironclaw onboard --channels-only  # Reconfigure channels\n  ironclaw onboard --provider-only  # Change LLM provider and model"
+        long_about = "Guides through initial configuration.\nExamples:\n  bastionclaw onboard --skip-auth  # Skip auth step\n  bastionclaw onboard --channels-only  # Reconfigure channels\n  bastionclaw onboard --provider-only  # Change LLM provider and model"
     )]
     Onboard {
         /// Skip authentication (use existing session)
@@ -146,7 +146,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage app configs",
-        long_about = "Commands for listing, getting, and setting configurations.\nExample: ironclaw config list"
+        long_about = "Commands for listing, getting, and setting configurations.\nExample: bastionclaw config list"
     )]
     Config(ConfigCommand),
 
@@ -154,7 +154,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage WASM tools",
-        long_about = "Install, list, or remove WASM-based tools.\nExample: ironclaw tool install mytool.wasm"
+        long_about = "Install, list, or remove WASM-based tools.\nExample: bastionclaw tool install mytool.wasm"
     )]
     Tool(ToolCommand),
 
@@ -162,7 +162,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Browse/install extensions",
-        long_about = "Interact with extension registry.\nExample: ironclaw registry list"
+        long_about = "Interact with extension registry.\nExample: bastionclaw registry list"
     )]
     Registry(RegistryCommand),
 
@@ -170,7 +170,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage channels",
-        long_about = "List configured messaging channels.\nExamples:\n  ironclaw channels list\n  ironclaw channels list --verbose\n  ironclaw channels list --json"
+        long_about = "List configured messaging channels.\nExamples:\n  bastionclaw channels list\n  bastionclaw channels list --verbose\n  bastionclaw channels list --json"
     )]
     Channels(ChannelsCommand),
 
@@ -179,7 +179,7 @@ pub enum Command {
         subcommand,
         alias = "cron",
         about = "Manage routines",
-        long_about = "List, create, edit, enable/disable, delete, and view history of routines.\nExamples:\n  ironclaw routines list\n  ironclaw routines create --name daily-digest --schedule '0 0 9 * * *' --prompt 'Summarize today'"
+        long_about = "List, create, edit, enable/disable, delete, and view history of routines.\nExamples:\n  bastionclaw routines list\n  bastionclaw routines create --name daily-digest --schedule '0 0 9 * * *' --prompt 'Summarize today'"
     )]
     Routines(RoutinesCommand),
 
@@ -187,7 +187,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage MCP servers",
-        long_about = "Add, auth, list, or test MCP servers.\nExample: ironclaw mcp add notion https://mcp.notion.com"
+        long_about = "Add, auth, list, or test MCP servers.\nExample: bastionclaw mcp add notion https://mcp.notion.com"
     )]
     Mcp(Box<McpCommand>),
 
@@ -195,7 +195,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage workspace memory",
-        long_about = "Search, read, or write to memory.\nExample: ironclaw memory search 'query'"
+        long_about = "Search, read, or write to memory.\nExample: bastionclaw memory search 'query'"
     )]
     Memory(MemoryCommand),
 
@@ -203,7 +203,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage DM pairing",
-        long_about = "Approve or manage pairing requests.\nExamples:\n  ironclaw pairing list telegram\n  ironclaw pairing approve telegram ABC12345"
+        long_about = "Approve or manage pairing requests.\nExamples:\n  bastionclaw pairing list telegram\n  bastionclaw pairing approve telegram ABC12345"
     )]
     Pairing(PairingCommand),
 
@@ -211,7 +211,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage deployment profiles",
-        long_about = "List available deployment profiles and see which is active.\nExamples:\n  ironclaw profile list\n  ironclaw profile list --json"
+        long_about = "List available deployment profiles and see which is active.\nExamples:\n  bastionclaw profile list\n  bastionclaw profile list --json"
     )]
     Profile(ProfileCommand),
 
@@ -219,7 +219,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage OS service",
-        long_about = "Install, start, or stop service.\nExample: ironclaw service install"
+        long_about = "Install, start, or stop service.\nExample: bastionclaw service install"
     )]
     Service(ServiceCommand),
 
@@ -227,7 +227,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage skills",
-        long_about = "List, search, and inspect SKILL.md-based skills.\nExamples:\n  ironclaw skills list\n  ironclaw skills search 'writing'\n  ironclaw skills info my-skill"
+        long_about = "List, search, and inspect SKILL.md-based skills.\nExamples:\n  bastionclaw skills list\n  bastionclaw skills search 'writing'\n  bastionclaw skills info my-skill"
     )]
     Skills(SkillsCommand),
 
@@ -235,7 +235,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage lifecycle hooks",
-        long_about = "List and inspect lifecycle hooks (bundled, plugin, workspace).\nExamples:\n  ironclaw hooks list\n  ironclaw hooks list --verbose\n  ironclaw hooks list --json"
+        long_about = "List and inspect lifecycle hooks (bundled, plugin, workspace).\nExamples:\n  bastionclaw hooks list\n  bastionclaw hooks list --verbose\n  bastionclaw hooks list --json"
     )]
     Hooks(HooksCommand),
 
@@ -243,35 +243,35 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage LLM providers and models",
-        long_about = "List providers, view current configuration, and set active provider/model.\nExamples:\n  ironclaw models list\n  ironclaw models list openai --verbose\n  ironclaw models status\n  ironclaw models set gpt-4o\n  ironclaw models set-provider anthropic --model claude-sonnet-4-6-20250514"
+        long_about = "List providers, view current configuration, and set active provider/model.\nExamples:\n  bastionclaw models list\n  bastionclaw models list openai --verbose\n  bastionclaw models status\n  bastionclaw models set gpt-4o\n  bastionclaw models set-provider anthropic --model claude-sonnet-4-6-20250514"
     )]
     Models(ModelsCommand),
 
     /// Probe external dependencies and validate configuration
     #[command(
         about = "Run diagnostics",
-        long_about = "Checks dependencies and config validity.\nExample: ironclaw doctor"
+        long_about = "Checks dependencies and config validity.\nExample: bastionclaw doctor"
     )]
     Doctor,
 
     /// View and manage gateway logs
     #[command(
         about = "View and manage gateway logs",
-        long_about = "Tail gateway logs, stream live output, or adjust log level.\nExamples:\n  ironclaw logs                 # Show last 200 lines from gateway.log\n  ironclaw logs --follow        # Stream live logs via SSE\n  ironclaw logs --level         # Show current log level\n  ironclaw logs --level debug   # Set log level to debug"
+        long_about = "Tail gateway logs, stream live output, or adjust log level.\nExamples:\n  bastionclaw logs                 # Show last 200 lines from gateway.log\n  bastionclaw logs --follow        # Stream live logs via SSE\n  bastionclaw logs --level         # Show current log level\n  bastionclaw logs --level debug   # Set log level to debug"
     )]
     Logs(LogsCommand),
 
     /// Show system health and diagnostics
     #[command(
         about = "Show system status",
-        long_about = "Displays health and diagnostics info.\nExample: ironclaw status"
+        long_about = "Displays health and diagnostics info.\nExample: bastionclaw status"
     )]
     Status,
 
     /// Generate shell completion scripts
     #[command(
         about = "Generate completions",
-        long_about = "Generates shell completion scripts.\nExample: ironclaw completion --shell bash > ironclaw.bash"
+        long_about = "Generates shell completion scripts.\nExample: bastionclaw completion --shell bash > bastionclaw.bash"
     )]
     Completion(Completion),
 
@@ -280,14 +280,14 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Import from other AI systems",
-        long_about = "Migrate data from other AI assistants like OpenClaw.\nExample: ironclaw import openclaw"
+        long_about = "Migrate data from other AI assistants like OpenClaw.\nExample: bastionclaw import openclaw"
     )]
     Import(ImportCommand),
 
     /// Authenticate with a provider (re-login)
     #[command(
         about = "Authenticate with a provider",
-        long_about = "Re-authenticate with an LLM provider.\nExample: ironclaw login --openai-codex"
+        long_about = "Re-authenticate with an LLM provider.\nExample: bastionclaw login --openai-codex"
     )]
     Login {
         /// Authenticate with OpenAI Codex (ChatGPT subscription)
@@ -308,7 +308,7 @@ pub enum Command {
         orchestrator_url: String,
 
         /// Maximum iterations before stopping.
-        #[arg(long, env = "IRONCLAW_MAX_ITERATIONS", default_value = "50")]
+        #[arg(long, env = "BASTIONCLAW_MAX_ITERATIONS", default_value = "50")]
         max_iterations: u32,
     },
 
@@ -316,7 +316,7 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage ACP agents",
-        long_about = "Add, list, remove, or test ACP-compliant coding agents.\nExample: ironclaw acp add goose --command goose --arg \"--stdio\""
+        long_about = "Add, list, remove, or test ACP-compliant coding agents.\nExample: bastionclaw acp add goose --command goose --arg \"--stdio\""
     )]
     Acp(AcpCommand),
 
@@ -371,7 +371,7 @@ pub async fn init_secrets_store()
     let config = crate::config::Config::from_env().await?;
     let master_key = config.secrets.master_key().ok_or_else(|| {
         anyhow::anyhow!(
-            "SECRETS_MASTER_KEY not set. Run 'ironclaw onboard' first or set it in .env"
+            "SECRETS_MASTER_KEY not set. Run 'bastionclaw onboard' first or set it in .env"
         )
     })?;
 

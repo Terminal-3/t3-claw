@@ -3,7 +3,7 @@
 //! Spawns any ACP-compliant agent (Goose, Codex, Gemini CLI, etc.) as a
 //! subprocess inside a Docker container and communicates via the standard
 //! ACP protocol (JSON-RPC over stdio). Agent output is translated into
-//! IronClaw's `JobEventPayload` stream and posted to the orchestrator.
+//! BastionClaw's `JobEventPayload` stream and posted to the orchestrator.
 //!
 //! Security model: the Docker container is the primary security boundary
 //! (cap-drop ALL, non-root user, memory limits, network isolation).
@@ -13,7 +13,7 @@
 //! ┌──────────────────────────────────────────────┐
 //! │ Docker Container                              │
 //! │                                               │
-//! │  ironclaw acp-bridge --job-id <uuid>          │
+//! │  bastionclaw acp-bridge --job-id <uuid>          │
 //! │    └─ spawns ACP agent subprocess             │
 //! │    └─ ACP handshake (initialize + session)    │
 //! │    └─ sends job description via prompt()      │
@@ -59,7 +59,7 @@ pub struct AcpBridgeRuntime {
 impl AcpBridgeRuntime {
     /// Create a new bridge runtime.
     ///
-    /// Reads `IRONCLAW_WORKER_TOKEN` from the environment for auth.
+    /// Reads `BASTIONCLAW_WORKER_TOKEN` from the environment for auth.
     pub fn new(config: AcpBridgeConfig) -> Result<Self, WorkerError> {
         let client = Arc::new(WorkerHttpClient::from_env(
             config.orchestrator_url.clone(),
@@ -209,15 +209,15 @@ impl AcpBridgeRuntime {
                 let incoming = child_stdout.compat();
 
                 // Create ACP connection
-                let ironclaw_client = IronClawAcpClient::new(Arc::clone(&client_for_acp));
+                let bastionclaw_client = BastionClawAcpClient::new(Arc::clone(&client_for_acp));
 
                 let (conn, handle_io) =
-                    acp::ClientSideConnection::new(ironclaw_client, outgoing, incoming, |fut| {
+                    acp::ClientSideConnection::new(bastionclaw_client, outgoing, incoming, |fut| {
                         tokio::task::spawn_local(fut);
                     });
                 tokio::task::spawn_local(handle_io);
 
-                conn.initialize(ironclaw_init_request())
+                conn.initialize(bastionclaw_init_request())
                     .await
                     .map_err(|e| WorkerError::ExecutionFailed {
                         reason: format!("ACP initialize failed: {}", e),
@@ -301,7 +301,7 @@ impl AcpBridgeRuntime {
 /// Sink for ACP events translated from session notifications.
 ///
 /// The bridge posts events to the orchestrator via HTTP; the CLI test
-/// command prints them to stdout. Both share the same `IronClawAcpClient`.
+/// command prints them to stdout. Both share the same `BastionClawAcpClient`.
 pub(crate) trait AcpEventSink: 'static {
     fn emit_event(&self, payload: &JobEventPayload) -> impl std::future::Future<Output = ()>;
 }
@@ -334,23 +334,23 @@ trait AcpPromptSender {
     ) -> impl std::future::Future<Output = acp::Result<acp::PromptResponse>>;
 }
 
-/// IronClaw's implementation of the ACP Client trait.
+/// BastionClaw's implementation of the ACP Client trait.
 ///
 /// Handles callbacks from the agent: session notifications (streaming output)
 /// and permission requests (auto-approved). Generic over the event sink so
 /// both the container bridge and CLI test command can reuse it.
-pub(crate) struct IronClawAcpClient<S: AcpEventSink> {
+pub(crate) struct BastionClawAcpClient<S: AcpEventSink> {
     sink: S,
 }
 
-impl<S: AcpEventSink> IronClawAcpClient<S> {
+impl<S: AcpEventSink> BastionClawAcpClient<S> {
     pub(crate) fn new(sink: S) -> Self {
         Self { sink }
     }
 }
 
 #[async_trait::async_trait(?Send)]
-impl<S: AcpEventSink> acp::Client for IronClawAcpClient<S> {
+impl<S: AcpEventSink> acp::Client for BastionClawAcpClient<S> {
     async fn request_permission(
         &self,
         args: acp::RequestPermissionRequest,
@@ -374,10 +374,10 @@ impl<S: AcpEventSink> acp::Client for IronClawAcpClient<S> {
     }
 }
 
-/// Build the standard IronClaw ACP initialization request.
-pub(crate) fn ironclaw_init_request() -> acp::InitializeRequest {
+/// Build the standard BastionClaw ACP initialization request.
+pub(crate) fn bastionclaw_init_request() -> acp::InitializeRequest {
     acp::InitializeRequest::new(acp::ProtocolVersion::V1).client_info(
-        acp::Implementation::new("ironclaw", env!("CARGO_PKG_VERSION")).title("IronClaw"),
+        acp::Implementation::new("bastionclaw", env!("CARGO_PKG_VERSION")).title("BastionClaw"),
     )
 }
 
@@ -533,7 +533,7 @@ async fn run_follow_up_loop(
 
 // ==================== Event translation ====================
 
-/// Convert an ACP `SessionUpdate` into an IronClaw `JobEventPayload`.
+/// Convert an ACP `SessionUpdate` into an BastionClaw `JobEventPayload`.
 fn session_update_to_payload(update: &acp::SessionUpdate) -> Option<JobEventPayload> {
     match update {
         acp::SessionUpdate::AgentMessageChunk(chunk) => text_from_content_block(&chunk.content)

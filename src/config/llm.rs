@@ -3,7 +3,7 @@ use std::sync::Once;
 
 use secrecy::SecretString;
 
-use crate::bootstrap::ironclaw_base_dir;
+use crate::bootstrap::bastionclaw_base_dir;
 use crate::config::helpers::{
     db_first_bool, db_first_or_default, optional_env, parse_optional_env, validate_base_url,
     validate_operator_base_url,
@@ -29,7 +29,7 @@ impl LlmConfig {
             backend: "nearai".to_string(),
             session: SessionConfig {
                 auth_base_url: "http://localhost:0".to_string(),
-                session_path: std::env::temp_dir().join("ironclaw-test-session.json"),
+                session_path: std::env::temp_dir().join("bastionclaw-test-session.json"),
             },
             nearai: NearAiConfig {
                 model: "test-model".to_string(),
@@ -94,7 +94,7 @@ impl LlmConfig {
         });
         // Warn operators when a DB-persisted value silently overrides LLM_BACKEND.
         // Skip the warning when both values are identical — this is the normal
-        // state after `ironclaw models set-provider`, which intentionally writes
+        // state after `bastionclaw models set-provider`, which intentionally writes
         // to both config.toml and .env for immediate effect.
         if backend_source == "db:llm_backend"
             && let Ok(env_val) = std::env::var("LLM_BACKEND")
@@ -324,7 +324,7 @@ impl LlmConfig {
                 .unwrap_or_else(|| "app_EMoamEEZ73f0CkXaXp7hrann".to_string());
             let session_path = optional_env("OPENAI_CODEX_SESSION_PATH")?
                 .map(PathBuf::from)
-                .unwrap_or_else(|| ironclaw_base_dir().join("openai_codex_session.json"));
+                .unwrap_or_else(|| bastionclaw_base_dir().join("openai_codex_session.json"));
             let token_refresh_margin_secs =
                 parse_optional_env("OPENAI_CODEX_REFRESH_MARGIN_SECS", 300)?;
             Some(OpenAiCodexConfig {
@@ -729,9 +729,9 @@ fn merge_extra_headers(
     merged
 }
 
-/// Get the default session file path (~/.ironclaw/session.json).
+/// Get the default session file path (~/.bastionclaw/session.json).
 pub fn default_session_path() -> PathBuf {
-    ironclaw_base_dir().join("session.json")
+    bastionclaw_base_dir().join("session.json")
 }
 
 #[cfg(test)]

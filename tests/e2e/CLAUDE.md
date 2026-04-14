@@ -1,6 +1,6 @@
-# IronClaw E2E Tests
+# BastionClaw E2E Tests
 
-Python/Playwright test suite that runs against a live ironclaw instance. Added in PR #553 ("Trajectory benchmarks and e2e trace test rig").
+Python/Playwright test suite that runs against a live bastionclaw instance. Added in PR #553 ("Trajectory benchmarks and e2e trace test rig").
 
 ## Setup
 
@@ -74,11 +74,11 @@ All fixtures are defined in `tests/e2e/conftest.py`. Running `pytest scenarios/`
 
 | Fixture | What it does |
 |---------|-------------|
-| `ironclaw_binary` | Checks `target/debug/ironclaw`; if absent, runs `cargo build --no-default-features --features libsql` (timeout 600s). |
+| `bastionclaw_binary` | Checks `target/debug/bastionclaw`; if absent, runs `cargo build --no-default-features --features libsql` (timeout 600s). |
 | `mock_llm_server` | Starts `mock_llm.py --port 0`, reads the assigned port from stdout, waits for `/v1/models` to return 200. Yields the base URL. |
-| `ironclaw_server` | Starts the ironclaw binary with a minimal env (see below), waits for `/api/health` (timeout 60s). Yields the base URL. On teardown sends **SIGINT** (not SIGTERM) so the tokio ctrl_c handler triggers a graceful shutdown and LLVM coverage data is flushed. |
-| `hosted_oauth_refresh_server` | Starts a second ironclaw instance with a dedicated libSQL DB and `GOOGLE_OAUTH_CLIENT_ID=hosted-google-client-id`, while still pointing `IRONCLAW_OAUTH_EXCHANGE_URL` at `mock_llm.py`. Yields a dict with `base_url`, `db_path`, `gateway_user_id`, and `mock_llm_url` for the hosted refresh regression scenario. |
-| `extension_cleanup_server` | Starts an isolated ironclaw instance with its own temp DB/home/WASM dirs, `SECRETS_MASTER_KEY`, and hosted-style OAuth env so uninstall-cleanup scenarios can inspect the `secrets` table without interfering with the shared E2E server state. |
+| `bastionclaw_server` | Starts the bastionclaw binary with a minimal env (see below), waits for `/api/health` (timeout 60s). Yields the base URL. On teardown sends **SIGINT** (not SIGTERM) so the tokio ctrl_c handler triggers a graceful shutdown and LLVM coverage data is flushed. |
+| `hosted_oauth_refresh_server` | Starts a second bastionclaw instance with a dedicated libSQL DB and `GOOGLE_OAUTH_CLIENT_ID=hosted-google-client-id`, while still pointing `BASTIONCLAW_OAUTH_EXCHANGE_URL` at `mock_llm.py`. Yields a dict with `base_url`, `db_path`, `gateway_user_id`, and `mock_llm_url` for the hosted refresh regression scenario. |
+| `extension_cleanup_server` | Starts an isolated bastionclaw instance with its own temp DB/home/WASM dirs, `SECRETS_MASTER_KEY`, and hosted-style OAuth env so uninstall-cleanup scenarios can inspect the `secrets` table without interfering with the shared E2E server state. |
 | `managed_gateway_server` | Function-scoped restartable gateway instance for SSE/connectivity scenarios; preserves port/DB/home across explicit stop/start calls so tests can simulate server restarts. |
 | `limited_gateway_server` | Function-scoped gateway instance with `GATEWAY_MAX_CONNECTIONS=2` for connection-cap coverage. |
 | `browser` | Launches a single Chromium instance (headless by default; set `HEADED=1` for headed). Shared across all tests. |
@@ -89,11 +89,11 @@ All fixtures are defined in `tests/e2e/conftest.py`. Running `pytest scenarios/`
 |---------|-------------|
 | `page` | Creates a fresh browser **context** (viewport 1280×720) and **page** per test, navigates to `/?token=e2e-test-token`, and waits for `#auth-screen` to become hidden before yielding. Closes the context after each test. |
 
-The function-scoped `page` fixture means **each test gets a clean browser context** (cookies, storage, etc.) but reuses the same ironclaw server and browser process. Tests that need the server URL directly (e.g., `test_auth_rejection`) accept `ironclaw_server` as an additional parameter.
+The function-scoped `page` fixture means **each test gets a clean browser context** (cookies, storage, etc.) but reuses the same bastionclaw server and browser process. Tests that need the server URL directly (e.g., `test_auth_rejection`) accept `bastionclaw_server` as an additional parameter.
 
-### Environment passed to ironclaw in tests
+### Environment passed to bastionclaw in tests
 
-The `ironclaw_server` fixture injects a minimal, deterministic environment:
+The `bastionclaw_server` fixture injects a minimal, deterministic environment:
 
 ```
 GATEWAY_ENABLED=true, GATEWAY_HOST=127.0.0.1, GATEWAY_PORT=<dynamic>
@@ -137,15 +137,15 @@ CANNED_RESPONSES = [
 
 ## Configuration
 
-`conftest.py` handles all server startup automatically — you do not need to start ironclaw manually before running `pytest`. The conftest builds the binary (libsql feature), starts the mock LLM, and starts ironclaw with a fresh temp database on every `pytest` invocation.
+`conftest.py` handles all server startup automatically — you do not need to start bastionclaw manually before running `pytest`. The conftest builds the binary (libsql feature), starts the mock LLM, and starts bastionclaw with a fresh temp database on every `pytest` invocation.
 
-If you need to test against a manually started ironclaw, you can skip conftest by running pytest with `--co` (collect-only) to understand what would run, or by calling the httpx/REST helpers directly without the `page` fixture.
+If you need to test against a manually started bastionclaw, you can skip conftest by running pytest with `--co` (collect-only) to understand what would run, or by calling the httpx/REST helpers directly without the `page` fixture.
 
 ## Writing New Scenarios
 
 1. Create `scenarios/test_my_feature.py`.
 2. All async functions are automatically recognized as tests — `asyncio_mode = "auto"` is set globally in `pyproject.toml`. Do **not** add `@pytest.mark.asyncio`; it is redundant and raises a warning.
-3. Use the `page` fixture for browser tests (function-scoped, fresh context each test). Use `ironclaw_server` directly for pure HTTP tests.
+3. Use the `page` fixture for browser tests (function-scoped, fresh context each test). Use `bastionclaw_server` directly for pure HTTP tests.
 4. Import selectors from `helpers.SEL` and `helpers.AUTH_TOKEN` — do not hardcode selectors or tokens inline.
 5. Use `httpx.AsyncClient` for REST calls; `aiohttp` for SSE streaming.
 6. Keep new fixtures session-scoped where possible; server startup is expensive. Function-scoped fixtures (like `page`) are fine for browser state that must be clean per test.
@@ -154,10 +154,10 @@ If you need to test against a manually started ironclaw, you can skip conftest b
 import httpx
 from helpers import AUTH_TOKEN
 
-async def test_my_endpoint(ironclaw_server):
+async def test_my_endpoint(bastionclaw_server):
     headers = {"Authorization": f"Bearer {AUTH_TOKEN}"}
     async with httpx.AsyncClient() as client:
-        r = await client.get(f"{ironclaw_server}/api/health", headers=headers)
+        r = await client.get(f"{bastionclaw_server}/api/health", headers=headers)
         assert r.status_code == 200
 ```
 
@@ -185,4 +185,4 @@ async def test_my_ui_feature(page):
 
 ## CI Integration
 
-E2E tests run in CI with `cargo-llvm-cov` for coverage collection. The CI workflow (`fix(ci): persist all cargo-llvm-cov env vars for E2E coverage` — PR #559) sets `LLVM_PROFILE_FILE` and related vars before spawning the ironclaw binary so coverage from E2E runs is captured.
+E2E tests run in CI with `cargo-llvm-cov` for coverage collection. The CI workflow (`fix(ci): persist all cargo-llvm-cov env vars for E2E coverage` — PR #559) sets `LLVM_PROFILE_FILE` and related vars before spawning the bastionclaw binary so coverage from E2E runs is captured.
