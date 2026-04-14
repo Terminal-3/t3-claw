@@ -2,7 +2,7 @@
   "name": "whatsapp",
   "display_name": "WhatsApp Channel",
   "kind": "channel",
-  "version": "0.2.2",
+  "version": "0.1.0",
   "wit_version": "0.3.0",
   "description": "Talk to your agent through WhatsApp",
   "keywords": [
@@ -18,8 +18,8 @@
   },
   "artifacts": {
     "wasm32-wasip2": {
-      "url": "https://github.com/nearai/bastionclaw/releases/download/bastionclaw-v0.25.0/channel-whatsapp-0.2.2-wasm32-wasip2.tar.gz",
-      "sha256": "88c539f28dc0ebd06acf359614cc63fb0f3508241be4c70fe0f46cbc9bfcd73a"
+      "url": null,
+      "sha256": null
     }
   },
   "auth_summary": {
