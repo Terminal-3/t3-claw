@@ -51,9 +51,34 @@ services:
       BASTIONCLAW_IN_DOCKER: "true"
       # Multi-tenancy: set AGENT_MULTI_TENANT=true in .env to enable per-user isolation
       AGENT_MULTI_TENANT: ${AGENT_MULTI_TENANT:-false}
+      # Sandbox: containers for full_job routines, Claude Code bridge, ACP agents.
+      # ReadOnly is the safe default — agents can fetch docs and call allowlisted
+      # APIs but cannot modify the workspace filesystem.  Upgrade to
+      # workspace_write in .env when routines need to build or produce artefacts.
+      # full_access bypasses Docker entirely and requires a second opt-in via
+      # SANDBOX_ALLOW_FULL_ACCESS=true — do not enable on shared/multi-tenant hosts.
+      SANDBOX_ENABLED: ${SANDBOX_ENABLED:-true}
+      SANDBOX_POLICY: ${SANDBOX_POLICY:-readonly}
+      SANDBOX_ALLOW_FULL_ACCESS: "false"
+      # TODO(security): When the docker-socket-proxy TODO above is resolved,
+      #   point DOCKER_HOST here at the proxy socket instead of the raw daemon,
+      #   e.g. DOCKER_HOST: "unix:///var/run/docker-proxy.sock"
     volumes:
       - bastionclaw_data:/home/bastionclaw/.bastionclaw
       - t3n_mcp_socket:/var/run/t3n-mcp
+      # Grants the container access to the host Docker daemon so sandbox jobs
+      # can spawn ephemeral worker containers (full_job routines, Claude Code
+      # bridge, ACP agents).  Without this mount, SANDBOX_ENABLED=true has no
+      # effect and a warning fires to every connected channel on startup.
+      #
+      # TODO(security): Replace this raw socket mount with a docker-socket-proxy
+      #   (e.g. Tecnativa/docker-socket-proxy) that allowlists only the API
+      #   calls BastionClaw actually needs (containers/create, start, stop,
+      #   inspect, logs — at minimum).  The raw socket gives any process inside
+      #   the container full Docker daemon access, which is a privilege-
+      #   escalation path if the container is ever compromised.
+      #   See: https://github.com/Tecnativa/docker-socket-proxy
+      - /var/run/docker.sock:/var/run/docker.sock
 
   t3n-mcp-sidecar:
     profiles: ["app"]
