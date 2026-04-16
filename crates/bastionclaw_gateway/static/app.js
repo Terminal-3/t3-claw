@@ -6179,7 +6179,8 @@ function renderUsersList(users) {
       actions += '<button class="btn-small" data-action="change-role" data-user-id="' + escapeHtml(u.id) + '" data-role="member">' + I18n.t('users.makeMember') + '</button> ';
     }
     actions += '<button class="btn-small" data-action="create-token" data-user-id="' + escapeHtml(u.id) + '" data-user-name="' + escapeHtml(u.display_name) + '">' + I18n.t('users.addToken') + '</button> ';
-    actions += '<button class="btn-small btn-secondary" data-action="get-login-link" data-user-id="' + escapeHtml(u.id) + '">' + I18n.t('users.getLoginLink') + '</button>';
+    actions += '<button class="btn-small btn-secondary" data-action="get-login-link" data-user-id="' + escapeHtml(u.id) + '">' + I18n.t('users.getLoginLink') + '</button> ';
+    actions += '<button class="btn-small btn-danger" data-action="delete-user" data-user-id="' + escapeHtml(u.id) + '" data-user-name="' + escapeHtml(u.display_name) + '">' + I18n.t('users.deleteUser') + '</button>';
     return '<tr>'
       + '<td class="user-id" title="' + escapeHtml(u.id) + '">' + escapeHtml(u.id.substring(0, 8)) + '…</td>'
       + '<td>' + escapeHtml(u.display_name) + '</td>'
@@ -6215,6 +6216,13 @@ function changeUserRole(userId, newRole) {
   })
     .then(function() { loadUsers(); })
     .catch(function(e) { alert(I18n.t('users.failedRoleChange') + ': ' + e.message); });
+}
+
+function deleteUser(userId, displayName) {
+  if (!confirm(I18n.t('users.deleteConfirm').replace('{name}', displayName))) return;
+  apiFetch('/api/admin/users/' + userId, { method: 'DELETE' })
+    .then(function() { loadUsers(); })
+    .catch(function(e) { alert(I18n.t('users.failedDelete') + ': ' + e.message); });
 }
 
 function createTokenForUser(userId, displayName) {
@@ -6265,6 +6273,7 @@ document.getElementById('users-table')?.addEventListener('click', function(e) {
   else if (action === 'change-role') changeUserRole(userId, btn.getAttribute('data-role'));
   else if (action === 'create-token') createTokenForUser(userId, userName || '');
   else if (action === 'get-login-link') getLoginLinkForUser(userId);
+  else if (action === 'delete-user') deleteUser(userId, userName || '');
 });
 
 // Wire up Users tab create form
