@@ -47,24 +47,30 @@ POSTGRES_PASSWORD=<strong-password>
 
 Everything else has a working default. See `.env.example` for the full reference.
 
-### 2b. Optional: Trinity MCP sidecar
+### 2b. Trinity MCP sidecar
 
-When you run the `app` profile, Docker now also starts a `t3n-mcp-sidecar`
-container alongside `bastionclaw`. The sidecar exposes the Trinity MCP server to
-BastionClaw over a shared Unix socket.
+When you run the `app` profile, Docker also starts a `t3n-mcp-sidecar` alongside
+`bastionclaw`. The sidecar pulls `@terminal-3/t3n-mcp` from the GitHub npm registry
+at build time — **no sibling repository is required**.
 
-Minimal optional settings in `.env`:
+Required in `.env` before building:
+
+```bash
+# read:packages access on the Terminal-3 GitHub org
+GITHUB_TOKEN=ghp_...
+```
+
+Optional runtime settings:
 
 ```bash
 # Default is staging if omitted
 T3N_MCP_ENV=staging
 
-# Optional overrides if you need a specific live Trinity instance
+# Override if you need a specific live Trinity instance
 # T3N_MCP_RPC_URL=https://your-rpc-endpoint
 # T3N_MCP_DASHBOARD_URL=https://your-dashboard-url
 
-# Optional for startup/connectivity tests, but required for real authenticated
-# Trinity operations such as session creation.
+# Required for authenticated Trinity operations (session creation etc.)
 # T3N_MCP_PRIVATE_KEY=0x...
 ```
 
@@ -72,8 +78,14 @@ Notes:
 
 - The sidecar starts automatically with `docker compose --profile app up`.
 - `T3N_MCP_PRIVATE_KEY` is **not** required just to prove connectivity.
-- If you use `T3N_MCP_RPC_URL`, it overrides the Trinity MCP repo's built-in
-  environment config.
+- The two containers communicate via a shared Unix socket volume (`t3n_mcp_socket`).
+  No network ports are needed between them.
+- After first boot, register the MCP server with BastionClaw (one-time):
+  ```bash
+  docker compose exec bastionclaw \
+    bastionclaw mcp add t3n-mcp --transport unix \
+    --socket /var/run/t3n-mcp/t3n-mcp.sock
+  ```
 
 ### 3. Start
 

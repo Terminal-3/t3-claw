@@ -95,8 +95,8 @@ services:
     profiles: ["app"]
     user: "0:0"
     build:
-      context: ..
-      dockerfile: bastion-claw/docker/t3n-mcp-sidecar.Dockerfile
+      context: .
+      dockerfile: docker/t3n-mcp-sidecar.Dockerfile
       args:
         GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     restart: unless-stopped
@@ -108,7 +108,7 @@ services:
       T3N_MCP_DASHBOARD_URL: ${T3N_MCP_DASHBOARD_URL:-}
       PRIVATE_KEY: ${T3N_MCP_PRIVATE_KEY:-}
       MCP_SOCKET_PATH: /var/run/t3n-mcp/t3n-mcp.sock
-      T3N_PROJECT_DIR: /app
+      T3N_PROJECT_DIR: /app/node_modules/@terminal-3/t3n-mcp
     volumes:
       - t3n_mcp_socket:/var/run/t3n-mcp
 
