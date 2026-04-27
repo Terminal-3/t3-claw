@@ -85,7 +85,7 @@ pub struct CapabilitiesFile {
     pub websocket: Option<serde_json::Value>,
 
     /// Authentication setup instructions.
-    /// Used by `ironclaw config` to guide users through auth setup.
+    /// Used by `bastionclaw config` to guide users through auth setup.
     #[serde(default)]
     pub auth: Option<AuthCapabilitySchema>,
 
@@ -1441,8 +1441,8 @@ mod tests {
                         "intents": 513,
                         "properties": {
                             "os": "linux",
-                            "browser": "ironclaw",
-                            "device": "ironclaw"
+                            "browser": "bastionclaw",
+                            "device": "bastionclaw"
                         }
                     }
                 }
@@ -1461,8 +1461,8 @@ mod tests {
                     "intents": 513,
                     "properties": {
                         "os": "linux",
-                        "browser": "ironclaw",
-                        "device": "ironclaw"
+                        "browser": "bastionclaw",
+                        "device": "bastionclaw"
                     }
                 }
             }))

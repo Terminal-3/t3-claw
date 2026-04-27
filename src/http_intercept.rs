@@ -49,7 +49,7 @@ struct HostRemapHttpInterceptor {
 }
 
 /// Restrict remap targets to loopback so that even if a stray
-/// `IRONCLAW_TEST_HTTP_REMAP` env var sneaks into a debug build, the
+/// `BASTIONCLAW_TEST_HTTP_REMAP` env var sneaks into a debug build, the
 /// remap can only forward to a local listener — never an external URL.
 /// Combined with the `cfg(any(test, debug_assertions))` gate at the call
 /// site in `app.rs`, this is the security boundary for the remap feature.
@@ -86,7 +86,7 @@ fn is_loopback_target(base_url: &str) -> bool {
 
 impl HostRemapHttpInterceptor {
     fn from_env() -> Option<Self> {
-        let raw = std::env::var("IRONCLAW_TEST_HTTP_REMAP").ok()?;
+        let raw = std::env::var("BASTIONCLAW_TEST_HTTP_REMAP").ok()?;
         let mappings = raw
             .split(',')
             .filter_map(|entry| {
@@ -100,7 +100,7 @@ impl HostRemapHttpInterceptor {
                     tracing::warn!(
                         host = %host,
                         base_url = %base_url,
-                        "IRONCLAW_TEST_HTTP_REMAP target is not loopback; refusing to register"
+                        "BASTIONCLAW_TEST_HTTP_REMAP target is not loopback; refusing to register"
                     );
                     return None;
                 }

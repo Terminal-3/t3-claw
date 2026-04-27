@@ -2,15 +2,10 @@
   "name": "google_sheets",
   "display_name": "Google Sheets",
   "kind": "tool",
-  "version": "0.2.1",
+  "version": "0.1.0",
   "wit_version": "0.3.0",
   "description": "Read and write Google Sheets spreadsheet data",
-  "keywords": [
-    "spreadsheets",
-    "google",
-    "data",
-    "sheets"
-  ],
+  "keywords": ["spreadsheets", "google", "data", "sheets"],
   "source": {
     "dir": "tools-src/google-sheets",
     "capabilities": "google-sheets-tool.capabilities.json",
@@ -18,21 +13,16 @@
   },
   "artifacts": {
     "wasm32-wasip2": {
-      "url": "https://github.com/nearai/ironclaw/releases/download/ironclaw-v0.22.0/tool-google-sheets-0.2.1-wasm32-wasip2.tar.gz",
-      "sha256": "1f8c381799a916be83263cac9d497d52946e21b1b588592a3a42ca94a73b7051"
+      "url": "https://github.com/terminal-3/bastion-claw/releases/download/bastionclaw-v0.1.0/tool-google_sheets-0.1.0-wasm32-wasip2.tar.gz",
+      "sha256": "3260368409d69fae5b5f4aaa06f4eb5a9d218c3d56ae366e625c348cd5c4d123"
     }
   },
   "auth_summary": {
     "method": "oauth",
     "provider": "Google",
-    "secrets": [
-      "google_oauth_token"
-    ],
+    "secrets": ["google_oauth_token"],
     "shared_auth": "google_oauth_token",
     "setup_url": "https://console.cloud.google.com/apis/credentials"
   },
-  "tags": [
-    "google",
-    "productivity"
-  ]
+  "tags": ["google", "productivity"]
 }

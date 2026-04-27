@@ -165,7 +165,7 @@ pub async fn verify_access_key(
 ) -> Result<(), OAuthError> {
     let body = serde_json::json!({
         "jsonrpc": "2.0",
-        "id": "ironclaw",
+        "id": "bastionclaw",
         "method": "query",
         "params": {
             "request_type": "view_access_key",
@@ -266,11 +266,11 @@ mod tests {
         });
         let verifying_key = signing_key.verifying_key();
 
-        let message = "Sign in to IronClaw\nNonce: abcd1234";
+        let message = "Sign in to BastionClaw\nNonce: abcd1234";
         let nonce = [0u8; 32];
 
         // Sign the v1 NEP-413 payload (tag → message → nonce → recipient → callback).
-        let payload = build_nep413_v1(message, &nonce, "ironclaw");
+        let payload = build_nep413_v1(message, &nonce, "bastionclaw");
         let signature = signing_key.sign(&payload);
 
         assert!(
@@ -279,7 +279,7 @@ mod tests {
                 &signature.to_bytes(),
                 message,
                 &nonce,
-                "ironclaw",
+                "bastionclaw",
             )
             .is_ok()
         );
@@ -295,7 +295,7 @@ mod tests {
         });
         let verifying_key = signing_key.verifying_key();
 
-        let message = "Sign in to IronClaw\nNonce: abcd1234";
+        let message = "Sign in to BastionClaw\nNonce: abcd1234";
         let nonce = [0u8; 32];
 
         // Sign the raw message bytes — this should be REJECTED because raw
@@ -308,7 +308,7 @@ mod tests {
                 &signature.to_bytes(),
                 message,
                 &nonce,
-                "ironclaw",
+                "bastionclaw",
             )
             .is_err(),
             "raw message signatures must be rejected (no nonce binding)"
@@ -325,11 +325,11 @@ mod tests {
         });
         let verifying_key = signing_key.verifying_key();
 
-        let message = "Sign in to IronClaw\nNonce: abcd1234";
+        let message = "Sign in to BastionClaw\nNonce: abcd1234";
         let nonce = [42u8; 32];
 
         // Sign the v2 NEP-413 payload (tag → message → recipient → nonce).
-        let payload = build_nep413_v2(message, &nonce, "ironclaw");
+        let payload = build_nep413_v2(message, &nonce, "bastionclaw");
         let signature = signing_key.sign(&payload);
 
         assert!(
@@ -338,7 +338,7 @@ mod tests {
                 &signature.to_bytes(),
                 message,
                 &nonce,
-                "ironclaw",
+                "bastionclaw",
             )
             .is_ok()
         );
@@ -368,7 +368,7 @@ mod tests {
                 &signature.to_bytes(),
                 message,
                 &nonce,
-                "ironclaw",
+                "bastionclaw",
             )
             .is_err()
         );

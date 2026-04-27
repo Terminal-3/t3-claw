@@ -521,7 +521,7 @@ impl McpClient {
                         )
                     } else {
                         format!(
-                            "MCP server '{}' requires authentication. Run: ironclaw mcp auth {}",
+                            "MCP server '{}' requires authentication. Run: bastionclaw mcp auth {}",
                             self.server_name, self.server_name
                         )
                     };
@@ -720,7 +720,7 @@ fn extract_server_name(url: &str) -> String {
 /// Build the canonical registry identifier for an MCP tool.
 ///
 /// MCP tool names commonly contain dashes (e.g. `notion-search`), and so do
-/// user-supplied server names (`my-server`). The IronClaw runtime converges
+/// user-supplied server names (`my-server`). The BastionClaw runtime converges
 /// on snake_case identifiers (see `ToolRegistry::resolve_name`), and LLMs,
 /// Codex / GPT-5 in particular, silently normalize tool names to valid
 /// Python identifiers by converting dashes to underscores. If we registered

@@ -7,11 +7,11 @@
 mod tests {
     use std::sync::Arc;
 
-    use ironclaw::cli::{PairingCommand, run_pairing_command_with_store};
-    use ironclaw::db::libsql::LibSqlBackend;
-    use ironclaw::db::{Database, UserRecord};
-    use ironclaw::ownership::{OwnerId, OwnershipCache};
-    use ironclaw::pairing::PairingStore;
+    use bastionclaw::cli::{PairingCommand, run_pairing_command_with_store};
+    use bastionclaw::db::libsql::LibSqlBackend;
+    use bastionclaw::db::{Database, UserRecord};
+    use bastionclaw::ownership::{OwnerId, OwnershipCache};
+    use bastionclaw::pairing::PairingStore;
 
     async fn setup_db() -> (Arc<dyn Database>, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();

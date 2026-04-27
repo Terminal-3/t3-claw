@@ -22,7 +22,7 @@ In your Google Cloud project, navigate to **APIs & Services → Library**, searc
 <Step title="Install the Extension">
 
 ```bash
-ironclaw registry install google-docs
+bastionclaw registry install google-docs
 ```
 
 </Step>
@@ -30,10 +30,10 @@ ironclaw registry install google-docs
 <Step title="Authorize Access">
 
 ```bash
-ironclaw tool auth google-docs
+bastionclaw tool auth google-docs
 ```
 
-IronClaw will provide a URL for you to authenticate - remember to follow the [auth setup](./oauth-setup) to enable your agent to capture the callback. If possible, it will open a browser window. Once approved, the token is stored securely and refreshed automatically.
+BastionClaw will provide a URL for you to authenticate - remember to follow the [auth setup](./oauth-setup) to enable your agent to capture the callback. If possible, it will open a browser window. Once approved, the token is stored securely and refreshed automatically.
 
 <Tip>
 If you already authenticated one Google service, you still need to authenticate each additional Google extension separately.

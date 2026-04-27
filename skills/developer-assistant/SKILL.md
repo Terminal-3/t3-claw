@@ -30,7 +30,7 @@ activation:
   max_context_tokens: 3000
 requires:
   # Capped at MAX_REQUIRED_SKILLS_PER_MANIFEST = 10 in
-  # `ironclaw_skills::types`. The trimmed list keeps the 10 highest-impact
+  # `bastionclaw_skills::types`. The trimmed list keeps the 10 highest-impact
   # companions for the developer workflow; the dropped entries
   # (`qa-review`, `review-readiness`, `product-prioritization`) can still
   # be installed manually via `skill_install` when needed.

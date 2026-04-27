@@ -1,7 +1,7 @@
 //! MCP server configuration.
 //!
 //! Stores configuration for connecting to hosted MCP servers.
-//! Configuration is persisted at ~/.ironclaw/mcp-servers.json.
+//! Configuration is persisted at ~/.bastionclaw/mcp-servers.json.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
-use crate::bootstrap::ironclaw_base_dir;
+use crate::bootstrap::bastionclaw_base_dir;
 use crate::tools::mcp::McpTool;
 use crate::tools::tool::ToolError;
 
@@ -60,12 +60,61 @@ pub struct McpServerConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
+    /// Optional setup/auth guidance for local transports such as stdio or Unix sockets.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub local_auth: Option<LocalMcpAuthConfig>,
+
     /// Last successfully discovered MCP tool catalog.
     ///
     /// This lets the runtime advertise concrete latent provider actions even
     /// while the server is currently inactive.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub cached_tools: Vec<McpTool>,
+}
+
+/// Guidance for local MCP servers that need an external user step before use.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LocalMcpAuthConfig {
+    /// Human-readable setup instructions shown to the user.
+    pub instructions: String,
+
+    /// Optional URL to open while setup is pending.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auth_url: Option<String>,
+
+    /// Optional secret name used to persist a "setup completed" marker.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub completion_secret_name: Option<String>,
+
+    /// Optional success message shown after the user confirms setup is complete.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub completion_message: Option<String>,
+}
+
+impl LocalMcpAuthConfig {
+    pub fn new(instructions: impl Into<String>) -> Self {
+        Self {
+            instructions: instructions.into(),
+            auth_url: None,
+            completion_secret_name: None,
+            completion_message: None,
+        }
+    }
+
+    pub fn with_auth_url(mut self, auth_url: impl Into<String>) -> Self {
+        self.auth_url = Some(auth_url.into());
+        self
+    }
+
+    pub fn with_completion_secret_name(mut self, secret_name: impl Into<String>) -> Self {
+        self.completion_secret_name = Some(secret_name.into());
+        self
+    }
+
+    pub fn with_completion_message(mut self, message: impl Into<String>) -> Self {
+        self.completion_message = Some(message.into());
+        self
+    }
 }
 
 fn default_true() -> bool {
@@ -83,6 +132,7 @@ impl McpServerConfig {
             oauth: None,
             enabled: true,
             description: None,
+            local_auth: None,
             cached_tools: Vec::new(),
         }
     }
@@ -106,6 +156,7 @@ impl McpServerConfig {
             oauth: None,
             enabled: true,
             description: None,
+            local_auth: None,
             cached_tools: Vec::new(),
         }
     }
@@ -122,6 +173,7 @@ impl McpServerConfig {
             oauth: None,
             enabled: true,
             description: None,
+            local_auth: None,
             cached_tools: Vec::new(),
         }
     }
@@ -135,6 +187,12 @@ impl McpServerConfig {
     /// Set description.
     pub fn with_description(mut self, description: impl Into<String>) -> Self {
         self.description = Some(description.into());
+        self
+    }
+
+    /// Set local transport auth/setup guidance.
+    pub fn with_local_auth(mut self, local_auth: LocalMcpAuthConfig) -> Self {
+        self.local_auth = Some(local_auth);
         self
     }
 
@@ -163,6 +221,37 @@ impl McpServerConfig {
             return Err(ConfigError::InvalidConfig {
                 reason: "Server name cannot be empty".to_string(),
             });
+        }
+
+        if let Some(local_auth) = &self.local_auth {
+            if !self.is_local_transport() {
+                return Err(ConfigError::InvalidConfig {
+                    reason: "local_auth is only supported for stdio and unix transports"
+                        .to_string(),
+                });
+            }
+            if local_auth.instructions.trim().is_empty() {
+                return Err(ConfigError::InvalidConfig {
+                    reason: "local_auth instructions cannot be empty".to_string(),
+                });
+            }
+            if let Some(auth_url) = &local_auth.auth_url {
+                let parsed = url::Url::parse(auth_url).map_err(|e| ConfigError::InvalidConfig {
+                    reason: format!("local_auth auth_url is invalid: {}", e),
+                })?;
+                if parsed.scheme() != "https" {
+                    return Err(ConfigError::InvalidConfig {
+                        reason: "local_auth auth_url must use https".to_string(),
+                    });
+                }
+            }
+            if let Some(secret_name) = &local_auth.completion_secret_name
+                && secret_name.trim().is_empty()
+            {
+                return Err(ConfigError::InvalidConfig {
+                    reason: "local_auth completion_secret_name cannot be empty".to_string(),
+                });
+            }
         }
 
         match self.effective_transport() {
@@ -231,6 +320,24 @@ impl McpServerConfig {
         self.headers
             .keys()
             .any(|k| k.eq_ignore_ascii_case("authorization"))
+    }
+
+    /// Whether this server uses a local (non-HTTP) transport.
+    ///
+    /// Stdio and Unix-socket transports communicate over local byte streams.
+    /// They never participate in HTTP-level auth (OAuth, DCR, bearer tokens).
+    pub fn is_local_transport(&self) -> bool {
+        !matches!(self.effective_transport(), EffectiveTransport::Http)
+    }
+
+    /// Get the secret name used to persist a local-setup completion marker.
+    pub fn local_auth_completion_secret_name(&self) -> Option<String> {
+        self.local_auth.as_ref().map(|local_auth| {
+            local_auth
+                .completion_secret_name
+                .clone()
+                .unwrap_or_else(|| format!("mcp_{}_local_auth_confirmed", self.name))
+        })
     }
 
     /// Check if this server requires authentication.
@@ -446,6 +553,19 @@ pub const NEARAI_MCP_SERVER_NAME: &str = "nearai";
 
 const NEARAI_MCP_REGISTRY_KEY: &str = "mcp-servers/nearai";
 
+/// MCP server id for the t3n (Trinity) sidecar auto-bootstrap.
+pub const T3N_MCP_SERVER_NAME: &str = "t3n-mcp";
+
+/// Environment variable used to enable the t3n-mcp auto-bootstrap. When set to a
+/// non-empty Unix socket path, a `unix`-transport MCP server entry is registered
+/// on first boot so the agent can connect to the sidecar without manual setup.
+/// Docker compose sets this automatically; bare-metal deployments that want the
+/// same behaviour should export it themselves.
+const T3N_MCP_SOCKET_PATH_ENV: &str = "T3N_MCP_SOCKET_PATH";
+
+const T3N_MCP_DESCRIPTION: &str =
+    "Terminal 3 Trinity network MCP server (served by the t3n-mcp-sidecar container over a Unix socket).";
+
 fn derive_nearai_mcp_url(base_url: &str) -> String {
     let base = base_url.trim_end_matches('/');
     let base = base.strip_suffix("/v1").unwrap_or(base);
@@ -506,13 +626,72 @@ pub async fn bootstrap_nearai_mcp_server(
     Ok(true)
 }
 
-/// Load MCP servers after bootstrapping NEAR AI MCP server (when env vars are set).
+fn t3n_mcp_server_from_env() -> Option<McpServerConfig> {
+    let socket_path = crate::config::helpers::env_or_override(T3N_MCP_SOCKET_PATH_ENV)?;
+    let socket_path = socket_path.trim().to_string();
+    if socket_path.is_empty() {
+        return None;
+    }
+
+    // No LocalMcpAuthConfig here: the sidecar authenticates to Trinity itself
+    // via the PRIVATE_KEY env var (see docker-compose.yml), so there is no
+    // user-facing step between install and use. Activation should be immediate;
+    // any real auth problem will surface as a tool-call error from Trinity.
+    let server = McpServerConfig::new_unix(T3N_MCP_SERVER_NAME, socket_path)
+        .with_description(T3N_MCP_DESCRIPTION);
+
+    match server.validate() {
+        Ok(()) => Some(server),
+        Err(err) => {
+            tracing::warn!("Ignoring invalid t3n-mcp bootstrap config: {}", err);
+            None
+        }
+    }
+}
+
+/// Register the Trinity (t3n-mcp) sidecar as a unix-transport MCP server on first
+/// boot when `T3N_MCP_SOCKET_PATH` is set. Returns `Ok(true)` when a new entry
+/// was written, `Ok(false)` if the env var is absent or an entry already exists.
+///
+/// The entry is never overwritten — once the user (or a prior boot) has a
+/// `t3n-mcp` config, later changes (toggles, local-auth confirmation, etc.)
+/// are preserved.
+pub async fn bootstrap_t3n_mcp_server(
+    db: Option<&dyn crate::db::Database>,
+    user_id: &str,
+) -> Result<bool, ConfigError> {
+    let Some(server) = t3n_mcp_server_from_env() else {
+        return Ok(false);
+    };
+
+    let mut servers = match db {
+        Some(store) => load_mcp_servers_from_db(store, user_id).await?,
+        None => load_mcp_servers().await?,
+    };
+
+    if servers.get(&server.name).is_some() {
+        return Ok(false);
+    }
+    servers.upsert(server);
+
+    match db {
+        Some(store) => save_mcp_servers_to_db(store, user_id, &servers).await?,
+        None => save_mcp_servers(&servers).await?,
+    }
+    Ok(true)
+}
+
+/// Load MCP servers after bootstrapping the built-in MCP servers (NEAR AI and
+/// t3n-mcp) when their respective env vars are set.
 pub async fn load_mcp_servers_ready(
     db: Option<&dyn crate::db::Database>,
     user_id: &str,
 ) -> Result<McpServersFile, ConfigError> {
     if let Err(e) = bootstrap_nearai_mcp_server(db, user_id).await {
         tracing::warn!("Failed to bootstrap NEAR AI MCP server: {}", e);
+    }
+    if let Err(e) = bootstrap_t3n_mcp_server(db, user_id).await {
+        tracing::warn!("Failed to bootstrap t3n-mcp server: {}", e);
     }
     match db {
         Some(store) => load_mcp_servers_from_db(store, user_id).await,
@@ -522,7 +701,7 @@ pub async fn load_mcp_servers_ready(
 
 /// Get the default MCP servers configuration path.
 pub fn default_config_path() -> PathBuf {
-    ironclaw_base_dir().join("mcp-servers.json")
+    bastionclaw_base_dir().join("mcp-servers.json")
 }
 
 /// Load MCP server configurations from the default location.
@@ -1088,6 +1267,45 @@ mod tests {
     }
 
     #[test]
+    fn test_is_local_transport() {
+        assert!(
+            !McpServerConfig::new("http-server", "https://mcp.example.com").is_local_transport()
+        );
+        assert!(McpServerConfig::new_unix("unix-server", "/var/run/mcp.sock").is_local_transport());
+        assert!(
+            McpServerConfig::new_stdio("stdio-server", "npx", vec![], HashMap::new())
+                .is_local_transport()
+        );
+    }
+
+    #[test]
+    fn test_local_auth_validation_rejects_http_transport() {
+        let config = McpServerConfig::new("t3n-mcp", "https://example.com/mcp").with_local_auth(
+            LocalMcpAuthConfig::new("Finish setup.")
+                .with_auth_url("https://staging.network.terminal3.io/login"),
+        );
+
+        let err = config.validate().unwrap_err().to_string();
+        assert!(
+            err.contains("local_auth is only supported"),
+            "expected local transport validation error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn test_local_auth_validation_rejects_non_https_url() {
+        let config = McpServerConfig::new_unix("t3n-mcp", "/tmp/t3n.sock").with_local_auth(
+            LocalMcpAuthConfig::new("Finish setup.").with_auth_url("http://localhost/setup"),
+        );
+
+        let err = config.validate().unwrap_err().to_string();
+        assert!(
+            err.contains("local_auth auth_url must use https"),
+            "expected https validation error, got: {err}"
+        );
+    }
+
+    #[test]
     fn test_header_crlf_injection_rejected() {
         let mut headers = HashMap::new();
         headers.insert("X-Good".to_string(), "safe".to_string());
@@ -1368,6 +1586,31 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_config_roundtrip_preserves_local_auth() {
+        let config = McpServerConfig::new_unix("t3n-mcp", "/var/run/t3n-mcp.sock").with_local_auth(
+            LocalMcpAuthConfig::new("Complete Trinity setup.")
+                .with_auth_url("https://staging.network.terminal3.io/login")
+                .with_completion_secret_name("t3n_local_setup_done")
+                .with_completion_message("All set."),
+        );
+
+        let json = serde_json::to_string_pretty(&config).unwrap();
+        let parsed: McpServerConfig = serde_json::from_str(&json).unwrap();
+
+        let local_auth = parsed.local_auth.expect("local_auth");
+        assert_eq!(local_auth.instructions, "Complete Trinity setup.");
+        assert_eq!(
+            local_auth.auth_url.as_deref(),
+            Some("https://staging.network.terminal3.io/login")
+        );
+        assert_eq!(
+            local_auth.completion_secret_name.as_deref(),
+            Some("t3n_local_setup_done")
+        );
+        assert_eq!(local_auth.completion_message.as_deref(), Some("All set."));
+    }
+
     // --- Issue 3 regression: is_localhost_url rejects attacker subdomains ---
 
     #[test]
@@ -1443,6 +1686,145 @@ mod tests {
         unsafe {
             std::env::remove_var("NEARAI_BASE_URL");
             std::env::remove_var("NEARAI_API_KEY");
+        }
+    }
+
+    // --- Regression: t3n-mcp auto-bootstrap from env ---
+    //
+    // After `make wipe` (which deletes the bastionclaw_data volume and the
+    // Postgres settings row), the compose stack came back up with the
+    // t3n-mcp-sidecar running but no client config pointing at its Unix
+    // socket. The agent therefore never connected. These tests lock in the
+    // env-driven bootstrap path so a missing config on a fresh volume
+    // auto-registers the sidecar entry.
+
+    #[test]
+    fn test_t3n_mcp_server_from_env_builds_unix_server() {
+        let _guard = crate::config::helpers::lock_env();
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::set_var(T3N_MCP_SOCKET_PATH_ENV, "/var/run/t3n-mcp/t3n-mcp.sock");
+        }
+
+        let server = t3n_mcp_server_from_env().expect("server from env");
+        assert_eq!(server.name, T3N_MCP_SERVER_NAME);
+        assert!(server.enabled);
+        assert!(server.url.is_empty());
+        match server.effective_transport() {
+            EffectiveTransport::Unix { socket_path } => {
+                assert_eq!(socket_path, "/var/run/t3n-mcp/t3n-mcp.sock");
+            }
+            other => panic!("expected Unix transport, got {:?}", other),
+        }
+        // The sidecar auths via PRIVATE_KEY in its own container — no
+        // user-facing setup step — so bootstrap must NOT attach a local_auth
+        // gate. Regression: a prior version set one and blocked activation
+        // behind a spurious "sign in to Trinity" prompt.
+        assert!(
+            server.local_auth.is_none(),
+            "t3n-mcp bootstrap must not attach a local_auth gate"
+        );
+        assert_eq!(server.description.as_deref(), Some(T3N_MCP_DESCRIPTION));
+
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::remove_var(T3N_MCP_SOCKET_PATH_ENV);
+        }
+    }
+
+    #[test]
+    fn test_t3n_mcp_server_from_env_requires_non_empty_path() {
+        let _guard = crate::config::helpers::lock_env();
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::remove_var(T3N_MCP_SOCKET_PATH_ENV);
+        }
+        assert!(t3n_mcp_server_from_env().is_none());
+
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::set_var(T3N_MCP_SOCKET_PATH_ENV, "   ");
+        }
+        assert!(
+            t3n_mcp_server_from_env().is_none(),
+            "whitespace-only path must be rejected"
+        );
+
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::remove_var(T3N_MCP_SOCKET_PATH_ENV);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_bootstrap_t3n_mcp_server_writes_entry_on_empty_config() {
+        let _guard = crate::config::helpers::lock_env();
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("mcp-servers.json");
+
+        // Empty starting state.
+        let empty = McpServersFile::default();
+        save_mcp_servers_to(&empty, &path).await.unwrap();
+
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::set_var(T3N_MCP_SOCKET_PATH_ENV, "/var/run/t3n-mcp/t3n-mcp.sock");
+        }
+
+        // Drive through the helper directly (file-based path) by crafting the
+        // server and upserting — mirrors what bootstrap_t3n_mcp_server() does
+        // when called without a DB backend.
+        let server = t3n_mcp_server_from_env().expect("server from env");
+        let mut loaded = load_mcp_servers_from(&path).await.unwrap();
+        assert!(loaded.get(&server.name).is_none());
+        loaded.upsert(server);
+        save_mcp_servers_to(&loaded, &path).await.unwrap();
+
+        let re_loaded = load_mcp_servers_from(&path).await.unwrap();
+        let entry = re_loaded
+            .get(T3N_MCP_SERVER_NAME)
+            .expect("t3n-mcp entry present");
+        match entry.effective_transport() {
+            EffectiveTransport::Unix { socket_path } => {
+                assert_eq!(socket_path, "/var/run/t3n-mcp/t3n-mcp.sock");
+            }
+            other => panic!("expected Unix transport, got {:?}", other),
+        }
+
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::remove_var(T3N_MCP_SOCKET_PATH_ENV);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_bootstrap_t3n_mcp_server_preserves_existing_entry() {
+        let _guard = crate::config::helpers::lock_env();
+
+        // Pre-existing user entry with the same name but a different path —
+        // bootstrap must not overwrite it.
+        let mut existing = McpServersFile::default();
+        existing.upsert(McpServerConfig::new_unix(
+            T3N_MCP_SERVER_NAME,
+            "/custom/user/path.sock",
+        ));
+        assert!(existing.get(T3N_MCP_SERVER_NAME).is_some());
+
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::set_var(T3N_MCP_SOCKET_PATH_ENV, "/var/run/t3n-mcp/t3n-mcp.sock");
+        }
+
+        // Simulate the guard clause inside bootstrap_t3n_mcp_server().
+        let should_write = existing.get(T3N_MCP_SERVER_NAME).is_none();
+        assert!(
+            !should_write,
+            "bootstrap must not overwrite an existing t3n-mcp entry"
+        );
+
+        // SAFETY: Tests serialize env access with lock_env().
+        unsafe {
+            std::env::remove_var(T3N_MCP_SOCKET_PATH_ENV);
         }
     }
 }

@@ -327,7 +327,7 @@ fn strip_tool_blocks(messages: &mut [crate::llm::provider::ChatMessage]) {
 // Message conversion
 // ---------------------------------------------------------------------------
 
-/// Convert IronClaw `ChatMessage` list into Bedrock system blocks + messages.
+/// Convert BastionClaw `ChatMessage` list into Bedrock system blocks + messages.
 ///
 /// Key differences from OpenAI/Anthropic protocol:
 /// 1. System messages are extracted and passed separately.
@@ -497,7 +497,7 @@ fn push_message(
 // Tool configuration
 // ---------------------------------------------------------------------------
 
-/// Build Bedrock `ToolConfiguration` from IronClaw tool definitions.
+/// Build Bedrock `ToolConfiguration` from BastionClaw tool definitions.
 fn build_tool_config(
     tools: &[ToolDefinition],
     tool_choice: Option<&str>,
@@ -599,7 +599,7 @@ fn extract_token_usage(usage: Option<&aws_sdk_bedrockruntime::types::TokenUsage>
     }
 }
 
-/// Map Bedrock `StopReason` to IronClaw `FinishReason`.
+/// Map Bedrock `StopReason` to BastionClaw `FinishReason`.
 fn map_stop_reason(reason: &StopReason) -> FinishReason {
     match reason {
         StopReason::EndTurn | StopReason::StopSequence => FinishReason::Stop,

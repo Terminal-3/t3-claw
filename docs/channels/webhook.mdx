@@ -4,7 +4,7 @@ sidebarTitle: Webhook
 description: REST API for external integrations
 ---
 
-The HTTP Webhook channel provides a REST API for integrating external services with IronClaw.
+The HTTP Webhook channel provides a REST API for integrating external services with BastionClaw.
 
 <Note>
 If you haven't set up your agent yet, follow our [Quickstart guide](../quickstart)
@@ -63,7 +63,7 @@ curl -X POST http://localhost:8080/webhook \
   -H "X-Webhook-Secret: your-secret" \
   -d '{
     "user_id": "default",
-    "message": "Hello, IronClaw!"
+    "message": "Hello, BastionClaw!"
   }'
 ```
 
@@ -131,7 +131,7 @@ Response:
 
 ### GitHub Webhook
 
-Configure GitHub to send events to your IronClaw webhook URL:
+Configure GitHub to send events to your BastionClaw webhook URL:
 
 ```bash
 # GitHub webhook URL
@@ -142,7 +142,7 @@ https://your-server:8080/webhook
 
 ### Zapier
 
-Use Zapier's Webhook action to send events to IronClaw.
+Use Zapier's Webhook action to send events to BastionClaw.
 
 ### Custom Script
 
@@ -164,7 +164,7 @@ print(response.json()["job_id"])
 
 <AccordionGroup>
   <Accordion title="Connection refused" icon="x-circle">
-    - Check IronClaw is running
+    - Check BastionClaw is running
     - Verify `HTTP_PORT` is correct
     - Check firewall: `sudo ufw allow 8080`
   </Accordion>
@@ -180,7 +180,7 @@ print(response.json()["job_id"])
   </Accordion>
 
   <Accordion title="Messages not processed" icon="message-circle">
-    - Check logs: `RUST_LOG=ironclaw=debug ironclaw run`
+    - Check logs: `RUST_LOG=bastionclaw=debug bastionclaw run`
     - Verify JSON format
     - Check `user_id` is valid
   </Accordion>

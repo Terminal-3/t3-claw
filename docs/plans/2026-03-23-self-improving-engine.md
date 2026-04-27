@@ -28,7 +28,7 @@ Each fix used the same tools the engine has access to: `read_file`, `apply_patch
 
 The engine modifies its own prompt templates based on accumulated experience.
 
-**What it changes:** `crates/ironclaw_engine/prompts/*.md` files
+**What it changes:** `crates/bastionclaw_engine/prompts/*.md` files
 
 **Examples:**
 - Adds "NEVER call web_fetch — use http() or llm_context()" to rules section
@@ -61,13 +61,13 @@ The engine adjusts its own defaults and mappings.
 
 **Trigger:** After N threads with similar patterns (not on first occurrence).
 
-**Validation:** Run existing test suite (`cargo test -p ironclaw_engine`). Only apply if tests pass.
+**Validation:** Run existing test suite (`cargo test -p bastionclaw_engine`). Only apply if tests pass.
 
 ### Level 3: Code Patching (high risk, high value)
 
 The engine proposes Rust code changes to fix bugs it detects in itself.
 
-**What it changes:** Any file in `crates/ironclaw_engine/` or `src/bridge/`
+**What it changes:** Any file in `crates/bastionclaw_engine/` or `src/bridge/`
 
 **Examples:**
 - Fix unsafe byte slicing (detected by panics in traces)
@@ -79,9 +79,9 @@ The engine proposes Rust code changes to fix bugs it detects in itself.
 
 **Guardrails:**
 1. Always work in a git branch (`self-improve/{timestamp}`)
-2. Run full test suite (`cargo test -p ironclaw_engine`)
-3. Run clippy (`cargo clippy -p ironclaw_engine --all-targets -- -D warnings`)
-4. Never modify files outside `crates/ironclaw_engine/` and `src/bridge/` without human approval
+2. Run full test suite (`cargo test -p bastionclaw_engine`)
+3. Run clippy (`cargo clippy -p bastionclaw_engine --all-targets -- -D warnings`)
+4. Never modify files outside `crates/bastionclaw_engine/` and `src/bridge/` without human approval
 5. Max patch size: 50 lines changed
 6. Generate a PR (not direct commit) with trace evidence
 7. Human approves or rejects the PR
@@ -117,7 +117,7 @@ Thread completes
 ### The Self-Improvement Thread's Prompt
 
 ```
-You are a debugging agent analyzing execution traces from the IronClaw engine.
+You are a debugging agent analyzing execution traces from the BastionClaw engine.
 
 ## Your task
 Read the trace file at {trace_path} and identify the root cause of any issues.
@@ -126,9 +126,9 @@ Then propose and validate a fix.
 ## Available information
 - Trace JSON: full message history, events, tool results, issues detected
 - Source code: read any file in the codebase
-- Prompt templates: crates/ironclaw_engine/prompts/*.md
+- Prompt templates: crates/bastionclaw_engine/prompts/*.md
 - Bridge adapters: src/bridge/*.rs
-- Engine code: crates/ironclaw_engine/src/**/*.rs
+- Engine code: crates/bastionclaw_engine/src/**/*.rs
 
 ## Fix levels
 1. PROMPT EDIT: Modify prompts/*.md to prevent LLM mistakes
@@ -140,7 +140,7 @@ Then propose and validate a fix.
 
 ## Rules
 - Always read the relevant source file before proposing a change
-- Always run `cargo test -p ironclaw_engine` after making changes
+- Always run `cargo test -p bastionclaw_engine` after making changes
 - Never modify more than 50 lines in a single patch
 - For Level 2-3: create a branch `self-improve/{issue}` and use git
 - Explain your reasoning: what the trace shows, why the fix works
@@ -236,7 +236,7 @@ This database itself is a MemoryDoc that the self-improvement thread can read an
 1. Self-improvement thread creates a git branch
 2. Reads trace + source code + fix pattern database
 3. Proposes a Rust code change using `apply_patch`
-4. Runs `cargo test -p ironclaw_engine` and `cargo clippy`
+4. Runs `cargo test -p bastionclaw_engine` and `cargo clippy`
 5. If tests pass: creates a PR with trace evidence + reasoning
 6. Human reviews and merges (or the system auto-merges after N successful self-fixes build trust)
 
@@ -263,7 +263,7 @@ This database itself is a MemoryDoc that the self-improvement thread can read an
 **Hard boundaries (never auto-modify):**
 - Security-sensitive code (safety layer, policy engine, leak detection)
 - Database schemas / migrations
-- Files outside `crates/ironclaw_engine/` and `src/bridge/` (without human approval)
+- Files outside `crates/bastionclaw_engine/` and `src/bridge/` (without human approval)
 - Test files (never weaken tests to make a fix pass)
 
 ---

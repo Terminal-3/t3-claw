@@ -1016,6 +1016,207 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
+name = "bastionclaw"
+version = "0.25.0"
+dependencies = [
+ "aes-gcm",
+ "agent-client-protocol",
+ "aho-corasick",
+ "anyhow",
+ "async-trait",
+ "aws-config",
+ "aws-sdk-bedrockruntime",
+ "aws-smithy-types",
+ "axum 0.8.8",
+ "base64 0.22.1",
+ "bastionclaw_common",
+ "bastionclaw_engine",
+ "bastionclaw_gateway",
+ "bastionclaw_safety",
+ "bastionclaw_skills",
+ "bastionclaw_tui",
+ "blake3",
+ "bollard",
+ "bs58",
+ "bytes",
+ "chrono",
+ "chrono-tz",
+ "clap",
+ "clap_complete",
+ "cookie",
+ "cron",
+ "crossterm 0.29.0",
+ "deadpool-postgres",
+ "dirs",
+ "dotenvy",
+ "ed25519-dalek",
+ "eventsource-stream",
+ "flate2",
+ "fs4",
+ "futures",
+ "glob",
+ "hex",
+ "hkdf",
+ "hmac",
+ "html-to-markdown-rs",
+ "http-body-util",
+ "hyper 1.8.1",
+ "hyper-util",
+ "iana-time-zone",
+ "insta",
+ "json5",
+ "jsonschema",
+ "jsonwebtoken",
+ "libsql",
+ "lru 0.16.3",
+ "mime_guess",
+ "open",
+ "pdf-extract",
+ "pgvector",
+ "postgres-types",
+ "pretty_assertions",
+ "pty-process",
+ "rand 0.8.5",
+ "readabilityrs",
+ "refinery",
+ "regex",
+ "reqwest",
+ "rig-core",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "rustls 0.23.37",
+ "rustls-native-certs 0.8.3",
+ "rustyline",
+ "secrecy",
+ "secret-service",
+ "security-framework 3.7.0",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_yml",
+ "sha2",
+ "subtle",
+ "tar",
+ "tempfile",
+ "termimad",
+ "testcontainers-modules",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-postgres",
+ "tokio-postgres-rustls",
+ "tokio-stream",
+ "tokio-test",
+ "tokio-tungstenite 0.26.2",
+ "tokio-util",
+ "toml 0.8.23",
+ "tower 0.5.3",
+ "tower-http 0.6.8",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-test",
+ "url",
+ "urlencoding",
+ "uuid",
+ "wasmparser 0.245.1",
+ "wasmtime",
+ "wasmtime-wasi",
+ "webpki-roots 0.26.11",
+ "zbus",
+ "zip",
+]
+
+[[package]]
+name = "bastionclaw_common"
+version = "0.2.0"
+dependencies = [
+ "chrono-tz",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "bastionclaw_engine"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bastionclaw_common",
+ "bastionclaw_skills",
+ "chrono",
+ "cron",
+ "monty",
+ "pretty_assertions",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "bastionclaw_gateway"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "bastionclaw_safety"
+version = "0.2.1"
+dependencies = [
+ "aho-corasick",
+ "criterion",
+ "regex",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "bastionclaw_skills"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "futures",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yml",
+ "sha2",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "urlencoding",
+]
+
+[[package]]
+name = "bastionclaw_tui"
+version = "0.1.0"
+dependencies = [
+ "arboard",
+ "chrono",
+ "image",
+ "pulldown-cmark",
+ "ratatui",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+ "tui-textarea",
+ "unicode-width 0.2.0",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3112,9 +3313,9 @@ dependencies = [
 
 [[package]]
 name = "gimli"
-version = "0.33.1"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19e16c5073773ccf057c282be832a59ee53ef5ff98db3aeff7f8314f52ffc196"
+checksum = "0bf7f043f89559805f8c7cacc432749b2fa0d0a0a9ee46ce47164ed5ba7f126c"
 dependencies = [
  "fnv",
  "hashbrown 0.16.1",
@@ -3865,207 +4066,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ironclaw"
-version = "0.25.0"
-dependencies = [
- "aes-gcm",
- "agent-client-protocol",
- "aho-corasick",
- "anyhow",
- "async-trait",
- "aws-config",
- "aws-sdk-bedrockruntime",
- "aws-smithy-types",
- "axum 0.8.8",
- "base64 0.22.1",
- "blake3",
- "bollard",
- "bs58",
- "bytes",
- "chrono",
- "chrono-tz",
- "clap",
- "clap_complete",
- "cookie",
- "cron",
- "crossterm 0.29.0",
- "deadpool-postgres",
- "dirs",
- "dotenvy",
- "ed25519-dalek",
- "eventsource-stream",
- "flate2",
- "fs4",
- "futures",
- "glob",
- "hex",
- "hkdf",
- "hmac",
- "html-to-markdown-rs",
- "http-body-util",
- "hyper 1.8.1",
- "hyper-util",
- "iana-time-zone",
- "insta",
- "ironclaw_common",
- "ironclaw_engine",
- "ironclaw_gateway",
- "ironclaw_safety",
- "ironclaw_skills",
- "ironclaw_tui",
- "json5",
- "jsonschema",
- "jsonwebtoken",
- "libsql",
- "lru 0.16.3",
- "mime_guess",
- "open",
- "pdf-extract",
- "pgvector",
- "postgres-types",
- "pretty_assertions",
- "pty-process",
- "rand 0.8.5",
- "readabilityrs",
- "refinery",
- "regex",
- "reqwest",
- "rig-core",
- "rust_decimal",
- "rust_decimal_macros",
- "rustls 0.23.37",
- "rustls-native-certs 0.8.3",
- "rustyline",
- "secrecy",
- "secret-service",
- "security-framework 3.7.0",
- "semver",
- "serde",
- "serde_json",
- "serde_yml",
- "sha2",
- "subtle",
- "tar",
- "tempfile",
- "termimad",
- "testcontainers-modules",
- "thiserror 2.0.18",
- "tokio",
- "tokio-postgres",
- "tokio-postgres-rustls",
- "tokio-stream",
- "tokio-test",
- "tokio-tungstenite 0.26.2",
- "tokio-util",
- "toml 0.8.23",
- "tower 0.5.3",
- "tower-http 0.6.8",
- "tracing",
- "tracing-subscriber",
- "tracing-test",
- "url",
- "urlencoding",
- "uuid",
- "wasmparser 0.245.1",
- "wasmtime",
- "wasmtime-wasi",
- "webpki-roots 0.26.11",
- "zbus",
- "zip",
-]
-
-[[package]]
-name = "ironclaw_common"
-version = "0.2.0"
-dependencies = [
- "chrono-tz",
- "serde",
- "serde_json",
- "tracing",
-]
-
-[[package]]
-name = "ironclaw_engine"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "chrono",
- "cron",
- "ironclaw_common",
- "ironclaw_skills",
- "monty",
- "pretty_assertions",
- "regex",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "ironclaw_gateway"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "ironclaw_safety"
-version = "0.2.1"
-dependencies = [
- "aho-corasick",
- "criterion",
- "regex",
- "serde_json",
- "thiserror 2.0.18",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "ironclaw_skills"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "futures",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yml",
- "sha2",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "urlencoding",
-]
-
-[[package]]
-name = "ironclaw_tui"
-version = "0.1.0"
-dependencies = [
- "arboard",
- "chrono",
- "image",
- "pulldown-cmark",
- "ratatui",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "tui-textarea",
- "unicode-width 0.2.0",
-]
-
-[[package]]
 name = "is-docker"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4796,8 +4796,8 @@ dependencies = [
 
 [[package]]
 name = "monty"
-version = "0.0.9"
-source = "git+https://github.com/pydantic/monty.git?rev=7a0d4b75b72e6ddacafaf36e26486186cdb6eb68#7a0d4b75b72e6ddacafaf36e26486186cdb6eb68"
+version = "0.0.11"
+source = "git+https://github.com/pydantic/monty.git?tag=v0.0.11#2e9df4b508e8a9ac80f3a6a26ed680242d1f460d"
 dependencies = [
  "ahash 0.8.12",
  "bytemuck",

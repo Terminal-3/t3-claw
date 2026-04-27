@@ -142,9 +142,9 @@ pub struct GateResolveRequest {
     pub resolution: GateResolutionPayload,
 }
 
-// --- App Event (re-exported from ironclaw_common) ---
+// --- App Event (re-exported from bastionclaw_common) ---
 
-pub use ironclaw_common::{AppEvent, ToolDecisionDto};
+pub use bastionclaw_common::{AppEvent, ToolDecisionDto};
 
 // --- Admin System Prompt ---
 
@@ -909,6 +909,14 @@ pub struct SettingsListResponse {
 #[derive(Debug, Deserialize)]
 pub struct SettingWriteRequest {
     pub value: serde_json::Value,
+}
+
+/// Query parameters for settings endpoints.
+/// `?scope=admin` writes to / reads from the admin-default scope.
+#[derive(Debug, Default, Deserialize)]
+pub struct SettingScopeQuery {
+    #[serde(default)]
+    pub scope: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

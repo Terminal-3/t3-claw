@@ -1,4 +1,4 @@
-# GitHub Tool for IronClaw
+# GitHub Tool for BastionClaw
 
 WASM tool for GitHub integration. It covers repositories, issues, pull requests,
 search, branches, file reads and writes, releases, and workflows.
@@ -21,7 +21,7 @@ search, branches, file reads and writes, releases, and workflows.
 3. Store the token:
 
    ```
-   ironclaw secret set github_token YOUR_TOKEN
+   bastionclaw secret set github_token YOUR_TOKEN
    ```
 
 ## Usage Examples
@@ -32,7 +32,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "get_repo",
   "owner": "nearai",
-  "repo": "ironclaw"
+  "repo": "bastionclaw"
 }
 ```
 
@@ -54,7 +54,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "list_issues",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "state": "open",
   "limit": 10
 }
@@ -66,7 +66,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "create_issue",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "title": "Bug: Something is broken",
   "body": "Detailed description...",
   "labels": ["bug", "help wanted"]
@@ -79,7 +79,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "list_pull_requests",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "state": "open",
   "limit": 5
 }
@@ -90,7 +90,7 @@ search, branches, file reads and writes, releases, and workflows.
 ```json
 {
   "action": "search_code",
-  "query": "repo:nearai/ironclaw tool_info",
+  "query": "repo:nearai/bastionclaw tool_info",
   "limit": 5
 }
 ```
@@ -100,7 +100,7 @@ search, branches, file reads and writes, releases, and workflows.
 ```json
 {
   "action": "search_issues_pull_requests",
-  "query": "repo:nearai/ironclaw is:pr label:bug",
+  "query": "repo:nearai/bastionclaw is:pr label:bug",
   "limit": 10
 }
 ```
@@ -111,7 +111,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "create_pr_review",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "pr_number": 42,
   "body": "LGTM! Great work.",
   "event": "APPROVE"
@@ -124,7 +124,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "create_pull_request",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "title": "feat: add event-driven routines",
   "head": "feat/event-routines",
   "base": "main",
@@ -138,7 +138,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "merge_pull_request",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "pr_number": 42,
   "merge_method": "squash"
 }
@@ -150,7 +150,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "list_issue_comments",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "issue_number": 42,
   "limit": 10
 }
@@ -162,7 +162,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "create_issue_comment",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "issue_number": 42,
   "body": "Thanks for reporting this!"
 }
@@ -174,7 +174,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "list_pull_request_comments",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "pr_number": 42,
   "limit": 30
 }
@@ -186,7 +186,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "reply_pull_request_comment",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "comment_id": 123456789,
   "body": "Fixed in the latest commit."
 }
@@ -198,7 +198,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "get_pull_request_reviews",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "pr_number": 42
 }
 ```
@@ -209,7 +209,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "get_combined_status",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "ref": "main"
 }
 ```
@@ -220,7 +220,7 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "get_file_content",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "path": "README.md",
   "ref": "main"
 }
@@ -232,10 +232,10 @@ search, branches, file reads and writes, releases, and workflows.
 {
   "action": "create_or_update_file",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "path": "docs/example.txt",
   "message": "docs: add example",
-  "content": "Hello from IronClaw"
+  "content": "Hello from BastionClaw"
 }
 ```
 
@@ -247,7 +247,7 @@ When updating an existing file, include the current blob `sha`.
 {
   "action": "delete_file",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "path": "docs/example.txt",
   "message": "docs: remove example",
   "sha": "0123456789abcdef0123456789abcdef01234567"
@@ -260,7 +260,7 @@ When updating an existing file, include the current blob `sha`.
 {
   "action": "list_branches",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "limit": 20
 }
 ```
@@ -271,7 +271,7 @@ When updating an existing file, include the current blob `sha`.
 {
   "action": "create_branch",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "branch": "feature/github-tool-audit",
   "from_ref": "main"
 }
@@ -283,7 +283,7 @@ When updating an existing file, include the current blob `sha`.
 {
   "action": "list_releases",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "limit": 10
 }
 ```
@@ -294,7 +294,7 @@ When updating an existing file, include the current blob `sha`.
 {
   "action": "create_release",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "tag_name": "v1.2.3",
   "name": "v1.2.3",
   "generate_release_notes": true
@@ -307,7 +307,7 @@ When updating an existing file, include the current blob `sha`.
 {
   "action": "trigger_workflow",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "workflow_id": "ci.yml",
   "ref": "main",
   "inputs": {
@@ -322,7 +322,7 @@ When updating an existing file, include the current blob `sha`.
 {
   "action": "get_workflow_runs",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "limit": 5
 }
 ```
@@ -333,7 +333,7 @@ When updating an existing file, include the current blob `sha`.
 {
   "action": "get_workflow_runs",
   "owner": "nearai",
-  "repo": "ironclaw",
+  "repo": "bastionclaw",
   "limit": 5,
   "page": 2
 }
@@ -362,7 +362,7 @@ Invalid event: 'INVALID'. Must be one of: APPROVE, REQUEST_CHANGES, COMMENT
 ### Missing Token
 
 ```text
-GitHub token not found in secret store. Set it with: ironclaw secret set github_token <token>...
+GitHub token not found in secret store. Set it with: bastionclaw secret set github_token <token>...
 ```
 
 ## Troubleshooting
@@ -376,7 +376,7 @@ GitHub token not found in secret store. Set it with: ironclaw secret set github_
 ### "GitHub API error 401: Bad credentials"
 
 - The token might be invalid or expired.
-- Update the token: `ironclaw secret set github_token NEW_TOKEN`.
+- Update the token: `bastionclaw secret set github_token NEW_TOKEN`.
 
 ### Rate Limiting
 

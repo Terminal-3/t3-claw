@@ -1,14 +1,14 @@
 ---
 title: Security
 sidebarTitle: Overview
-description: IronClaw's defense-in-depth security architecture
+description: BastionClaw's defense-in-depth security architecture
 ---
 
-Security is IronClaw's primary differentiator. Your data stays yours through multiple layers of defense.
+Security is BastionClaw's primary differentiator. Your data stays yours through multiple layers of defense.
 
 ## Security-First Design
 
-IronClaw is built with security as a core principle:
+BastionClaw is built with security as a core principle:
 
 - **Local-first** — Your data stays on your machine
 - **Encrypted at rest** — Secrets use AES-256-GCM
@@ -19,14 +19,14 @@ IronClaw is built with security as a core principle:
 ## Defense Layers
 
 <Frame>
-  <img src="/assets/security-architecture.svg" alt="IronClaw Security Architecture Diagram" />
+  <img src="/assets/security-architecture.svg" alt="BastionClaw Security Architecture Diagram" />
 </Frame>
 
 <Note>
   [Download the Excalidraw file](/assets/security-architecture.excalidraw) to explore or edit this diagram.
 </Note>
 
-The security architecture illustrates IronClaw's **defense in depth** approach with four independent protection layers that data flows through before reaching external services.
+The security architecture illustrates BastionClaw's **defense in depth** approach with four independent protection layers that data flows through before reaching external services.
 
 ## The Four Defense Layers
 
@@ -50,7 +50,7 @@ The security architecture illustrates IronClaw's **defense in depth** approach w
 
 ## Security Defaults
 
-IronClaw ships with secure defaults:
+BastionClaw ships with secure defaults:
 
 | Feature | Default | Why |
 |---------|---------|-----|
@@ -127,9 +127,9 @@ See [Secrets](/security/secrets) for details.
 
 ## Compliance Considerations
 
-IronClaw helps with security compliance:
+BastionClaw helps with security compliance:
 
-| Requirement | IronClaw Feature |
+| Requirement | BastionClaw Feature |
 |-------------|-----------------|
 | Data encryption at rest | AES-256-GCM for secrets |
 | Access control | Channel policies, owner binding |
@@ -139,7 +139,7 @@ IronClaw helps with security compliance:
 
 ## Security Checklist
 
-When deploying IronClaw:
+When deploying BastionClaw:
 
 - [ ] Use OS keychain for master key (not env var)
 - [ ] Set `HTTP_HOST=127.0.0.1` if external webhooks not needed
@@ -153,7 +153,7 @@ When deploying IronClaw:
 
 If you discover a security vulnerability:
 
-1. Email security@ironclaw.ai
+1. Email security@bastionclaw.ai
 2. Do not disclose publicly until fixed
 3. Include steps to reproduce
 

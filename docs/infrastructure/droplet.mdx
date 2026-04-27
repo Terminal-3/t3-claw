@@ -1,14 +1,14 @@
 ---
 title: DigitalOcean Droplet
-description: Host IronClaw on a DigitalOcean Droplet
+description: Host BastionClaw on a DigitalOcean Droplet
 ---
 
 DigitalOcean offers a simple and cost-effective way to run applications in the cloud thanks to its Droplets - virtual machines that can be set up in minutes. 
 
-In this guide we will setup a DigitalOcean Droplet and strengthen its security so you can safely run IronClaw and expose it to the internet.
+In this guide we will setup a DigitalOcean Droplet and strengthen its security so you can safely run BastionClaw and expose it to the internet.
 
 <Tip>
-Do not feel like setting up your own infrastructure? You can install IronClaw with a few clicks on [agent.near.ai](https://agent.near.ai)
+Do not feel like setting up your own infrastructure? You can install BastionClaw with a few clicks on [agent.near.ai](https://agent.near.ai)
 </Tip>
 
 ---
@@ -19,7 +19,7 @@ Register on [DigitalOcean](https://cloud.digitalocean.com) and navigate to the [
 
 ![droplets landing page](/images/infrastructure/droplets/droplets-landing.png)
 
-I recommend choosing Ubuntu as the operating system - particularly the latest LTS version - and the `Basic` plan with a `Regular` disk. This currently costs around $4/month and provides more than enough resources to run IronClaw for most use cases.
+I recommend choosing Ubuntu as the operating system - particularly the latest LTS version - and the `Basic` plan with a `Regular` disk. This currently costs around $4/month and provides more than enough resources to run BastionClaw for most use cases.
 
 ![droplets plan selection](/images/infrastructure/droplets/droplets-create.png)
 
@@ -68,32 +68,32 @@ apt update && apt upgrade -y
 
 ### Create a New User
 
-It is good practice to create a new user with sudo privileges instead of using `root` for daily operations. You can create a new user (for example, `ironclaw`) and add it to the sudo group:
+It is good practice to create a new user with sudo privileges instead of using `root` for daily operations. You can create a new user (for example, `bastionclaw`) and add it to the sudo group:
 
 ```bash
-adduser ironclaw
-usermod -aG sudo ironclaw
+adduser bastionclaw
+usermod -aG sudo bastionclaw
 ```
 
 Since we will want to log in with this new user, we need to copy the SSH keys from `root` to the new user:
 
 ```bash
 # Create the .ssh directory for the user
-mkdir -p /home/ironclaw/.ssh
+mkdir -p /home/bastionclaw/.ssh
 
 # Copy your current root authorized_keys (if you want the same key)
-cp ~/.ssh/authorized_keys /home/ironclaw/.ssh/authorized_keys
+cp ~/.ssh/authorized_keys /home/bastionclaw/.ssh/authorized_keys
 
 # Set the correct permissions (critical — SSH will ignore the file otherwise)
-chown -R ironclaw:ironclaw /home/ironclaw/
-chmod 700 /home/ironclaw/.ssh
-chmod 600 /home/ironclaw/.ssh/authorized_keys
+chown -R bastionclaw:bastionclaw /home/bastionclaw/
+chmod 700 /home/bastionclaw/.ssh
+chmod 600 /home/bastionclaw/.ssh/authorized_keys
 ```
 
 Open a new terminal window and try to log in with the new user to confirm everything is working:
 
 ```bash
-ssh ironclaw@<IP_ADDRESS>
+ssh bastionclaw@<IP_ADDRESS>
 ```
 
 <Warning>
@@ -114,7 +114,7 @@ Port 2222                   # Change default port (optional but helps)
 Then reboot the Droplet to apply the changes, and try to log in again using the new port:
 
 ```bash
-ssh -p 2222 ironclaw@<IP_ADDRESS>
+ssh -p 2222 bastionclaw@<IP_ADDRESS>
 ```
 
 If everything works, you can now disable root login by setting `PermitRootLogin no` in the SSH configuration and rebooting again.
@@ -145,30 +145,30 @@ sudo ufw enable
 
 ---
 
-## Install IronClaw
+## Install BastionClaw
 
-Now that we have set up and secured the Droplet, we can proceed with the IronClaw installation. You can follow the installation instructions in the [Quickstart Guide](/quickstart) to get IronClaw up and running.
-
-```
-# Install IronClaw
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/ironclaw/releases/latest/download/ironclaw-installer.sh | sh
-```
-
-Now simply start IronClaw and follow the instructions to complete the setup:
+Now that we have set up and secured the Droplet, we can proceed with the BastionClaw installation. You can follow the installation instructions in the [Quickstart Guide](/quickstart) to get BastionClaw up and running.
 
 ```
-ironclaw
+# Install BastionClaw
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/bastionclaw/releases/latest/download/bastionclaw-installer.sh | sh
+```
+
+Now simply start BastionClaw and follow the instructions to complete the setup:
+
+```
+bastionclaw
 ```
 
 <Tip>
-We recommend using a session manager like `tmux` or `screen` so you can easily detach and reattach to your running IronClaw instance between SSH sessions.
+We recommend using a session manager like `tmux` or `screen` so you can easily detach and reattach to your running BastionClaw instance between SSH sessions.
 </Tip>
 
 ---
 
 ## Next Steps
 
-Follow our [Quickstart Guide](/quickstart) to create your first agent, connect it to Telegram, and start exploring IronClaw's capabilities.
+Follow our [Quickstart Guide](/quickstart) to create your first agent, connect it to Telegram, and start exploring BastionClaw's capabilities.
 
 Want to talk with your agent using a messaging app? Check out the [**Channels**](/channels/overview.mdx) documentation to learn how to connect.
 

@@ -299,8 +299,8 @@ impl PendingGateStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bastionclaw_engine::{ConversationId, ResumeKind, ThreadId};
     use chrono::{Duration, Utc};
-    use ironclaw_engine::{ConversationId, ResumeKind, ThreadId};
 
     fn sample_gate_with(
         user_id: &str,

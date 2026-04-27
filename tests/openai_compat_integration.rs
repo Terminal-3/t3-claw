@@ -9,11 +9,11 @@ use std::time::Duration;
 use async_trait::async_trait;
 use rust_decimal::Decimal;
 
-use ironclaw::channels::web::server::{GatewayState, start_server};
-use ironclaw::channels::web::sse::SseManager;
-use ironclaw::channels::web::ws::WsConnectionTracker;
-use ironclaw::error::LlmError;
-use ironclaw::llm::{
+use bastionclaw::channels::web::server::{GatewayState, start_server};
+use bastionclaw::channels::web::sse::SseManager;
+use bastionclaw::channels::web::ws::WsConnectionTracker;
+use bastionclaw::error::LlmError;
+use bastionclaw::llm::{
     CompletionRequest, CompletionResponse, FinishReason, LlmProvider, ToolCompletionRequest,
     ToolCompletionResponse,
 };
@@ -62,7 +62,7 @@ impl LlmProvider for MockLlmProvider {
             .messages
             .iter()
             .rev()
-            .find(|m| m.role == ironclaw::llm::Role::User)
+            .find(|m| m.role == bastionclaw::llm::Role::User)
             .map(|m| m.content.clone())
             .unwrap_or_else(|| "no user message".to_string());
 
@@ -90,7 +90,7 @@ impl LlmProvider for MockLlmProvider {
         if let Some(tool) = req.tools.first() {
             Ok(ToolCompletionResponse {
                 content: None,
-                tool_calls: vec![ironclaw::llm::ToolCall {
+                tool_calls: vec![bastionclaw::llm::ToolCall {
                     id: "call_mock_001".to_string(),
                     name: tool.name.clone(),
                     arguments: serde_json::json!({"test": true}),
@@ -211,14 +211,14 @@ async fn start_test_server_with_provider(
         skill_registry: None,
         skill_catalog: None,
         auth_manager: None,
-        chat_rate_limiter: ironclaw::channels::web::server::PerUserRateLimiter::new(30, 60),
-        oauth_rate_limiter: ironclaw::channels::web::server::PerUserRateLimiter::new(20, 60),
-        webhook_rate_limiter: ironclaw::channels::web::server::RateLimiter::new(10, 60),
+        chat_rate_limiter: bastionclaw::channels::web::server::PerUserRateLimiter::new(30, 60),
+        oauth_rate_limiter: bastionclaw::channels::web::server::PerUserRateLimiter::new(20, 60),
+        webhook_rate_limiter: bastionclaw::channels::web::server::RateLimiter::new(10, 60),
         registry_entries: Vec::new(),
         cost_guard: None,
         routine_engine: Arc::new(tokio::sync::RwLock::new(None)),
         startup_time: std::time::Instant::now(),
-        active_config: ironclaw::channels::web::server::ActiveConfigSnapshot::default(),
+        active_config: bastionclaw::channels::web::server::ActiveConfigSnapshot::default(),
         secrets_store: None,
         db_auth: None,
         pairing_store: None,
@@ -234,7 +234,7 @@ async fn start_test_server_with_provider(
         tool_dispatcher: None,
     });
 
-    let auth = ironclaw::channels::web::auth::MultiAuthState::single(
+    let auth = bastionclaw::channels::web::auth::MultiAuthState::single(
         AUTH_TOKEN.to_string(),
         "test-user".to_string(),
     );
@@ -395,10 +395,10 @@ async fn test_chat_completions_streaming() {
     // Check simulated streaming header
     assert_eq!(
         resp.headers()
-            .get("x-ironclaw-streaming")
+            .get("x-bastionclaw-streaming")
             .and_then(|v| v.to_str().ok()),
         Some("simulated"),
-        "Expected x-ironclaw-streaming: simulated header"
+        "Expected x-bastionclaw-streaming: simulated header"
     );
 
     let text = resp.text().await.unwrap();
@@ -723,14 +723,14 @@ async fn test_no_llm_provider_returns_503() {
         skill_registry: None,
         skill_catalog: None,
         auth_manager: None,
-        chat_rate_limiter: ironclaw::channels::web::server::PerUserRateLimiter::new(30, 60),
-        oauth_rate_limiter: ironclaw::channels::web::server::PerUserRateLimiter::new(20, 60),
-        webhook_rate_limiter: ironclaw::channels::web::server::RateLimiter::new(10, 60),
+        chat_rate_limiter: bastionclaw::channels::web::server::PerUserRateLimiter::new(30, 60),
+        oauth_rate_limiter: bastionclaw::channels::web::server::PerUserRateLimiter::new(20, 60),
+        webhook_rate_limiter: bastionclaw::channels::web::server::RateLimiter::new(10, 60),
         registry_entries: Vec::new(),
         cost_guard: None,
         routine_engine: Arc::new(tokio::sync::RwLock::new(None)),
         startup_time: std::time::Instant::now(),
-        active_config: ironclaw::channels::web::server::ActiveConfigSnapshot::default(),
+        active_config: bastionclaw::channels::web::server::ActiveConfigSnapshot::default(),
         secrets_store: None,
         db_auth: None,
         pairing_store: None,
@@ -746,7 +746,7 @@ async fn test_no_llm_provider_returns_503() {
         tool_dispatcher: None,
     });
 
-    let auth = ironclaw::channels::web::auth::MultiAuthState::single(
+    let auth = bastionclaw::channels::web::auth::MultiAuthState::single(
         AUTH_TOKEN.to_string(),
         "test-user".to_string(),
     );
@@ -775,10 +775,10 @@ async fn test_chat_completions_body_too_large() {
 
     let mock_state = Arc::new(MockLlmState::default());
     let llm_provider: Arc<dyn LlmProvider> = Arc::new(MockLlmProvider::new(mock_state));
-    let state = ironclaw::channels::web::test_helpers::TestGatewayBuilder::new()
+    let state = bastionclaw::channels::web::test_helpers::TestGatewayBuilder::new()
         .llm_provider(llm_provider)
         .build();
-    let auth_state = ironclaw::channels::web::auth::MultiAuthState::single(
+    let auth_state = bastionclaw::channels::web::auth::MultiAuthState::single(
         AUTH_TOKEN.to_string(),
         "test-user".to_string(),
     );
@@ -786,11 +786,11 @@ async fn test_chat_completions_body_too_large() {
     let app = Router::new()
         .route(
             "/v1/chat/completions",
-            post(ironclaw::channels::web::openai_compat::chat_completions_handler),
+            post(bastionclaw::channels::web::openai_compat::chat_completions_handler),
         )
         .route_layer(middleware::from_fn_with_state(
-            ironclaw::channels::web::auth::CombinedAuthState::from(auth_state),
-            ironclaw::channels::web::auth::auth_middleware,
+            bastionclaw::channels::web::auth::CombinedAuthState::from(auth_state),
+            bastionclaw::channels::web::auth::auth_middleware,
         ))
         .layer(DefaultBodyLimit::max(10 * 1024 * 1024))
         .with_state(state);

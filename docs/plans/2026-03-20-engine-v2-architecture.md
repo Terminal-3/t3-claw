@@ -1,15 +1,15 @@
-# IronClaw Engine v2: Unified Thread-Capability-CodeAct Architecture
+# BastionClaw Engine v2: Unified Thread-Capability-CodeAct Architecture
 
 **Date:** 2026-03-20
 **Updated:** 2026-04-01
 **Status:** In Progress (Phases 1-6 complete, engine running end-to-end)
-**Goal:** Replace IronClaw's ~10 fragmented abstractions with a unified execution model built on 5 primitives: Thread, Step, Capability, MemoryDoc, Project. Developed as a standalone crate (`ironclaw_engine`) that can be swapped in when it passes all acceptance tests.
+**Goal:** Replace BastionClaw's ~10 fragmented abstractions with a unified execution model built on 5 primitives: Thread, Step, Capability, MemoryDoc, Project. Developed as a standalone crate (`bastionclaw_engine`) that can be swapped in when it passes all acceptance tests.
 
 ---
 
 ## Motivation
 
-IronClaw currently has Session, Job, Routine, Channel, Tool, Skill, Hook, Observer, Extension, and LoopDelegate as separate abstractions. All share common patterns (lifecycle, messaging, state, capabilities) but are implemented independently. This causes:
+BastionClaw currently has Session, Job, Routine, Channel, Tool, Skill, Hook, Observer, Extension, and LoopDelegate as separate abstractions. All share common patterns (lifecycle, messaging, state, capabilities) but are implemented independently. This causes:
 
 - Duplicated logic across ChatDelegate, JobDelegate, ContainerDelegate
 - Inconsistent state machines (SessionState vs JobState vs RoutineState)
@@ -51,10 +51,10 @@ IronClaw currently has Session, Job, Routine, Channel, Tool, Skill, Hook, Observ
 
 ## Crate Structure
 
-Single crate: `crates/ironclaw_engine/`
+Single crate: `crates/bastionclaw_engine/`
 
 ```
-crates/ironclaw_engine/
+crates/bastionclaw_engine/
   Cargo.toml
   CLAUDE.md
   src/
@@ -328,7 +328,7 @@ The existing `Channel` trait stays. A bridge adapter translates:
 
 ## Phase 6: Main Crate Integration — DONE (partial)
 
-**Goal:** Bridge adapters connect the engine to existing IronClaw infrastructure. Strategy C: parallel deployment via `ENGINE_V2=true` env var.
+**Goal:** Bridge adapters connect the engine to existing BastionClaw infrastructure. Strategy C: parallel deployment via `ENGINE_V2=true` env var.
 
 ### 6.1 Bridge adapters — DONE (`src/bridge/`)
 - `LlmBridgeAdapter` — wraps `Arc<dyn LlmProvider>`, converts `ThreadMessage` ↔ `ChatMessage`, `ActionDef` ↔ `ToolDefinition`. Depth-based routing (depth=0 → primary, depth>0 → `cheap_llm`). Code block detection for CodeAct (`extract_code_block` handles ```repl, ```python, ```py, bare ```). Defaults: max_tokens=4096, temperature=0.7, tool_choice="auto". No-tools path uses plain `complete()`.
@@ -346,7 +346,7 @@ Engine broadcasts `ThreadEvent`s via `tokio::broadcast`. Router subscribes and f
 `EngineState` persists across messages (OnceLock singleton). ConversationManager builds the visible conversation transcript for continuity. The orchestrator persists its mutable working transcript and intermediate execution state in `persisted_state` / internal thread transcript rather than mixing tool traces into the user-visible transcript.
 
 ### 6.5 Trace recording + retrospective — DONE
-Live trace recording is handled by the host crate's `RecordingLlm` (`IRONCLAW_RECORD_TRACE=1`) — engine v2 piggybacks on it via the shared LLM provider chain, so there is no separate engine trace file. Inside ThreadManager, retrospective trace analysis runs unconditionally after each thread completes: the analyzer detects 8 issue categories and the reflection pipeline produces Summary/Lesson/Issue/Spec/Playbook docs.
+Live trace recording is handled by the host crate's `RecordingLlm` (`BASTIONCLAW_RECORD_TRACE=1`) — engine v2 piggybacks on it via the shared LLM provider chain, so there is no separate engine trace file. Inside ThreadManager, retrospective trace analysis runs unconditionally after each thread completes: the analyzer detects 8 issue categories and the reflection pipeline produces Summary/Lesson/Issue/Spec/Playbook docs.
 
 ### 6.6 Bugs found and fixed via traces
 - Tool name hyphens vs underscores (web-search vs web_search)
@@ -385,7 +385,7 @@ Approval, authentication, and post-action auth chaining all use the same pause/r
 #### Web gateway integration — DONE
 - SSE streaming via AppEvent: `ThreadEvent` → `AppEvent` conversion + `SseManager.broadcast()`
 - V1 conversation DB persistence: user messages + agent responses written via `add_conversation_message()`
-- Depends on `ironclaw_common` crate with `AppEvent` type (PR #1615, merged into branch)
+- Depends on `bastionclaw_common` crate with `AppEvent` type (PR #1615, merged into branch)
 
 #### Routines / Jobs — PARTIAL
 - V1-only tools (`routine_create`, `create_job`, `build_software`, etc.) are blocked in engine v2 with a helpful error: "use the slash command instead"
@@ -443,14 +443,14 @@ This should remain an adapter-boundary feature in `EffectBridgeAdapter`, reusing
 
 ### 7.3 Sub-crate extraction
 Once boundaries stabilize, split if beneficial:
-- `ironclaw_types` — shared types for WASM extensions
-- `ironclaw_capability` — if used by tooling/CLI independently
+- `bastionclaw_types` — shared types for WASM extensions
+- `bastionclaw_capability` — if used by tooling/CLI independently
 
 ---
 
 ## Phase 8: Sandboxed Execution + Infrastructure Integration
 
-**Goal:** Leverage existing IronClaw infrastructure for sandboxed execution. This is NOT about running CodeAct/RLM in different runtimes — Monty is the sole Python executor. This is about isolating threads and running third-party tools safely.
+**Goal:** Leverage existing BastionClaw infrastructure for sandboxed execution. This is NOT about running CodeAct/RLM in different runtimes — Monty is the sole Python executor. This is about isolating threads and running third-party tools safely.
 
 ### 8.1 WASM tool sandbox (existing infrastructure)
 - Third-party tools from `tools-src/` and the registry run in WASM via existing `src/tools/wasm/`
@@ -534,9 +534,9 @@ Phase 7 no longer depends on adding SQL persistence; it depends on engine stabil
 
 ```bash
 # Engine crate only:
-cargo check -p ironclaw_engine
-cargo clippy -p ironclaw_engine --all-targets -- -D warnings
-cargo test -p ironclaw_engine
+cargo check -p bastionclaw_engine
+cargo clippy -p bastionclaw_engine --all-targets -- -D warnings
+cargo test -p bastionclaw_engine
 
 # Full workspace (no regressions):
 cargo check

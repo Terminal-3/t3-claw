@@ -1,4 +1,4 @@
-# Smart Model Routing for IronClaw
+# Smart Model Routing for BastionClaw
 
 **Status:** Implemented
 **Author:** Microwave

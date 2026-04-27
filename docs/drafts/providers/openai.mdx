@@ -9,7 +9,7 @@ Use OpenAI's GPT models directly via their API.
 ## Configuration
 
 ```bash
-# ~/.ironclaw/.env
+# ~/.bastionclaw/.env
 
 LLM_BACKEND=openai
 OPENAI_API_KEY=sk-...
@@ -36,7 +36,7 @@ OPENAI_API_KEY=sk-...
 ### Via Wizard
 
 ```bash
-ironclaw onboard
+bastionclaw onboard
 ```
 
 1. Step 3: Select "OpenAI"
@@ -46,7 +46,7 @@ ironclaw onboard
 ### Manual Configuration
 
 ```bash
-# Edit ~/.ironclaw/.env
+# Edit ~/.bastionclaw/.env
 export LLM_BACKEND=openai
 export OPENAI_API_KEY=sk-...
 
@@ -54,9 +54,9 @@ export OPENAI_API_KEY=sk-...
 export OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-Restart IronClaw:
+Restart BastionClaw:
 ```bash
-ironclaw run
+bastionclaw run
 ```
 
 ## Cost

@@ -34,8 +34,8 @@ use crate::worker::autonomous_recovery::{
     AutonomousRecoveryAction, AutonomousRecoveryState, EMPTY_TOOL_COMPLETION_FAILURE,
     EMPTY_TOOL_COMPLETION_NUDGE, FORCE_TEXT_RECOVERY_PROMPT,
 };
-use ironclaw_common::AppEvent;
-use ironclaw_safety::SafetyLayer;
+use bastionclaw_common::AppEvent;
+use bastionclaw_safety::SafetyLayer;
 
 /// Shared dependencies for worker execution.
 ///
@@ -325,7 +325,7 @@ Report when the job is complete or if you encounter issues you cannot resolve."#
             .ok()
             .and_then(|ctx| ctx.metadata.get("max_iterations").and_then(|v| v.as_u64()))
             .unwrap_or(50) as usize;
-        let max_iterations = max_iterations.min(ironclaw_common::MAX_WORKER_ITERATIONS as usize);
+        let max_iterations = max_iterations.min(bastionclaw_common::MAX_WORKER_ITERATIONS as usize);
 
         // Initial tool definitions for planning (will be refreshed in loop)
         reason_ctx.available_tools = self.tools().tool_definitions().await;
@@ -1739,23 +1739,35 @@ impl<'a> LoopDelegate for JobDelegate<'a> {
             .collect();
 
         // Execute tools (parallel for multiple, direct for single)
+        let mut tool_failure_count: usize = 0;
+        let total_tools = selections.len();
+
         if selections.len() == 1 {
             let selection = &selections[0];
             let result = self
                 .worker
                 .execute_tool(&selection.tool_name, &selection.parameters)
                 .await;
+            if result.is_err() {
+                tool_failure_count += 1;
+            }
             self.worker
                 .process_tool_result_job(reason_ctx, selection, result)
                 .await?;
         } else {
             let results = self.worker.execute_tools_parallel(&selections).await;
             for (selection, result) in selections.iter().zip(results) {
+                if result.result.is_err() {
+                    tool_failure_count += 1;
+                }
                 self.worker
                     .process_tool_result_job(reason_ctx, selection, result.result)
                     .await?;
             }
         }
+
+        reason_ctx.last_tool_batch_all_failed =
+            total_tools > 0 && tool_failure_count == total_tools;
 
         Ok(None)
     }
@@ -1824,7 +1836,7 @@ mod tests {
     use crate::testing::{BroadcastCapture, RecordingBroadcastChannel};
     use crate::tools::builtin::MessageTool;
     use crate::tools::{Tool, ToolError as ToolExecError, ToolOutput};
-    use ironclaw_safety::SafetyLayer;
+    use bastionclaw_safety::SafetyLayer;
 
     /// A test tool that sleeps for a configurable duration before returning.
     struct SlowTool {

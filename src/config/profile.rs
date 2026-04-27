@@ -5,11 +5,11 @@
 //! select a deployment shape with a single env var:
 //!
 //! ```bash
-//! IRONCLAW_PROFILE=server ironclaw
+//! BASTIONCLAW_PROFILE=server bastionclaw
 //! ```
 //!
-//! **Lookup order** for `IRONCLAW_PROFILE=foo`:
-//! 1. `~/.ironclaw/profiles/foo.toml`  (user-defined, highest priority)
+//! **Lookup order** for `BASTIONCLAW_PROFILE=foo`:
+//! 1. `~/.bastionclaw/profiles/foo.toml`  (user-defined, highest priority)
 //! 2. Built-in profiles embedded in the binary
 //!
 //! Users can create any profile name they want — just drop a TOML file in the
@@ -19,7 +19,7 @@
 
 use std::path::PathBuf;
 
-use crate::bootstrap::ironclaw_base_dir;
+use crate::bootstrap::bastionclaw_base_dir;
 use crate::config::helpers::optional_env;
 use crate::error::ConfigError;
 use crate::settings::Settings;
@@ -31,14 +31,14 @@ const BUILTIN_SERVER: &str = include_str!("../../profiles/server.toml");
 const BUILTIN_SERVER_MULTITENANT: &str = include_str!("../../profiles/server-multitenant.toml");
 
 /// Known built-in profile names and their embedded TOML content.
-const BUILTIN_PROFILES: &[(&str, &str)] = &[
+pub(crate) const BUILTIN_PROFILES: &[(&str, &str)] = &[
     ("local", BUILTIN_LOCAL),
     ("local-sandbox", BUILTIN_LOCAL_SANDBOX),
     ("server", BUILTIN_SERVER),
     ("server-multitenant", BUILTIN_SERVER_MULTITENANT),
 ];
 
-/// Directory under the IronClaw base dir where user-defined profiles live.
+/// Directory under the BastionClaw base dir where user-defined profiles live.
 const PROFILES_DIR: &str = "profiles";
 
 /// Information about an available profile.
@@ -52,12 +52,12 @@ pub struct ProfileInfo {
     pub path: Option<PathBuf>,
 }
 
-/// Read `IRONCLAW_PROFILE` and merge the profile onto `settings`.
+/// Read `BASTIONCLAW_PROFILE` and merge the profile onto `settings`.
 ///
 /// If the env var is unset or empty, this is a no-op. If set to an unknown
 /// name with no user-defined file, returns an error.
 pub fn apply_profile(settings: &mut Settings) -> Result<(), ConfigError> {
-    let name = match optional_env("IRONCLAW_PROFILE")? {
+    let name = match optional_env("BASTIONCLAW_PROFILE")? {
         Some(n) if !n.is_empty() => n,
         _ => return Ok(()),
     };
@@ -74,7 +74,7 @@ fn load_profile(name: &str) -> Result<Settings, ConfigError> {
     // Reject names that could escape the profiles directory.
     if name.contains('/') || name.contains('\\') || name.contains("..") || name.starts_with('.') {
         return Err(ConfigError::InvalidValue {
-            key: "IRONCLAW_PROFILE".to_string(),
+            key: "BASTIONCLAW_PROFILE".to_string(),
             message: format!(
                 "invalid profile name '{name}': must not contain path separators or '..'"
             ),
@@ -90,7 +90,7 @@ fn load_profile(name: &str) -> Result<Settings, ConfigError> {
         return Settings::load_toml(&user_path)
             .map_err(ConfigError::ParseError)?
             .ok_or(ConfigError::InvalidValue {
-                key: "IRONCLAW_PROFILE".to_string(),
+                key: "BASTIONCLAW_PROFILE".to_string(),
                 message: format!(
                     "profile file exists but could not be loaded: {}",
                     user_path.display()
@@ -113,7 +113,7 @@ fn load_profile(name: &str) -> Result<Settings, ConfigError> {
     // 3. Not found anywhere.
     let available: Vec<&str> = BUILTIN_PROFILES.iter().map(|(n, _)| *n).collect();
     Err(ConfigError::InvalidValue {
-        key: "IRONCLAW_PROFILE".to_string(),
+        key: "BASTIONCLAW_PROFILE".to_string(),
         message: format!(
             "unknown profile '{name}'. Built-in profiles: {}. \
              You can also create a custom profile at {}",
@@ -162,9 +162,9 @@ pub fn list_profiles() -> Vec<ProfileInfo> {
     profiles
 }
 
-/// Path to the user-defined profiles directory: `~/.ironclaw/profiles/`.
+/// Path to the user-defined profiles directory: `~/.bastionclaw/profiles/`.
 fn user_profiles_dir() -> PathBuf {
-    ironclaw_base_dir().join(PROFILES_DIR)
+    bastionclaw_base_dir().join(PROFILES_DIR)
 }
 
 #[cfg(test)]
@@ -175,8 +175,8 @@ mod tests {
     #[test]
     fn no_profile_is_noop() {
         let _guard = lock_env();
-        // Ensure IRONCLAW_PROFILE is not set.
-        unsafe { std::env::remove_var("IRONCLAW_PROFILE") };
+        // Ensure BASTIONCLAW_PROFILE is not set.
+        unsafe { std::env::remove_var("BASTIONCLAW_PROFILE") };
 
         let mut settings = Settings::default();
         let original = settings.clone();
@@ -191,12 +191,12 @@ mod tests {
     #[test]
     fn unknown_profile_errors() {
         let _guard = lock_env();
-        unsafe { std::env::set_var("IRONCLAW_PROFILE", "nonexistent-xyz-987") };
+        unsafe { std::env::set_var("BASTIONCLAW_PROFILE", "nonexistent-xyz-987") };
 
         let mut settings = Settings::default();
         let result = apply_profile(&mut settings);
 
-        unsafe { std::env::remove_var("IRONCLAW_PROFILE") };
+        unsafe { std::env::remove_var("BASTIONCLAW_PROFILE") };
 
         assert!(result.is_err());
         let err = result.unwrap_err().to_string();
@@ -233,12 +233,12 @@ mod tests {
     #[test]
     fn local_profile_disables_gateway() {
         let _guard = lock_env();
-        unsafe { std::env::set_var("IRONCLAW_PROFILE", "local") };
+        unsafe { std::env::set_var("BASTIONCLAW_PROFILE", "local") };
 
         let mut settings = Settings::default();
         apply_profile(&mut settings).expect("local profile should load");
 
-        unsafe { std::env::remove_var("IRONCLAW_PROFILE") };
+        unsafe { std::env::remove_var("BASTIONCLAW_PROFILE") };
 
         assert!(!settings.channels.gateway_enabled);
         assert!(!settings.sandbox.enabled);
@@ -252,12 +252,12 @@ mod tests {
     #[test]
     fn server_profile_enables_postgres() {
         let _guard = lock_env();
-        unsafe { std::env::set_var("IRONCLAW_PROFILE", "server") };
+        unsafe { std::env::set_var("BASTIONCLAW_PROFILE", "server") };
 
         let mut settings = Settings::default();
         apply_profile(&mut settings).expect("server profile should load");
 
-        unsafe { std::env::remove_var("IRONCLAW_PROFILE") };
+        unsafe { std::env::remove_var("BASTIONCLAW_PROFILE") };
 
         assert_eq!(settings.database_backend.as_deref(), Some("postgres"));
         assert!(settings.sandbox.enabled);
@@ -268,12 +268,12 @@ mod tests {
     #[test]
     fn server_multitenant_sets_higher_parallelism() {
         let _guard = lock_env();
-        unsafe { std::env::set_var("IRONCLAW_PROFILE", "server-multitenant") };
+        unsafe { std::env::set_var("BASTIONCLAW_PROFILE", "server-multitenant") };
 
         let mut settings = Settings::default();
         apply_profile(&mut settings).expect("server-multitenant profile should load");
 
-        unsafe { std::env::remove_var("IRONCLAW_PROFILE") };
+        unsafe { std::env::remove_var("BASTIONCLAW_PROFILE") };
 
         assert_eq!(settings.agent.max_parallel_jobs, 10);
         assert_eq!(settings.database_backend.as_deref(), Some("postgres"));
@@ -282,12 +282,12 @@ mod tests {
     #[test]
     fn local_sandbox_enables_sandbox() {
         let _guard = lock_env();
-        unsafe { std::env::set_var("IRONCLAW_PROFILE", "local-sandbox") };
+        unsafe { std::env::set_var("BASTIONCLAW_PROFILE", "local-sandbox") };
 
         let mut settings = Settings::default();
         apply_profile(&mut settings).expect("local-sandbox profile should load");
 
-        unsafe { std::env::remove_var("IRONCLAW_PROFILE") };
+        unsafe { std::env::remove_var("BASTIONCLAW_PROFILE") };
 
         assert!(settings.sandbox.enabled);
         assert_eq!(settings.sandbox.policy, "readonly");
@@ -297,12 +297,12 @@ mod tests {
     #[test]
     fn case_insensitive_profile_name() {
         let _guard = lock_env();
-        unsafe { std::env::set_var("IRONCLAW_PROFILE", "SERVER") };
+        unsafe { std::env::set_var("BASTIONCLAW_PROFILE", "SERVER") };
 
         let mut settings = Settings::default();
         apply_profile(&mut settings).expect("case-insensitive should work");
 
-        unsafe { std::env::remove_var("IRONCLAW_PROFILE") };
+        unsafe { std::env::remove_var("BASTIONCLAW_PROFILE") };
 
         assert_eq!(settings.database_backend.as_deref(), Some("postgres"));
     }
@@ -320,7 +320,7 @@ mod tests {
     #[test]
     fn user_profile_overrides_builtin() {
         // NOTE: We cannot redirect `user_profiles_dir()` in tests because
-        // `ironclaw_base_dir()` is cached in a `LazyLock`. Instead we test the
+        // `bastionclaw_base_dir()` is cached in a `LazyLock`. Instead we test the
         // override *logic*: load a user TOML that shadows a built-in profile
         // name and verify that `merge_from` makes the user values win.
         let _guard = lock_env();

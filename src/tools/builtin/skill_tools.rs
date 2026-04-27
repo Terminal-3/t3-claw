@@ -14,10 +14,10 @@ use crate::context::JobContext;
 use crate::tools::tool::{
     ApprovalRequirement, EngineCompatibility, Tool, ToolError, ToolOutput, require_str,
 };
-use ironclaw_skills::catalog::{
+use bastionclaw_skills::catalog::{
     SkillCatalog, catalog_entry_is_installed, resolve_catalog_slug_for_name,
 };
-use ironclaw_skills::registry::SkillRegistry;
+use bastionclaw_skills::registry::SkillRegistry;
 
 const MAX_CHAIN_DEPS: usize = 10;
 
@@ -139,7 +139,7 @@ where
     let mut attempted = 0usize;
 
     while let Some(dep_name) = queue.pop_front() {
-        if !ironclaw_skills::validate_skill_name(&dep_name) {
+        if !bastionclaw_skills::validate_skill_name(&dep_name) {
             report
                 .failed
                 .push(format!("{}: invalid skill dependency name", dep_name));
@@ -163,11 +163,11 @@ where
 
         attempted += 1;
 
-        let download_url = ironclaw_skills::catalog::skill_download_url(registry_url, &dep_name);
+        let download_url = bastionclaw_skills::catalog::skill_download_url(registry_url, &dep_name);
         match fetcher(download_url).await {
             Ok(dep_content) => {
-                let normalized = ironclaw_skills::normalize_line_endings(&dep_content);
-                match ironclaw_skills::registry::SkillRegistry::prepare_install_to_disk(
+                let normalized = bastionclaw_skills::normalize_line_endings(&dep_content);
+                match bastionclaw_skills::registry::SkillRegistry::prepare_install_to_disk(
                     &user_dir,
                     &dep_name,
                     &normalized,
@@ -718,7 +718,7 @@ impl Tool for SkillInstallTool {
             )
             .await?;
             requested_identifier = Some(download_key.clone());
-            let download_url = ironclaw_skills::catalog::skill_download_url(
+            let download_url = bastionclaw_skills::catalog::skill_download_url(
                 self.catalog.registry_url(),
                 &download_key,
             );
@@ -727,7 +727,7 @@ impl Tool for SkillInstallTool {
                 .map_err(ToolError::from)?
         };
 
-        let normalized = ironclaw_skills::normalize_line_endings(&content);
+        let normalized = bastionclaw_skills::normalize_line_endings(&content);
 
         // Check for duplicates and get install_dir under a brief read lock.
         let (user_dir, skill_name_from_parse, install_content) = {
@@ -737,7 +737,7 @@ impl Tool for SkillInstallTool {
                 .map_err(|e| ToolError::ExecutionFailed(format!("Lock poisoned: {}", e)))?;
 
             let (skill_name, install_content) =
-                ironclaw_skills::registry::SkillRegistry::resolve_install_content(
+                bastionclaw_skills::registry::SkillRegistry::resolve_install_content(
                     &normalized,
                     requested_identifier.as_deref(),
                 )
@@ -759,7 +759,7 @@ impl Tool for SkillInstallTool {
 
         // Perform async I/O (write to disk, validate round-trip) with no lock held.
         let (skill_name, loaded_skill) =
-            ironclaw_skills::registry::SkillRegistry::prepare_install_to_disk(
+            bastionclaw_skills::registry::SkillRegistry::prepare_install_to_disk(
                 &user_dir,
                 &skill_name_from_parse,
                 &install_content,
@@ -973,7 +973,7 @@ fn validate_resolved_addrs(host: &str, addrs: &[std::net::SocketAddr]) -> Result
 fn build_fetch_client_builder() -> reqwest::ClientBuilder {
     reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
-        .user_agent("ironclaw/0.1")
+        .user_agent("bastionclaw/0.1")
         .redirect(reqwest::redirect::Policy::none())
 }
 
@@ -1084,11 +1084,11 @@ pub(crate) async fn fetch_skill_content(url: &str) -> Result<String, SkillFetchE
     };
 
     // Basic size check
-    if content.len() as u64 > ironclaw_skills::MAX_PROMPT_FILE_SIZE {
+    if content.len() as u64 > bastionclaw_skills::MAX_PROMPT_FILE_SIZE {
         return Err(SkillFetchError::from_message(format!(
             "Skill content too large: {} bytes (max {} bytes)",
             content.len(),
-            ironclaw_skills::MAX_PROMPT_FILE_SIZE
+            bastionclaw_skills::MAX_PROMPT_FILE_SIZE
         )));
     }
 
@@ -1247,7 +1247,7 @@ impl Tool for SkillRemoveTool {
         };
 
         // Delete files from disk (async I/O, no lock held).
-        ironclaw_skills::registry::SkillRegistry::delete_skill_files(&skill_path)
+        bastionclaw_skills::registry::SkillRegistry::delete_skill_files(&skill_path)
             .await
             .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
 
@@ -1357,7 +1357,7 @@ mod tests {
 
     #[test]
     fn test_find_catalog_slug_for_display_name() {
-        let entries = vec![ironclaw_skills::catalog::CatalogEntry {
+        let entries = vec![bastionclaw_skills::catalog::CatalogEntry {
             slug: "finance/mortgage-calculator".to_string(),
             name: "Mortgage Calculator".to_string(),
             description: String::new(),
@@ -1387,7 +1387,7 @@ mod tests {
     #[test]
     fn test_resolve_catalog_slug_for_display_name_is_ambiguous() {
         let entries = vec![
-            ironclaw_skills::catalog::CatalogEntry {
+            bastionclaw_skills::catalog::CatalogEntry {
                 slug: "alice/mortgage-calculator".to_string(),
                 name: "Mortgage Calculator".to_string(),
                 description: String::new(),
@@ -1399,7 +1399,7 @@ mod tests {
                 installs_current: None,
                 owner: None,
             },
-            ironclaw_skills::catalog::CatalogEntry {
+            bastionclaw_skills::catalog::CatalogEntry {
                 slug: "bob/mortgage-calculator".to_string(),
                 name: "Mortgage Calculator".to_string(),
                 description: String::new(),
@@ -1607,8 +1607,8 @@ mod tests {
         let registry = test_registry();
         let registry_url = "https://clawhub.example";
 
-        let dep_a_url = ironclaw_skills::catalog::skill_download_url(registry_url, "dep-a");
-        let dep_b_url = ironclaw_skills::catalog::skill_download_url(registry_url, "dep-b");
+        let dep_a_url = bastionclaw_skills::catalog::skill_download_url(registry_url, "dep-a");
+        let dep_b_url = bastionclaw_skills::catalog::skill_download_url(registry_url, "dep-b");
 
         let responses = Arc::new(HashMap::from([
             (dep_a_url, skill_content("dep-a", &["dep-b"])),
@@ -1689,8 +1689,8 @@ mod tests {
 
         // Second "install": re-drive with the pending list via the helper
         // that `SkillInstallTool::execute` uses when `install_dependencies=true`.
-        let dep_a_url = ironclaw_skills::catalog::skill_download_url(registry_url, "dep-a");
-        let dep_b_url = ironclaw_skills::catalog::skill_download_url(registry_url, "dep-b");
+        let dep_a_url = bastionclaw_skills::catalog::skill_download_url(registry_url, "dep-a");
+        let dep_b_url = bastionclaw_skills::catalog::skill_download_url(registry_url, "dep-b");
         let responses = Arc::new(HashMap::from([
             (dep_a_url, skill_content("dep-a", &[])),
             (dep_b_url, skill_content("dep-b", &[])),

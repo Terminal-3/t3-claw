@@ -2,7 +2,7 @@
   "name": "github",
   "display_name": "GitHub",
   "kind": "tool",
-  "version": "0.2.3",
+  "version": "0.1.0",
   "wit_version": "0.3.0",
   "description": "GitHub integration for repositories, issues, pull requests, search, branches, file writes, releases, and workflows",
   "keywords": [
@@ -21,21 +21,16 @@
   },
   "artifacts": {
     "wasm32-wasip2": {
-      "url": "https://github.com/nearai/ironclaw/releases/download/ironclaw-v0.25.0/tool-github-0.2.3-wasm32-wasip2.tar.gz",
-      "sha256": "f0b1daab4a9f978d1638e7d83569db02b1733b3916cddfc5be0993b16c49927c"
+      "url": "https://github.com/terminal-3/bastion-claw/releases/download/bastionclaw-v0.1.0/tool-github-0.1.0-wasm32-wasip2.tar.gz",
+      "sha256": "27811925d5412f97fa53fe8325eb1073715816d50683e42de7c05274f1dbc7d6"
     }
   },
   "auth_summary": {
     "method": "manual",
     "provider": "GitHub",
-    "secrets": [
-      "github_token"
-    ],
+    "secrets": ["github_token"],
     "shared_auth": null,
     "setup_url": "https://github.com/settings/tokens"
   },
-  "tags": [
-    "default",
-    "development"
-  ]
+  "tags": ["default", "development"]
 }

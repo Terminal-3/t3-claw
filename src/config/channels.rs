@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::bootstrap::ironclaw_base_dir;
+use crate::bootstrap::bastionclaw_base_dir;
 use crate::channels::web::sse::DEFAULT_MAX_CONNECTIONS;
 use crate::config::helpers::{
     db_first_bool, db_first_optional_string, db_first_or_default, optional_env, parse_bool_env,
@@ -19,7 +19,7 @@ pub struct ChannelsConfig {
     pub gateway: Option<GatewayConfig>,
     pub signal: Option<SignalConfig>,
     pub tui: Option<TuiChannelConfig>,
-    /// Directory containing WASM channel modules (default: ~/.ironclaw/channels/).
+    /// Directory containing WASM channel modules (default: ~/.bastionclaw/channels/).
     pub wasm_channels_dir: std::path::PathBuf,
     /// Whether WASM channels are enabled.
     pub wasm_channels_enabled: bool,
@@ -369,7 +369,8 @@ impl ChannelsConfig {
         };
 
         let cli_enabled = db_first_bool(cs.cli_enabled, defaults.cli_enabled, "CLI_ENABLED")?;
-        let cli_mode = db_first_optional_string(&cs.cli_mode, "CLI_MODE")?.unwrap_or_default();
+        let cli_mode = db_first_optional_string(&cs.cli_mode, "CLI_MODE")?
+            .unwrap_or_else(|| "tui".to_string());
         let tui = if cli_mode.eq_ignore_ascii_case("tui") {
             Some(TuiChannelConfig {
                 theme: optional_env("TUI_THEME")?.unwrap_or_else(|| "dark".to_string()),
@@ -425,9 +426,9 @@ impl ChannelsConfig {
 /// other modules that need to construct a gateway URL.
 pub const DEFAULT_GATEWAY_PORT: u16 = 3000;
 
-/// Get the default channels directory (~/.ironclaw/channels/).
+/// Get the default channels directory (~/.bastionclaw/channels/).
 fn default_channels_dir() -> PathBuf {
-    ironclaw_base_dir().join("channels")
+    bastionclaw_base_dir().join("channels")
 }
 
 #[cfg(test)]

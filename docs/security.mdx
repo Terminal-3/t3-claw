@@ -1,9 +1,9 @@
 ---
 title: Security
-description: IronClaw's defense-in-depth security architecture
+description: BastionClaw's defense-in-depth security architecture
 ---
 
-IronClaw is built from the ground up with security as a core principle. We use a defense-in-depth architecture with multiple independent layers of protection to keep your data safe while enabling powerful agent capabilities.
+BastionClaw is built from the ground up with security as a core principle. We use a defense-in-depth architecture with multiple independent layers of protection to keep your data safe while enabling powerful agent capabilities.
 
 <CardGroup cols={2}>
   <Card title="Encrypted at rest" icon="lock">
@@ -27,7 +27,7 @@ IronClaw is built from the ground up with security as a core principle. We use a
 
 ## Data Flow
 
-The security architecture illustrates IronClaw's **defense in depth** approach with four independent protection layers that data flows through before reaching the LLM and external services.
+The security architecture illustrates BastionClaw's **defense in depth** approach with four independent protection layers that data flows through before reaching the LLM and external services.
 
 
 ![Data Flow Diagram](/images/security/data-flow.png)
@@ -50,7 +50,7 @@ Multiple layers protect against prompt injection:
 
 ## Leak Detector
 
-IronClaw scans all input going to the LLM - be that user input or the result of running a tool - for potential leaks of sensitive information.
+BastionClaw scans all input going to the LLM - be that user input or the result of running a tool - for potential leaks of sensitive information.
 
 The leak detector uses a combination of regex patterns and heuristic checks to identify potential secrets:
 

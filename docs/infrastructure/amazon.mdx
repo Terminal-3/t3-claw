@@ -1,12 +1,12 @@
 ---
 title: Amazon EC2
-description: Host IronClaw on an Amazon EC2 Instance
+description: Host BastionClaw on an Amazon EC2 Instance
 ---
 
-Amazon Elastic Compute Cloud (EC2) lets you run virtual machines on AWS infrastructure with flexible pricing and a free tier for new accounts. In this guide we will launch an EC2 instance and configure it securely so you can run IronClaw and expose it to the internet.
+Amazon Elastic Compute Cloud (EC2) lets you run virtual machines on AWS infrastructure with flexible pricing and a free tier for new accounts. In this guide we will launch an EC2 instance and configure it securely so you can run BastionClaw and expose it to the internet.
 
 <Tip>
-Do not feel like setting up your own infrastructure? You can install IronClaw with a few clicks on [agent.near.ai](https://agent.near.ai)
+Do not feel like setting up your own infrastructure? You can install BastionClaw with a few clicks on [agent.near.ai](https://agent.near.ai)
 </Tip>
 
 ---
@@ -19,7 +19,7 @@ Sign in to the [AWS Management Console](https://console.aws.amazon.com) and navi
 
 Configure the following:
 
-- **Name**: choose a descriptive name (e.g. `ironclaw`)
+- **Name**: choose a descriptive name (e.g. `bastionclaw`)
 - **AMI**: Ubuntu Server 24.04 LTS (free tier eligible)
 - **Instance type**: `t2.micro` or `t3.micro` (free tier eligible) — sufficient for most use cases
 - **Key pair**: click **Create new key pair**, give it a name, choose RSA and `.pem` format, then download the file. Keep it in a safe place — you will not be able to download it again.
@@ -75,7 +75,7 @@ Unlike DigitalOcean Droplets, EC2 Ubuntu instances do not let you log in directl
 
 ## Configure Your Instance
 
-Now that we are inside the instance, we need to perform some initial configuration. We want to strengthen security by setting up a dedicated user and preparing the system for running IronClaw.
+Now that we are inside the instance, we need to perform some initial configuration. We want to strengthen security by setting up a dedicated user and preparing the system for running BastionClaw.
 
 ### Update and Upgrade
 
@@ -87,32 +87,32 @@ sudo apt update && sudo apt upgrade -y
 
 ### Create a New User
 
-It is good practice to create a dedicated user with sudo privileges instead of using `ubuntu` for all operations. You can create a new user (for example, `ironclaw`) and add it to the sudo group:
+It is good practice to create a dedicated user with sudo privileges instead of using `ubuntu` for all operations. You can create a new user (for example, `bastionclaw`) and add it to the sudo group:
 
 ```bash
-sudo adduser ironclaw
-sudo usermod -aG sudo ironclaw
+sudo adduser bastionclaw
+sudo usermod -aG sudo bastionclaw
 ```
 
 Copy the SSH keys from `ubuntu` to the new user so you can log in with the same key pair:
 
 ```bash
 # Create the .ssh directory for the user
-sudo mkdir -p /home/ironclaw/.ssh
+sudo mkdir -p /home/bastionclaw/.ssh
 
 # Copy the authorized_keys from the ubuntu user
-sudo cp ~/.ssh/authorized_keys /home/ironclaw/.ssh/authorized_keys
+sudo cp ~/.ssh/authorized_keys /home/bastionclaw/.ssh/authorized_keys
 
 # Set the correct ownership (critical — SSH will ignore the file otherwise)
-sudo chown -R ironclaw:ironclaw /home/ironclaw/
-sudo chmod 700 /home/ironclaw/.ssh
-sudo chmod 600 /home/ironclaw/.ssh/authorized_keys
+sudo chown -R bastionclaw:bastionclaw /home/bastionclaw/
+sudo chmod 700 /home/bastionclaw/.ssh
+sudo chmod 600 /home/bastionclaw/.ssh/authorized_keys
 ```
 
 Open a new terminal window and confirm you can log in with the new user before continuing:
 
 ```bash
-ssh -i <KEY_PATH> ironclaw@<IP_ADDRESS>
+ssh -i <KEY_PATH> bastionclaw@<IP_ADDRESS>
 ```
 
 <Warning>
@@ -125,29 +125,29 @@ EC2 Security Groups already act as a network-level firewall. As long as your inb
 
 ---
 
-## Install IronClaw
+## Install BastionClaw
 
-Now that the instance is set up and secured, install IronClaw:
+Now that the instance is set up and secured, install BastionClaw:
 
 ```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/ironclaw/releases/latest/download/ironclaw-installer.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/bastionclaw/releases/latest/download/bastionclaw-installer.sh | sh
 ```
 
-Then start IronClaw and follow the instructions to complete the setup:
+Then start BastionClaw and follow the instructions to complete the setup:
 
 ```bash
-ironclaw
+bastionclaw
 ```
 
 <Tip>
-We recommend using a session manager like `tmux` or `screen` so you can easily detach and reattach to your running IronClaw instance between SSH sessions.
+We recommend using a session manager like `tmux` or `screen` so you can easily detach and reattach to your running BastionClaw instance between SSH sessions.
 </Tip>
 
 ---
 
 ## Next Steps
 
-Follow our [Quickstart Guide](/quickstart) to create your first agent, connect it to Telegram, and start exploring IronClaw's capabilities.
+Follow our [Quickstart Guide](/quickstart) to create your first agent, connect it to Telegram, and start exploring BastionClaw's capabilities.
 
 Want to talk with your agent using a messaging app? Check out the [**Channels**](/channels/overview) documentation to learn how to connect.
 

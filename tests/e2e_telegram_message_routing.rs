@@ -9,17 +9,17 @@ mod tests {
     use std::time::Duration;
 
     use async_trait::async_trait;
-    use futures::StreamExt;
-    use ironclaw::agent::{Agent, AgentDeps};
-    use ironclaw::app::{AppBuilder, AppBuilderFlags};
-    use ironclaw::channels::web::log_layer::LogBroadcaster;
-    use ironclaw::channels::{
+    use bastionclaw::agent::{Agent, AgentDeps};
+    use bastionclaw::app::{AppBuilder, AppBuilderFlags};
+    use bastionclaw::channels::web::log_layer::LogBroadcaster;
+    use bastionclaw::channels::{
         Channel, ChannelManager, IncomingMessage, MessageStream, OutgoingResponse, StatusUpdate,
     };
-    use ironclaw::config::Config;
-    use ironclaw::db::{Database, libsql::LibSqlBackend};
-    use ironclaw::error::ChannelError;
-    use ironclaw::llm::{LlmProvider, SessionConfig, SessionManager};
+    use bastionclaw::config::Config;
+    use bastionclaw::db::{Database, libsql::LibSqlBackend};
+    use bastionclaw::error::ChannelError;
+    use bastionclaw::llm::{LlmProvider, SessionConfig, SessionManager};
+    use futures::StreamExt;
     use tokio::sync::{Mutex, mpsc};
     use tokio_stream::wrappers::ReceiverStream;
 
@@ -199,10 +199,11 @@ mod tests {
             http_interceptor: None,
             transcription: None,
             document_extraction: None,
-            sandbox_readiness: ironclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
+            sandbox_readiness:
+                bastionclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
             builder: None,
             llm_backend: "nearai".to_string(),
-            tenant_rates: std::sync::Arc::new(ironclaw::tenant::TenantRateRegistry::new(4, 3)),
+            tenant_rates: std::sync::Arc::new(bastionclaw::tenant::TenantRateRegistry::new(4, 3)),
         };
 
         let gateway = Arc::new(TestChannel::new());

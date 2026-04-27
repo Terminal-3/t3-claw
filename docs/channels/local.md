@@ -1,9 +1,9 @@
 ---
 title: "Local"
-description: "Use IronClaw locally via terminal or browser"
+description: "Use BastionClaw locally via terminal or browser"
 ---
 
-By default, IronClaw provides two local interfaces for chatting with your agent:
+By default, BastionClaw provides two local interfaces for chatting with your agent:
 
 - **Terminal UI (TUI):** chat directly in your terminal
 - **Web Gateway:** chat in your browser over a local HTTP server
@@ -16,7 +16,7 @@ If you haven't set up your agent yet, follow our [Quickstart guide](../quickstar
 
 ## Terminal UI
 
-Simply run `ironclaw` and the TUI will launch in your terminal. Use the keyboard shortcuts below to navigate and chat with your agent.
+Simply run `bastionclaw` and the TUI will launch in your terminal. Use the keyboard shortcuts below to navigate and chat with your agent.
 | Key | Action |
 |-----|--------|
 | `Enter` | Send message |
@@ -47,7 +47,7 @@ Simply run `ironclaw` and the TUI will launch in your terminal. Use the keyboard
 
 ### Authentication
 
-By default, IronClaw generates an auth token at startup and prints it in logs. To use a stable token across restarts:
+By default, BastionClaw generates an auth token at startup and prints it in logs. To use a stable token across restarts:
 
 ```bash
 export GATEWAY_AUTH_TOKEN="your-secure-token-here"
@@ -106,7 +106,7 @@ When using `0.0.0.0`, use a strong auth token and place the service behind HTTPS
   </Accordion>
 
   <Accordion title="Web UI connection refused">
-    - Verify `ironclaw run` is active
+    - Verify `bastionclaw run` is active
     - Check `GATEWAY_PORT` value
     - Confirm host and firewall settings
   </Accordion>

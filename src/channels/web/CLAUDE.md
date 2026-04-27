@@ -106,6 +106,7 @@ Extension lifecycle note:
 | DELETE | `/api/admin/users/{id}` | Delete user and all data |
 | POST | `/api/admin/users/{id}/suspend` | Suspend a user |
 | POST | `/api/admin/users/{id}/activate` | Re-activate a user |
+| POST | `/api/admin/users/{id}/token` | Create a recovery token for a user (returns plaintext once) |
 | GET | `/api/admin/usage` | Per-user LLM usage stats |
 | GET | `/api/admin/users/{user_id}/secrets` | List a user's secrets (names only) |
 | PUT | `/api/admin/users/{user_id}/secrets/{name}` | Create or update a user's secret |
@@ -238,7 +239,7 @@ All responses include:
 
 ## Pending Gates
 
-Classic agent approvals are in-memory, but engine v2 pauses live in the unified pending-gate store with file-backed recovery under `~/.ironclaw/pending-gates.json`. `HistoryResponse.pending_gate` rehydrates from that store so cards survive thread switches, SSE reconnects, and process restarts. Gate UI must remain thread-scoped: stale cards from another thread should not be rendered or resolved in the current thread.
+Classic agent approvals are in-memory, but engine v2 pauses live in the unified pending-gate store with file-backed recovery under `~/.bastionclaw/pending-gates.json`. `HistoryResponse.pending_gate` rehydrates from that store so cards survive thread switches, SSE reconnects, and process restarts. Gate UI must remain thread-scoped: stale cards from another thread should not be rendered or resolved in the current thread.
 
 ## Adding a New API Endpoint
 

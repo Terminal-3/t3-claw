@@ -10,15 +10,15 @@ use std::sync::Arc;
 use std::sync::{Mutex, OnceLock};
 
 #[cfg(feature = "integration")]
-use futures::StreamExt;
+use bastionclaw::channels::Channel;
 #[cfg(feature = "integration")]
-use ironclaw::channels::Channel;
-#[cfg(feature = "integration")]
-use ironclaw::channels::OutgoingResponse;
-use ironclaw::channels::wasm::{
+use bastionclaw::channels::OutgoingResponse;
+use bastionclaw::channels::wasm::{
     PreparedChannelModule, WasmChannel, WasmChannelRuntime, WasmChannelRuntimeConfig,
 };
-use ironclaw::pairing::PairingStore;
+use bastionclaw::pairing::PairingStore;
+#[cfg(feature = "integration")]
+use futures::StreamExt;
 #[cfg(feature = "integration")]
 use tokio::time::{Duration, timeout};
 
@@ -120,7 +120,7 @@ async fn create_slack_channel_with_store(
     let capabilities_bytes = std::fs::read(slack_capabilities_path())
         .unwrap_or_else(|err| panic!("Failed to read Slack capabilities file: {err}"));
     let capabilities_file =
-        ironclaw::channels::wasm::ChannelCapabilitiesFile::from_bytes(&capabilities_bytes)
+        bastionclaw::channels::wasm::ChannelCapabilitiesFile::from_bytes(&capabilities_bytes)
             .unwrap_or_else(|err| panic!("Failed to parse Slack capabilities file: {err}"));
 
     let channel = WasmChannel::new(
@@ -207,7 +207,7 @@ fn slack_test_http_rewrite_map(base_url: &str) -> String {
 }
 
 #[cfg(feature = "integration")]
-async fn expect_no_message(stream: &mut ironclaw::channels::MessageStream, timeout_ms: u64) {
+async fn expect_no_message(stream: &mut bastionclaw::channels::MessageStream, timeout_ms: u64) {
     let result = timeout(Duration::from_millis(timeout_ms), stream.next()).await;
     assert!(
         result.is_err(),
@@ -683,7 +683,7 @@ async fn test_respond_posts_to_slack_api() {
         let _ = axum::serve(listener, app).await;
     });
     let _guard = ScopedEnvVar::set(
-        "IRONCLAW_TEST_HTTP_REWRITE_MAP",
+        "BASTIONCLAW_TEST_HTTP_REWRITE_MAP",
         &slack_test_http_rewrite_map(&format!("http://{addr}")),
     );
 
@@ -731,7 +731,7 @@ async fn test_respond_posts_to_slack_api() {
     channel
         .respond(
             &incoming,
-            OutgoingResponse::text("hello back from ironclaw"),
+            OutgoingResponse::text("hello back from bastionclaw"),
         )
         .await
         .expect("slack respond should succeed");
@@ -754,7 +754,7 @@ async fn test_respond_posts_to_slack_api() {
     assert_eq!(payloads[0]["channel"], serde_json::json!("DU42OWNER"));
     assert_eq!(
         payloads[0]["text"],
-        serde_json::json!("hello back from ironclaw")
+        serde_json::json!("hello back from bastionclaw")
     );
 }
 

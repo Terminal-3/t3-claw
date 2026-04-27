@@ -1,4 +1,4 @@
-//! `ironclaw doctor` - active health diagnostics.
+//! `bastionclaw doctor` - active health diagnostics.
 //!
 //! Probes external dependencies and validates configuration to surface
 //! problems before they bite during normal operation. Each check reports
@@ -6,7 +6,7 @@
 
 use std::path::PathBuf;
 
-use crate::bootstrap::ironclaw_base_dir;
+use crate::bootstrap::bastionclaw_base_dir;
 use crate::cli::fmt;
 use crate::settings::Settings;
 
@@ -28,7 +28,7 @@ async fn load_acp_agents_for_doctor()
 /// Run all diagnostic checks and print results.
 pub async fn run_doctor_command() -> anyhow::Result<()> {
     println!();
-    println!("  {}IronClaw Doctor{}", fmt::bold(), fmt::reset());
+    println!("  {}BastionClaw Doctor{}", fmt::bold(), fmt::reset());
 
     let mut passed = 0u32;
     let mut failed = 0u32;
@@ -297,7 +297,7 @@ async fn check_nearai_session(settings: &Settings) -> CheckResult {
             return CheckResult::Pass("API key configured".into());
         }
         return CheckResult::Fail(format!(
-            "session file not found at {}. Run `ironclaw onboard`",
+            "session file not found at {}. Run `bastionclaw onboard`",
             session_path.display()
         ));
     }
@@ -399,7 +399,7 @@ async fn try_pg_connect() -> Result<(), String> {
 // ── Workspace directory ─────────────────────────────────────
 
 fn check_workspace_dir() -> CheckResult {
-    let dir = ironclaw_base_dir();
+    let dir = bastionclaw_base_dir();
 
     if dir.exists() {
         if dir.is_dir() {
@@ -442,7 +442,7 @@ fn check_embeddings(settings: &Settings) -> CheckResult {
                 ))
             } else {
                 let hint = match config.provider.as_str() {
-                    "nearai" => "run `ironclaw onboard` to create a session",
+                    "nearai" => "run `bastionclaw onboard` to create a session",
                     _ => "set OPENAI_API_KEY",
                 };
                 CheckResult::Fail(format!(
@@ -583,10 +583,10 @@ async fn check_acp_config() -> CheckResult {
 // ── Skills ──────────────────────────────────────────────────
 
 async fn check_skills() -> CheckResult {
-    let user_dir = ironclaw_base_dir().join("skills");
-    let installed_dir = ironclaw_base_dir().join("installed_skills");
+    let user_dir = bastionclaw_base_dir().join("skills");
+    let installed_dir = bastionclaw_base_dir().join("installed_skills");
 
-    let mut registry = ironclaw_skills::SkillRegistry::new(user_dir.clone());
+    let mut registry = bastionclaw_skills::SkillRegistry::new(user_dir.clone());
     registry = registry.with_installed_dir(installed_dir);
 
     // discover_all() returns loaded skill names (not warnings).
@@ -617,7 +617,7 @@ fn check_secrets(settings: &Settings) -> CheckResult {
             }
         }
         crate::settings::KeySource::None => {
-            CheckResult::Skip("secrets not configured (run `ironclaw onboard`)".into())
+            CheckResult::Skip("secrets not configured (run `bastionclaw onboard`)".into())
         }
     }
 }
@@ -627,21 +627,25 @@ fn check_secrets(settings: &Settings) -> CheckResult {
 fn check_service_installed() -> CheckResult {
     if cfg!(target_os = "macos") {
         let plist =
-            dirs::home_dir().map(|h| h.join("Library/LaunchAgents/com.ironclaw.daemon.plist"));
+            dirs::home_dir().map(|h| h.join("Library/LaunchAgents/com.bastionclaw.daemon.plist"));
         match plist {
             Some(path) if path.exists() => {
                 CheckResult::Pass(format!("launchd plist installed ({})", path.display()))
             }
-            Some(_) => CheckResult::Skip("not installed (run `ironclaw service install`)".into()),
+            Some(_) => {
+                CheckResult::Skip("not installed (run `bastionclaw service install`)".into())
+            }
             None => CheckResult::Skip("cannot determine home directory".into()),
         }
     } else if cfg!(target_os = "linux") {
-        let unit = dirs::home_dir().map(|h| h.join(".config/systemd/user/ironclaw.service"));
+        let unit = dirs::home_dir().map(|h| h.join(".config/systemd/user/bastionclaw.service"));
         match unit {
             Some(path) if path.exists() => {
                 CheckResult::Pass(format!("systemd unit installed ({})", path.display()))
             }
-            Some(_) => CheckResult::Skip("not installed (run `ironclaw service install`)".into()),
+            Some(_) => {
+                CheckResult::Skip("not installed (run `bastionclaw service install`)".into())
+            }
             None => CheckResult::Skip("cannot determine home directory".into()),
         }
     } else {
@@ -711,7 +715,7 @@ mod tests {
 
     #[test]
     fn check_binary_skips_nonexistent() {
-        match check_binary("__ironclaw_nonexistent_binary__", &["--version"]) {
+        match check_binary("__bastionclaw_nonexistent_binary__", &["--version"]) {
             CheckResult::Skip(_) => {}
             other => panic!(
                 "expected Skip for nonexistent binary, got: {}",

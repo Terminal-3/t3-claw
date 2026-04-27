@@ -1,10 +1,10 @@
 ---
 title: Agent Overview
 sidebarTitle: Overview
-description: How IronClaw's agent runtime processes requests and executes jobs
+description: How BastionClaw's agent runtime processes requests and executes jobs
 ---
 
-IronClaw's agent runtime is an always-on loop that accepts messages from any channel, classifies intent, and dispatches work as parallel jobs — each independently tracked through a defined state machine.
+BastionClaw's agent runtime is an always-on loop that accepts messages from any channel, classifies intent, and dispatches work as parallel jobs — each independently tracked through a defined state machine.
 
 ## Agent Loop
 
@@ -66,7 +66,7 @@ The self-repair system monitors InProgress jobs and transitions stuck ones back 
 
 ## Session Model
 
-IronClaw uses a three-level session hierarchy:
+BastionClaw uses a three-level session hierarchy:
 
 | Level | Description |
 |-------|-------------|
@@ -91,7 +91,7 @@ Type these commands directly in any channel — the submission parser intercepts
 
 ## Context Window Management
 
-As conversations grow, context pressure increases. IronClaw handles this automatically:
+As conversations grow, context pressure increases. BastionClaw handles this automatically:
 
 - **Context monitor** tracks token usage per turn
 - **Compaction** summarizes old turns when pressure is high

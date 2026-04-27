@@ -5,13 +5,13 @@ use std::sync::{Arc, OnceLock};
 use tokio::sync::RwLock;
 use tracing::debug;
 
-use ironclaw_engine::{
+use bastionclaw_engine::{
     Capability, CapabilityRegistry, ConversationManager, LeaseManager, MissionManager,
     PolicyEngine, Project, Store, ThreadConfig, ThreadManager, ThreadOutcome,
 };
 
-use ironclaw_common::AppEvent;
-use ironclaw_engine::types::{is_shared_owner, shared_owner_id};
+use bastionclaw_common::AppEvent;
+use bastionclaw_engine::types::{is_shared_owner, shared_owner_id};
 
 use crate::agent::Agent;
 use crate::bridge::auth_manager::AuthManager;
@@ -83,7 +83,7 @@ async fn resolve_auth_gate_display_name(
     tools: &crate::tools::ToolRegistry,
     pending: &PendingGate,
 ) -> String {
-    if let ironclaw_engine::ResumeKind::Authentication {
+    if let bastionclaw_engine::ResumeKind::Authentication {
         credential_name, ..
     } = &pending.resume_kind
     {
@@ -104,7 +104,7 @@ async fn send_pending_gate_status(
     let display_parameters = gate_display_parameters(pending);
 
     match &pending.resume_kind {
-        ironclaw_engine::ResumeKind::Approval { allow_always } => {
+        bastionclaw_engine::ResumeKind::Approval { allow_always } => {
             let _ = agent
                 .channels
                 .send_status(
@@ -120,7 +120,7 @@ async fn send_pending_gate_status(
                 )
                 .await;
         }
-        ironclaw_engine::ResumeKind::Authentication {
+        bastionclaw_engine::ResumeKind::Authentication {
             instructions,
             auth_url,
             ..
@@ -139,21 +139,21 @@ async fn send_pending_gate_status(
                 )
                 .await;
         }
-        ironclaw_engine::ResumeKind::External { .. } => {}
+        bastionclaw_engine::ResumeKind::External { .. } => {}
     }
 }
 
 fn pending_gate_prompt_message(pending: &PendingGate, auth_display_name: &str) -> Option<String> {
     match &pending.resume_kind {
-        ironclaw_engine::ResumeKind::Approval { .. } => Some(format!(
+        bastionclaw_engine::ResumeKind::Approval { .. } => Some(format!(
             "Tool '{}' requires approval. Reply 'yes' to approve, 'no' to deny.",
             pending.action_name
         )),
-        ironclaw_engine::ResumeKind::Authentication { .. } => Some(format!(
+        bastionclaw_engine::ResumeKind::Authentication { .. } => Some(format!(
             "Authentication required for '{}'. Paste your token below (or type 'cancel'):",
             auth_display_name
         )),
-        ironclaw_engine::ResumeKind::External { .. } => Some(format!(
+        bastionclaw_engine::ResumeKind::External { .. } => Some(format!(
             "Waiting for external confirmation (gate: {})...",
             pending.gate_name
         )),
@@ -164,9 +164,9 @@ fn resumed_action_result_message(
     call_id: &str,
     action_name: &str,
     output: &serde_json::Value,
-) -> ironclaw_engine::ThreadMessage {
+) -> bastionclaw_engine::ThreadMessage {
     let rendered = serde_json::to_string_pretty(output).unwrap_or_else(|_| output.to_string());
-    ironclaw_engine::ThreadMessage::action_result(call_id, action_name, rendered)
+    bastionclaw_engine::ThreadMessage::action_result(call_id, action_name, rendered)
 }
 
 /// Resolve the assistant action `call_id` that a pending gate corresponds to.
@@ -177,7 +177,7 @@ fn resumed_action_result_message(
 /// `action_call_id` on a `ThreadMessage::action_result` corrupts the engine's
 /// call/result pairing and causes the assistant to drop the resumed reply.
 fn resolved_call_id_for_pending_action(
-    thread: &ironclaw_engine::Thread,
+    thread: &bastionclaw_engine::Thread,
     pending: &PendingGate,
 ) -> Option<String> {
     // New pending gates persist the exact call_id at insertion time.
@@ -190,14 +190,14 @@ fn resolved_call_id_for_pending_action(
         .messages
         .iter()
         .filter_map(|message| {
-            (message.role == ironclaw_engine::types::message::MessageRole::ActionResult)
+            (message.role == bastionclaw_engine::types::message::MessageRole::ActionResult)
                 .then_some(message.action_call_id.as_deref())
                 .flatten()
         })
         .collect();
 
     thread.messages.iter().rev().find_map(|message| {
-        if message.role != ironclaw_engine::types::message::MessageRole::Assistant {
+        if message.role != bastionclaw_engine::types::message::MessageRole::Assistant {
             return None;
         }
         message.action_calls.as_ref().and_then(|calls| {
@@ -317,7 +317,7 @@ async fn notify_pending_gate(
         );
     }
 
-    if let ironclaw_engine::ResumeKind::External { callback_id } = &pending.resume_kind {
+    if let bastionclaw_engine::ResumeKind::External { callback_id } = &pending.resume_kind {
         tracing::debug!(
             gate = %pending.gate_name,
             callback = %callback_id,
@@ -388,19 +388,19 @@ async fn execute_pending_gate_action(
             )
         })?;
 
-    let exec_ctx = ironclaw_engine::ThreadExecutionContext {
+    let exec_ctx = bastionclaw_engine::ThreadExecutionContext {
         thread_id: pending.thread_id,
         thread_type: thread.thread_type,
         project_id: thread.project_id,
         user_id: thread.user_id.clone(),
-        step_id: ironclaw_engine::StepId::new(),
+        step_id: bastionclaw_engine::StepId::new(),
         current_call_id: Some(resolved_call_id.clone()),
         source_channel: Some(pending.source_channel.clone()),
         user_timezone: thread
             .metadata
             .get("user_timezone")
             .and_then(|v| v.as_str())
-            .and_then(ironclaw_engine::ValidTimezone::parse),
+            .and_then(bastionclaw_engine::ValidTimezone::parse),
     };
 
     state.effect_adapter.reset_call_count();
@@ -440,7 +440,7 @@ async fn execute_pending_gate_action(
             )
             .await
         }
-        Err(ironclaw_engine::EngineError::GatePaused {
+        Err(bastionclaw_engine::EngineError::GatePaused {
             gate_name,
             action_name,
             call_id,
@@ -486,7 +486,7 @@ async fn execute_pending_gate_action(
                 approval_already_granted: approval_already_granted
                     || matches!(
                         pending.resume_kind,
-                        ironclaw_engine::ResumeKind::Approval { .. }
+                        bastionclaw_engine::ResumeKind::Approval { .. }
                     ),
             };
             insert_and_notify_pending_gate(agent, state, message, pending_gate).await
@@ -504,8 +504,8 @@ async fn execute_pending_gate_action(
 async fn resolve_user_project(
     store: &Arc<dyn Store>,
     user_id: &str,
-    fallback: ironclaw_engine::ProjectId,
-) -> Result<ironclaw_engine::ProjectId, Error> {
+    fallback: bastionclaw_engine::ProjectId,
+) -> Result<bastionclaw_engine::ProjectId, Error> {
     // Fast path: check if fallback project belongs to this user
     if let Ok(Some(project)) = store.load_project(fallback).await
         && project.is_owned_by(user_id)
@@ -524,7 +524,7 @@ async fn resolve_user_project(
     }
 
     // Create a new default project for this user
-    let project = ironclaw_engine::Project::new(user_id, "default", "Default project");
+    let project = bastionclaw_engine::Project::new(user_id, "default", "Default project");
     let pid = project.id;
     store
         .save_project(&project)
@@ -540,7 +540,7 @@ struct EngineState {
     conversation_manager: Arc<ConversationManager>,
     effect_adapter: Arc<EffectBridgeAdapter>,
     store: Arc<dyn Store>,
-    default_project_id: ironclaw_engine::ProjectId,
+    default_project_id: bastionclaw_engine::ProjectId,
     /// Unified pending gate store — keyed by (user_id, thread_id).
     pending_gates: Arc<crate::gate::store::PendingGateStore>,
     /// SSE manager for broadcasting AppEvents to the web gateway.
@@ -562,10 +562,10 @@ enum PendingGateResolution {
     Ambiguous,
 }
 
-fn parse_engine_thread_id(scope: Option<&str>) -> Option<ironclaw_engine::ThreadId> {
+fn parse_engine_thread_id(scope: Option<&str>) -> Option<bastionclaw_engine::ThreadId> {
     scope
         .and_then(|s| uuid::Uuid::parse_str(s).ok())
-        .map(ironclaw_engine::ThreadId)
+        .map(bastionclaw_engine::ThreadId)
 }
 
 fn parse_scope_uuid(scope: Option<&str>) -> Option<uuid::Uuid> {
@@ -589,7 +589,7 @@ async fn reconcile_pending_gate_state(
             continue;
         };
 
-        if thread.state != ironclaw_engine::ThreadState::Waiting
+        if thread.state != bastionclaw_engine::ThreadState::Waiting
             || !thread.is_owned_by(&gate.user_id)
         {
             let _ = pending_gates.discard(&gate.key()).await;
@@ -606,7 +606,7 @@ async fn reconcile_pending_gate_state(
             .await
             .map_err(|e| engine_err("list all threads", e))?;
         for mut thread in threads {
-            if thread.state != ironclaw_engine::ThreadState::Waiting {
+            if thread.state != bastionclaw_engine::ThreadState::Waiting {
                 continue;
             }
             let key = PendingGateKey {
@@ -618,7 +618,7 @@ async fn reconcile_pending_gate_state(
             }
 
             if let Err(e) = thread.transition_to(
-                ironclaw_engine::ThreadState::Failed,
+                bastionclaw_engine::ThreadState::Failed,
                 Some("pending gate missing during recovery".into()),
             ) {
                 debug!(thread_id = %thread.id, error = %e, "failed to reconcile waiting thread");
@@ -637,7 +637,7 @@ async fn reconcile_pending_gate_state(
 async fn fail_orphaned_waiting_thread_if_needed(
     state: &EngineState,
     user_id: &str,
-    thread_id: ironclaw_engine::ThreadId,
+    thread_id: bastionclaw_engine::ThreadId,
 ) -> Result<bool, Error> {
     if state
         .pending_gates
@@ -660,13 +660,13 @@ async fn fail_orphaned_waiting_thread_if_needed(
         return Ok(false);
     };
 
-    if !thread.is_owned_by(user_id) || thread.state != ironclaw_engine::ThreadState::Waiting {
+    if !thread.is_owned_by(user_id) || thread.state != bastionclaw_engine::ThreadState::Waiting {
         return Ok(false);
     }
 
     thread
         .transition_to(
-            ironclaw_engine::ThreadState::Failed,
+            bastionclaw_engine::ThreadState::Failed,
             Some("pending gate missing before resume".into()),
         )
         .map_err(|e| engine_err("reconcile waiting thread", e))?;
@@ -772,7 +772,7 @@ pub async fn init_engine(agent: &Agent) -> Result<(), Error> {
         name: "missions".into(),
         description: "Mission and routine lifecycle management".into(),
         actions: vec![
-            ironclaw_engine::ActionDef {
+            bastionclaw_engine::ActionDef {
                 name: "mission_create".into(),
                 description: "Create a new mission (routine). Use when the user wants to set up a recurring task, scheduled check, or periodic routine. Results are delivered to the current channel by default.".into(),
                 parameters_schema: serde_json::json!({
@@ -788,14 +788,14 @@ pub async fn init_engine(agent: &Agent) -> Result<(), Error> {
                 effects: vec![],
                 requires_approval: false,
             },
-            ironclaw_engine::ActionDef {
+            bastionclaw_engine::ActionDef {
                 name: "mission_list".into(),
                 description: "List all missions and routines in the current project.".into(),
                 parameters_schema: serde_json::json!({"type": "object"}),
                 effects: vec![],
                 requires_approval: false,
             },
-            ironclaw_engine::ActionDef {
+            bastionclaw_engine::ActionDef {
                 name: "mission_fire".into(),
                 description: "Manually trigger a mission or routine to run immediately.".into(),
                 parameters_schema: serde_json::json!({
@@ -808,7 +808,7 @@ pub async fn init_engine(agent: &Agent) -> Result<(), Error> {
                 effects: vec![],
                 requires_approval: false,
             },
-            ironclaw_engine::ActionDef {
+            bastionclaw_engine::ActionDef {
                 name: "mission_pause".into(),
                 description: "Pause a running mission or routine.".into(),
                 parameters_schema: serde_json::json!({
@@ -821,7 +821,7 @@ pub async fn init_engine(agent: &Agent) -> Result<(), Error> {
                 effects: vec![],
                 requires_approval: false,
             },
-            ironclaw_engine::ActionDef {
+            bastionclaw_engine::ActionDef {
                 name: "mission_resume".into(),
                 description: "Resume a paused mission or routine.".into(),
                 parameters_schema: serde_json::json!({
@@ -834,7 +834,7 @@ pub async fn init_engine(agent: &Agent) -> Result<(), Error> {
                 effects: vec![],
                 requires_approval: false,
             },
-            ironclaw_engine::ActionDef {
+            bastionclaw_engine::ActionDef {
                 name: "mission_update".into(),
                 description: "Update a mission/routine. Change name, goal, cadence, notification channels, daily budget, or success criteria.".into(),
                 parameters_schema: serde_json::json!({
@@ -853,7 +853,7 @@ pub async fn init_engine(agent: &Agent) -> Result<(), Error> {
                 effects: vec![],
                 requires_approval: false,
             },
-            ironclaw_engine::ActionDef {
+            bastionclaw_engine::ActionDef {
                 name: "mission_delete".into(),
                 description: "Delete a mission or routine permanently.".into(),
                 parameters_schema: serde_json::json!({
@@ -930,12 +930,12 @@ pub async fn init_engine(agent: &Agent) -> Result<(), Error> {
     let mut mission_manager_inner =
         MissionManager::new(store_dyn.clone(), Arc::clone(&thread_manager));
     if let Some(workspace) = agent.workspace().cloned() {
-        let reader: Arc<dyn ironclaw_engine::WorkspaceReader> =
+        let reader: Arc<dyn bastionclaw_engine::WorkspaceReader> =
             Arc::new(crate::bridge::WorkspaceReaderAdapter::new(workspace));
         mission_manager_inner = mission_manager_inner.with_workspace_reader(reader);
     }
     let cost_guard = Arc::clone(&agent.deps.cost_guard);
-    let budget_gate: Arc<dyn ironclaw_engine::BudgetGate> =
+    let budget_gate: Arc<dyn bastionclaw_engine::BudgetGate> =
         Arc::new(crate::bridge::CostGuardBudgetGate::new(cost_guard));
     mission_manager_inner = mission_manager_inner.with_budget_gate(budget_gate);
     let mission_manager = Arc::new(mission_manager_inner);
@@ -1169,7 +1169,7 @@ pub async fn resolve_engine_auth_callback(
         .filter(|gate| {
             matches!(
                 &gate.resume_kind,
-                ironclaw_engine::ResumeKind::Authentication {
+                bastionclaw_engine::ResumeKind::Authentication {
                     credential_name: gate_credential,
                     ..
                 } if gate_credential == credential_name
@@ -1225,11 +1225,21 @@ pub async fn handle_approval(
         .as_ref()
         .ok_or_else(|| engine_err("init", "engine state is empty"))?;
 
-    // Don't pass the v1 thread_id as a hint — the v1 session uses different
-    // UUIDs from the engine.  The user_id alone is sufficient for single-user
-    // deployments; ambiguity resolution kicks in for multi-user.
-    let pending = match resolve_pending_gate_for_user(&state.pending_gates, &message.user_id, None)
-        .await
+    // Scope explicit approval replies to the active gateway conversation when
+    // available so `/approve` cannot resume an unrelated pending gate owned by
+    // another thread, such as a background routine. Other channels still use
+    // legacy thread IDs that do not map 1:1 to engine conversation scopes.
+    let thread_scope = if message.channel == "gateway" {
+        message.conversation_scope()
+    } else {
+        None
+    };
+    let pending = match resolve_pending_gate_for_user(
+        &state.pending_gates,
+        &message.user_id,
+        thread_scope,
+    )
+    .await
     {
         PendingGateResolution::Resolved(p) => p,
         PendingGateResolution::None => {
@@ -1245,7 +1255,7 @@ pub async fn handle_approval(
 
     if !matches!(
         pending.resume_kind,
-        ironclaw_engine::ResumeKind::Approval { .. }
+        bastionclaw_engine::ResumeKind::Approval { .. }
     ) {
         return Ok(Some(
             "The selected pending gate is not an approval request.".into(),
@@ -1261,9 +1271,9 @@ pub async fn handle_approval(
         thread_id,
         request_id,
         if approved {
-            ironclaw_engine::GateResolution::Approved { always }
+            bastionclaw_engine::GateResolution::Approved { always }
         } else {
-            ironclaw_engine::GateResolution::Denied { reason: None }
+            bastionclaw_engine::GateResolution::Denied { reason: None }
         },
     )
     .await
@@ -1298,7 +1308,7 @@ pub async fn handle_exec_approval(
         && gate.request_id == request_id.to_string()
         && matches!(
             gate.resume_kind,
-            ironclaw_engine::ResumeKind::Approval { .. }
+            bastionclaw_engine::ResumeKind::Approval { .. }
         )
     {
         drop(guard);
@@ -1308,9 +1318,9 @@ pub async fn handle_exec_approval(
             thread_id,
             request_id,
             if approved {
-                ironclaw_engine::GateResolution::Approved { always }
+                bastionclaw_engine::GateResolution::Approved { always }
             } else {
-                ironclaw_engine::GateResolution::Denied { reason: None }
+                bastionclaw_engine::GateResolution::Denied { reason: None }
             },
         )
         .await;
@@ -1324,7 +1334,7 @@ pub async fn handle_exec_approval(
         .find(|gate| {
             matches!(
                 gate.resume_kind,
-                ironclaw_engine::ResumeKind::Approval { .. }
+                bastionclaw_engine::ResumeKind::Approval { .. }
             ) && gate.request_id == request_id
         });
     drop(guard);
@@ -1336,9 +1346,9 @@ pub async fn handle_exec_approval(
             pending.thread_id,
             request_id,
             if approved {
-                ironclaw_engine::GateResolution::Approved { always }
+                bastionclaw_engine::GateResolution::Approved { always }
             } else {
-                ironclaw_engine::GateResolution::Denied { reason: None }
+                bastionclaw_engine::GateResolution::Denied { reason: None }
             },
         )
         .await;
@@ -1378,7 +1388,7 @@ pub async fn handle_external_callback(
         && gate.request_id == request_id.to_string()
         && matches!(
             gate.resume_kind,
-            ironclaw_engine::ResumeKind::Authentication { .. }
+            bastionclaw_engine::ResumeKind::Authentication { .. }
         )
     {
         drop(guard);
@@ -1387,7 +1397,7 @@ pub async fn handle_external_callback(
             message,
             thread_id,
             request_id,
-            ironclaw_engine::GateResolution::ExternalCallback {
+            bastionclaw_engine::GateResolution::ExternalCallback {
                 payload: serde_json::Value::Null,
             },
         )
@@ -1402,7 +1412,7 @@ pub async fn handle_external_callback(
         .find(|gate| {
             matches!(
                 gate.resume_kind,
-                ironclaw_engine::ResumeKind::Authentication { .. }
+                bastionclaw_engine::ResumeKind::Authentication { .. }
             ) && gate.request_id == request_id
         });
     drop(guard);
@@ -1413,7 +1423,7 @@ pub async fn handle_external_callback(
             message,
             pending.thread_id,
             request_id,
-            ironclaw_engine::GateResolution::ExternalCallback {
+            bastionclaw_engine::GateResolution::ExternalCallback {
                 payload: serde_json::Value::Null,
             },
         )
@@ -1441,9 +1451,9 @@ pub async fn handle_external_callback(
 pub async fn resolve_gate(
     agent: &Agent,
     message: &IncomingMessage,
-    thread_id: ironclaw_engine::ThreadId,
+    thread_id: bastionclaw_engine::ThreadId,
     request_id: uuid::Uuid,
-    resolution: ironclaw_engine::GateResolution,
+    resolution: bastionclaw_engine::GateResolution,
 ) -> Result<Option<String>, Error> {
     init_engine(agent).await?;
 
@@ -1480,7 +1490,7 @@ pub async fn resolve_gate(
         })?;
 
     match resolution {
-        ironclaw_engine::GateResolution::Approved { always } => {
+        bastionclaw_engine::GateResolution::Approved { always } => {
             if let Some(ref sse) = state.sse {
                 sse.broadcast_for_user(
                     &message.user_id,
@@ -1537,7 +1547,7 @@ pub async fn resolve_gate(
             return result;
         }
 
-        ironclaw_engine::GateResolution::Denied { reason } => {
+        bastionclaw_engine::GateResolution::Denied { reason } => {
             if let Some(ref sse) = state.sse {
                 sse.broadcast_for_user(
                     &message.user_id,
@@ -1563,7 +1573,7 @@ pub async fn resolve_gate(
                 )
                 .await;
 
-            let deny_msg = ironclaw_engine::ThreadMessage::user(format!(
+            let deny_msg = bastionclaw_engine::ThreadMessage::user(format!(
                 "User denied action '{}'. Do not execute it; choose an alternative approach.{}",
                 pending.action_name,
                 reason
@@ -1586,7 +1596,7 @@ pub async fn resolve_gate(
                 .map_err(|e| engine_err("resume error", e))?;
         }
 
-        ironclaw_engine::GateResolution::Cancelled => {
+        bastionclaw_engine::GateResolution::Cancelled => {
             if let Some(ref sse) = state.sse {
                 sse.broadcast_for_user(
                     &message.user_id,
@@ -1615,9 +1625,9 @@ pub async fn resolve_gate(
             return Ok(Some("Cancelled.".into()));
         }
 
-        ironclaw_engine::GateResolution::CredentialProvided { token } => {
+        bastionclaw_engine::GateResolution::CredentialProvided { token } => {
             // Store credential then RESUME (not retry) — preserves thread work
-            if let ironclaw_engine::ResumeKind::Authentication {
+            if let bastionclaw_engine::ResumeKind::Authentication {
                 ref credential_name,
                 ..
             } = pending.resume_kind
@@ -1783,7 +1793,7 @@ pub async fn resolve_gate(
             }
         }
 
-        ironclaw_engine::GateResolution::ExternalCallback { .. } => {
+        bastionclaw_engine::GateResolution::ExternalCallback { .. } => {
             if let Some(ref sse) = state.sse {
                 sse.broadcast_for_user(
                     &message.user_id,
@@ -1971,7 +1981,7 @@ pub async fn handle_expected(
         .events
         .iter()
         .filter_map(|e| match &e.kind {
-            ironclaw_engine::EventKind::ActionExecuted {
+            bastionclaw_engine::EventKind::ActionExecuted {
                 action_name,
                 params_summary,
                 ..
@@ -1980,7 +1990,7 @@ pub async fn handle_expected(
                 "params": params_summary,
                 "success": true,
             })),
-            ironclaw_engine::EventKind::ActionFailed {
+            bastionclaw_engine::EventKind::ActionFailed {
                 action_name, error, ..
             } => Some(serde_json::json!({
                 "tool": action_name,
@@ -2040,9 +2050,9 @@ pub async fn handle_expected(
 /// then falls back to the last completed thread visible in conversation entries).
 async fn find_most_recent_thread(
     state: &EngineState,
-    conv: &Option<ironclaw_engine::ConversationSurface>,
+    conv: &Option<bastionclaw_engine::ConversationSurface>,
     user_id: &str,
-) -> Option<ironclaw_engine::Thread> {
+) -> Option<bastionclaw_engine::Thread> {
     let conv = conv.as_ref()?;
 
     // Try active threads first (most recent interaction)
@@ -2140,7 +2150,7 @@ pub async fn has_pending_auth(user_id: &str) -> bool {
         .any(|gate| {
             matches!(
                 gate.resume_kind,
-                ironclaw_engine::ResumeKind::Authentication { .. }
+                bastionclaw_engine::ResumeKind::Authentication { .. }
             )
         })
 }
@@ -2158,7 +2168,7 @@ pub async fn get_engine_pending_auth(
     let state = guard.as_ref()?;
     match resolve_pending_gate_for_user(&state.pending_gates, user_id, thread_id).await {
         PendingGateResolution::Resolved(gate) => {
-            if let ironclaw_engine::ResumeKind::Authentication {
+            if let bastionclaw_engine::ResumeKind::Authentication {
                 credential_name,
                 instructions,
                 ..
@@ -2204,7 +2214,7 @@ pub async fn clear_engine_pending_auth(user_id: &str, thread_id: Option<&str>) {
             PendingGateResolution::Resolved(gate)
                 if matches!(
                     gate.resume_kind,
-                    ironclaw_engine::ResumeKind::Authentication { .. }
+                    bastionclaw_engine::ResumeKind::Authentication { .. }
                 ) =>
             {
                 let _ = state.pending_gates.discard(&gate.key()).await;
@@ -2219,7 +2229,7 @@ pub async fn clear_engine_pending_auth(user_id: &str, thread_id: Option<&str>) {
     for gate in state.pending_gates.list_for_user(user_id).await {
         if matches!(
             gate.resume_kind,
-            ironclaw_engine::ResumeKind::Authentication { .. }
+            bastionclaw_engine::ResumeKind::Authentication { .. }
         ) {
             let _ = state.pending_gates.discard(&gate.key()).await;
         }
@@ -2275,15 +2285,15 @@ async fn handle_with_engine_inner(
         PendingGateResolution::Resolved(gate)
             if matches!(
                 gate.resume_kind,
-                ironclaw_engine::ResumeKind::Authentication { .. }
+                bastionclaw_engine::ResumeKind::Authentication { .. }
             ) =>
         {
             let request_id = gate.request_id;
             let resolution =
                 if content.trim().is_empty() || content.trim().eq_ignore_ascii_case("cancel") {
-                    ironclaw_engine::GateResolution::Cancelled
+                    bastionclaw_engine::GateResolution::Cancelled
                 } else {
-                    ironclaw_engine::GateResolution::CredentialProvided {
+                    bastionclaw_engine::GateResolution::CredentialProvided {
                         token: content.trim().to_string(),
                     }
                 };
@@ -2293,7 +2303,7 @@ async fn handle_with_engine_inner(
         PendingGateResolution::Resolved(gate)
             if matches!(
                 gate.resume_kind,
-                ironclaw_engine::ResumeKind::Approval { .. }
+                bastionclaw_engine::ResumeKind::Approval { .. }
             ) =>
         {
             let pending = gate.clone();
@@ -2382,7 +2392,7 @@ async fn handle_with_engine_inner(
     let validated_tz = message
         .timezone
         .as_deref()
-        .and_then(ironclaw_engine::ValidTimezone::parse);
+        .and_then(bastionclaw_engine::ValidTimezone::parse);
 
     // Handle the message — spawns a new thread or injects into active one
     let thread_id = state
@@ -2509,8 +2519,8 @@ async fn await_thread_outcome(
     agent: &Agent,
     state: &EngineState,
     message: &IncomingMessage,
-    conv_id: ironclaw_engine::ConversationId,
-    thread_id: ironclaw_engine::ThreadId,
+    conv_id: bastionclaw_engine::ConversationId,
+    thread_id: bastionclaw_engine::ThreadId,
 ) -> Result<Option<String>, Error> {
     let mut event_rx = state.thread_manager.subscribe_events();
     let channels = &agent.channels;
@@ -2668,7 +2678,7 @@ async fn await_thread_outcome(
                     parameters: serde_json::json!({ "credential_name": cred_name }),
                     display_parameters: None,
                     description: format!("Authentication required for '{}'.", cred_name),
-                    resume_kind: ironclaw_engine::ResumeKind::Authentication {
+                    resume_kind: bastionclaw_engine::ResumeKind::Authentication {
                         credential_name: cred_name.clone(),
                         instructions: setup_hint.clone(),
                         auth_url: None,
@@ -2765,7 +2775,7 @@ async fn await_thread_outcome(
 
             // Send appropriate StatusUpdate via channel
             match &resume_kind {
-                ironclaw_engine::ResumeKind::Approval { allow_always } => {
+                bastionclaw_engine::ResumeKind::Approval { allow_always } => {
                     let _ = agent
                         .channels
                         .send_status(
@@ -2786,7 +2796,7 @@ async fn await_thread_outcome(
                         action_name
                     )))
                 }
-                ironclaw_engine::ResumeKind::Authentication {
+                bastionclaw_engine::ResumeKind::Authentication {
                     credential_name,
                     instructions,
                     auth_url,
@@ -2824,7 +2834,7 @@ async fn await_thread_outcome(
                         extension_for_display
                     )))
                 }
-                ironclaw_engine::ResumeKind::External { callback_id } => {
+                bastionclaw_engine::ResumeKind::External { callback_id } => {
                     tracing::debug!(
                         gate = %gate_name,
                         callback = %callback_id,
@@ -2897,11 +2907,11 @@ fn interpret_message_event(role: &str, content_preview: &str) -> Option<&'static
 ///    `Agent` entry tagged with the mission's thread id keeps the v2 history
 ///    consistent with what the user actually saw.
 async fn handle_mission_notification(
-    notif: &ironclaw_engine::MissionNotification,
+    notif: &bastionclaw_engine::MissionNotification,
     channels: &std::sync::Arc<crate::channels::ChannelManager>,
     sse: Option<&Arc<SseManager>>,
     db: Option<&Arc<dyn Database>>,
-    conv_mgr: Option<&ironclaw_engine::ConversationManager>,
+    conv_mgr: Option<&bastionclaw_engine::ConversationManager>,
 ) {
     let Some(ref text) = notif.response else {
         return;
@@ -2998,12 +3008,12 @@ async fn handle_mission_notification(
 
 /// Forward an engine ThreadEvent to the channel as a StatusUpdate.
 async fn forward_event_to_channel(
-    event: &ironclaw_engine::ThreadEvent,
+    event: &bastionclaw_engine::ThreadEvent,
     channels: &std::sync::Arc<crate::channels::ChannelManager>,
     channel_name: &str,
     metadata: &serde_json::Value,
 ) {
-    use ironclaw_engine::EventKind;
+    use bastionclaw_engine::EventKind;
 
     match &event.kind {
         EventKind::StepStarted { .. } => {
@@ -3094,7 +3104,7 @@ async fn forward_event_to_channel(
                         StatusUpdate::AuthRequired {
                             extension_name: cred_name,
                             instructions: Some(
-                                "Store the credential with: ironclaw secret set <name> <value>"
+                                "Store the credential with: bastionclaw secret set <name> <value>"
                                     .into(),
                             ),
                             auth_url: None,
@@ -3144,10 +3154,10 @@ async fn forward_event_to_channel(
 /// Returns multiple events when needed (e.g., ToolStarted + ToolCompleted
 /// so the frontend creates the card then resolves it).
 fn thread_event_to_app_events(
-    event: &ironclaw_engine::ThreadEvent,
+    event: &bastionclaw_engine::ThreadEvent,
     thread_id: &str,
 ) -> Vec<AppEvent> {
-    use ironclaw_engine::EventKind;
+    use bastionclaw_engine::EventKind;
 
     match &event.kind {
         EventKind::StepStarted { .. } => vec![AppEvent::Thinking {
@@ -3328,8 +3338,10 @@ pub struct EngineMissionDetail {
 
 // ── Engine query functions ───────────────────────────────────
 
-fn cadence_type_label(cadence: &ironclaw_engine::types::mission::MissionCadence) -> &'static str {
-    use ironclaw_engine::types::mission::MissionCadence;
+fn cadence_type_label(
+    cadence: &bastionclaw_engine::types::mission::MissionCadence,
+) -> &'static str {
+    use bastionclaw_engine::types::mission::MissionCadence;
     match cadence {
         MissionCadence::Cron { .. } => "cron",
         MissionCadence::OnEvent { .. } => "event",
@@ -3345,8 +3357,8 @@ fn cadence_type_label(cadence: &ironclaw_engine::types::mission::MissionCadence)
 /// "every Monday at 09:00", etc.) and falls back to `"cron: <expression>"`
 /// for unrecognized patterns. Other cadence types include their pattern/path
 /// so the user can see what triggers the mission.
-fn cadence_description(cadence: &ironclaw_engine::types::mission::MissionCadence) -> String {
-    use ironclaw_engine::types::mission::MissionCadence;
+fn cadence_description(cadence: &bastionclaw_engine::types::mission::MissionCadence) -> String {
+    use bastionclaw_engine::types::mission::MissionCadence;
     match cadence {
         MissionCadence::Cron {
             expression,
@@ -3438,7 +3450,7 @@ fn describe_cron(expression: &str) -> Option<String> {
     None
 }
 
-fn thread_to_info(t: &ironclaw_engine::Thread) -> EngineThreadInfo {
+fn thread_to_info(t: &bastionclaw_engine::Thread) -> EngineThreadInfo {
     EngineThreadInfo {
         id: t.id.to_string(),
         goal: t.goal.clone(),
@@ -3469,7 +3481,7 @@ pub async fn list_engine_threads(
     let pid = match project_id {
         Some(id) => {
             let uuid = uuid::Uuid::parse_str(id).map_err(|e| engine_err("parse project_id", e))?;
-            ironclaw_engine::ProjectId(uuid)
+            bastionclaw_engine::ProjectId(uuid)
         }
         None => state.default_project_id,
     };
@@ -3497,7 +3509,7 @@ pub async fn get_engine_thread(
     };
 
     let tid = uuid::Uuid::parse_str(thread_id).map_err(|e| engine_err("parse thread_id", e))?;
-    let tid = ironclaw_engine::ThreadId(tid);
+    let tid = bastionclaw_engine::ThreadId(tid);
 
     let Some(thread) = state
         .store
@@ -3552,7 +3564,7 @@ pub async fn list_engine_thread_steps(
     // Validate thread ownership before returning steps.
     if let Some(thread) = state
         .store
-        .load_thread(ironclaw_engine::ThreadId(tid))
+        .load_thread(bastionclaw_engine::ThreadId(tid))
         .await
         .map_err(|e| engine_err("load thread", e))?
     {
@@ -3565,7 +3577,7 @@ pub async fn list_engine_thread_steps(
 
     let steps = state
         .store
-        .load_steps(ironclaw_engine::ThreadId(tid))
+        .load_steps(bastionclaw_engine::ThreadId(tid))
         .await
         .map_err(|e| engine_err("load steps", e))?;
 
@@ -3603,7 +3615,7 @@ pub async fn list_engine_thread_events(
     // Validate thread ownership before returning events.
     if let Some(thread) = state
         .store
-        .load_thread(ironclaw_engine::ThreadId(tid))
+        .load_thread(bastionclaw_engine::ThreadId(tid))
         .await
         .map_err(|e| engine_err("load thread", e))?
     {
@@ -3616,7 +3628,7 @@ pub async fn list_engine_thread_events(
 
     let events = state
         .store
-        .load_events(ironclaw_engine::ThreadId(tid))
+        .load_events(bastionclaw_engine::ThreadId(tid))
         .await
         .map_err(|e| engine_err("load events", e))?;
 
@@ -3669,7 +3681,7 @@ pub async fn get_engine_project(
     let pid = uuid::Uuid::parse_str(project_id).map_err(|e| engine_err("parse project_id", e))?;
     let project = state
         .store
-        .load_project(ironclaw_engine::ProjectId(pid))
+        .load_project(bastionclaw_engine::ProjectId(pid))
         .await
         .map_err(|e| engine_err("load project", e))?;
 
@@ -3699,7 +3711,7 @@ pub async fn list_engine_missions(
     let pid = match project_id {
         Some(id) => {
             let uuid = uuid::Uuid::parse_str(id).map_err(|e| engine_err("parse project_id", e))?;
-            ironclaw_engine::ProjectId(uuid)
+            bastionclaw_engine::ProjectId(uuid)
         }
         None => state.default_project_id,
     };
@@ -3743,7 +3755,7 @@ pub async fn get_engine_mission(
     let mid = uuid::Uuid::parse_str(mission_id).map_err(|e| engine_err("parse mission_id", e))?;
     let mission = state
         .store
-        .load_mission(ironclaw_engine::MissionId(mid))
+        .load_mission(bastionclaw_engine::MissionId(mid))
         .await
         .map_err(|e| engine_err("load mission", e))?;
 
@@ -3801,7 +3813,7 @@ pub async fn fire_engine_mission(mission_id: &str, user_id: &str) -> Result<Opti
     };
 
     let mid = uuid::Uuid::parse_str(mission_id).map_err(|e| engine_err("parse mission_id", e))?;
-    let mid = ironclaw_engine::MissionId(mid);
+    let mid = bastionclaw_engine::MissionId(mid);
 
     let result = state
         .effect_adapter
@@ -3841,7 +3853,7 @@ pub async fn pause_engine_mission(
 
     // Shared missions require admin role; pass the shared owner id to satisfy engine check.
     let effective_user_id = resolve_mission_user_id(&state.store, mid, user_id, is_admin).await?;
-    mgr.pause_mission(ironclaw_engine::MissionId(mid), &effective_user_id)
+    mgr.pause_mission(bastionclaw_engine::MissionId(mid), &effective_user_id)
         .await
         .map_err(|e| engine_err("pause mission", e))
 }
@@ -3871,7 +3883,7 @@ pub async fn resume_engine_mission(
         .ok_or_else(|| engine_err("mission", "mission manager not available"))?;
 
     let effective_user_id = resolve_mission_user_id(&state.store, mid, user_id, is_admin).await?;
-    mgr.resume_mission(ironclaw_engine::MissionId(mid), &effective_user_id)
+    mgr.resume_mission(bastionclaw_engine::MissionId(mid), &effective_user_id)
         .await
         .map_err(|e| engine_err("resume mission", e))
 }
@@ -3892,12 +3904,12 @@ pub async fn reset_engine_state() {
 /// If the mission is shared-owned, requires admin role and returns the shared owner id
 /// so the engine ownership check passes. Otherwise returns the caller's user_id.
 async fn resolve_mission_user_id(
-    store: &Arc<dyn ironclaw_engine::Store>,
+    store: &Arc<dyn bastionclaw_engine::Store>,
     mid: uuid::Uuid,
     user_id: &str,
     is_admin: bool,
 ) -> Result<String, Error> {
-    if let Ok(Some(mission)) = store.load_mission(ironclaw_engine::MissionId(mid)).await
+    if let Ok(Some(mission)) = store.load_mission(bastionclaw_engine::MissionId(mid)).await
         && is_shared_owner(&mission.user_id)
     {
         if !is_admin {
@@ -3918,7 +3930,7 @@ async fn resolve_mission_user_id(
 ///
 /// Runs at engine init before user-scoped queries. After migration, records
 /// are findable by the owner's identity and the "legacy" sentinel disappears.
-async fn migrate_legacy_user_ids(store: &Arc<dyn ironclaw_engine::Store>, owner_id: &str) {
+async fn migrate_legacy_user_ids(store: &Arc<dyn bastionclaw_engine::Store>, owner_id: &str) {
     // Projects
     if let Ok(legacy) = store.list_projects("legacy").await {
         for mut project in legacy {
@@ -3930,7 +3942,7 @@ async fn migrate_legacy_user_ids(store: &Arc<dyn ironclaw_engine::Store>, owner_
 
     // We need a project_id to query threads/missions/docs. Use list_projects
     // with the now-migrated owner_id, or fall back to "legacy" in case save failed.
-    let all_projects: Vec<ironclaw_engine::Project> =
+    let all_projects: Vec<bastionclaw_engine::Project> =
         store.list_projects(owner_id).await.unwrap_or_default();
 
     for project in &all_projects {
@@ -3987,15 +3999,15 @@ mod tests {
     use crate::hooks::HookRegistry;
     use crate::testing::{StubChannel, StubLlm};
     use crate::tools::ToolRegistry;
+    use bastionclaw_safety::SafetyLayer;
     use futures::stream;
-    use ironclaw_safety::SafetyLayer;
     use rust_decimal::Decimal;
 
     static ENGINE_STATE_TEST_LOCK: LazyLock<TokioMutex<()>> = LazyLock::new(|| TokioMutex::new(()));
 
     struct TestStore {
-        conversations: TokioRwLock<Vec<ironclaw_engine::ConversationSurface>>,
-        threads: TokioRwLock<HashMap<ironclaw_engine::ThreadId, ironclaw_engine::Thread>>,
+        conversations: TokioRwLock<Vec<bastionclaw_engine::ConversationSurface>>,
+        threads: TokioRwLock<HashMap<bastionclaw_engine::ThreadId, bastionclaw_engine::Thread>>,
     }
 
     impl TestStore {
@@ -4049,82 +4061,82 @@ mod tests {
     impl Store for TestStore {
         async fn save_thread(
             &self,
-            thread: &ironclaw_engine::Thread,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            thread: &bastionclaw_engine::Thread,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             self.threads.write().await.insert(thread.id, thread.clone());
             Ok(())
         }
         async fn load_thread(
             &self,
-            id: ironclaw_engine::ThreadId,
-        ) -> Result<Option<ironclaw_engine::Thread>, ironclaw_engine::EngineError> {
+            id: bastionclaw_engine::ThreadId,
+        ) -> Result<Option<bastionclaw_engine::Thread>, bastionclaw_engine::EngineError> {
             Ok(self.threads.read().await.get(&id).cloned())
         }
         async fn list_threads(
             &self,
-            _project_id: ironclaw_engine::ProjectId,
+            _project_id: bastionclaw_engine::ProjectId,
             _user_id: &str,
-        ) -> Result<Vec<ironclaw_engine::Thread>, ironclaw_engine::EngineError> {
+        ) -> Result<Vec<bastionclaw_engine::Thread>, bastionclaw_engine::EngineError> {
             Ok(self.threads.read().await.values().cloned().collect())
         }
         async fn update_thread_state(
             &self,
-            _id: ironclaw_engine::ThreadId,
-            _state: ironclaw_engine::ThreadState,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            _id: bastionclaw_engine::ThreadId,
+            _state: bastionclaw_engine::ThreadState,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
         async fn save_step(
             &self,
-            _: &ironclaw_engine::Step,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            _: &bastionclaw_engine::Step,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
         async fn load_steps(
             &self,
-            _: ironclaw_engine::ThreadId,
-        ) -> Result<Vec<ironclaw_engine::Step>, ironclaw_engine::EngineError> {
+            _: bastionclaw_engine::ThreadId,
+        ) -> Result<Vec<bastionclaw_engine::Step>, bastionclaw_engine::EngineError> {
             Ok(vec![])
         }
         async fn append_events(
             &self,
-            _: &[ironclaw_engine::ThreadEvent],
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            _: &[bastionclaw_engine::ThreadEvent],
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
         async fn load_events(
             &self,
-            _: ironclaw_engine::ThreadId,
-        ) -> Result<Vec<ironclaw_engine::ThreadEvent>, ironclaw_engine::EngineError> {
+            _: bastionclaw_engine::ThreadId,
+        ) -> Result<Vec<bastionclaw_engine::ThreadEvent>, bastionclaw_engine::EngineError> {
             Ok(vec![])
         }
         async fn save_project(
             &self,
-            _: &ironclaw_engine::Project,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            _: &bastionclaw_engine::Project,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
         async fn load_project(
             &self,
-            _: ironclaw_engine::ProjectId,
-        ) -> Result<Option<ironclaw_engine::Project>, ironclaw_engine::EngineError> {
+            _: bastionclaw_engine::ProjectId,
+        ) -> Result<Option<bastionclaw_engine::Project>, bastionclaw_engine::EngineError> {
             Ok(None)
         }
         async fn list_projects(
             &self,
             _user_id: &str,
-        ) -> Result<Vec<ironclaw_engine::Project>, ironclaw_engine::EngineError> {
+        ) -> Result<Vec<bastionclaw_engine::Project>, bastionclaw_engine::EngineError> {
             Ok(vec![])
         }
         async fn list_all_projects(
             &self,
-        ) -> Result<Vec<ironclaw_engine::Project>, ironclaw_engine::EngineError> {
+        ) -> Result<Vec<bastionclaw_engine::Project>, bastionclaw_engine::EngineError> {
             Ok(vec![])
         }
         async fn save_conversation(
             &self,
-            conversation: &ironclaw_engine::ConversationSurface,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            conversation: &bastionclaw_engine::ConversationSurface,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             let mut conversations = self.conversations.write().await;
             conversations.retain(|existing| existing.id != conversation.id);
             conversations.push(conversation.clone());
@@ -4132,8 +4144,8 @@ mod tests {
         }
         async fn load_conversation(
             &self,
-            id: ironclaw_engine::ConversationId,
-        ) -> Result<Option<ironclaw_engine::ConversationSurface>, ironclaw_engine::EngineError>
+            id: bastionclaw_engine::ConversationId,
+        ) -> Result<Option<bastionclaw_engine::ConversationSurface>, bastionclaw_engine::EngineError>
         {
             Ok(self
                 .conversations
@@ -4146,7 +4158,7 @@ mod tests {
         async fn list_conversations(
             &self,
             user_id: &str,
-        ) -> Result<Vec<ironclaw_engine::ConversationSurface>, ironclaw_engine::EngineError>
+        ) -> Result<Vec<bastionclaw_engine::ConversationSurface>, bastionclaw_engine::EngineError>
         {
             Ok(self
                 .conversations
@@ -4159,74 +4171,76 @@ mod tests {
         }
         async fn save_memory_doc(
             &self,
-            _: &ironclaw_engine::MemoryDoc,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            _: &bastionclaw_engine::MemoryDoc,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
         async fn load_memory_doc(
             &self,
-            _: ironclaw_engine::DocId,
-        ) -> Result<Option<ironclaw_engine::MemoryDoc>, ironclaw_engine::EngineError> {
+            _: bastionclaw_engine::DocId,
+        ) -> Result<Option<bastionclaw_engine::MemoryDoc>, bastionclaw_engine::EngineError>
+        {
             Ok(None)
         }
         async fn list_memory_docs(
             &self,
-            _: ironclaw_engine::ProjectId,
+            _: bastionclaw_engine::ProjectId,
             _user_id: &str,
-        ) -> Result<Vec<ironclaw_engine::MemoryDoc>, ironclaw_engine::EngineError> {
+        ) -> Result<Vec<bastionclaw_engine::MemoryDoc>, bastionclaw_engine::EngineError> {
             Ok(vec![])
         }
         async fn save_lease(
             &self,
-            _: &ironclaw_engine::CapabilityLease,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            _: &bastionclaw_engine::CapabilityLease,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
         async fn load_active_leases(
             &self,
-            _: ironclaw_engine::ThreadId,
-        ) -> Result<Vec<ironclaw_engine::CapabilityLease>, ironclaw_engine::EngineError> {
+            _: bastionclaw_engine::ThreadId,
+        ) -> Result<Vec<bastionclaw_engine::CapabilityLease>, bastionclaw_engine::EngineError>
+        {
             Ok(vec![])
         }
         async fn revoke_lease(
             &self,
-            _: ironclaw_engine::LeaseId,
+            _: bastionclaw_engine::LeaseId,
             _: &str,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
         async fn save_mission(
             &self,
-            _: &ironclaw_engine::Mission,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            _: &bastionclaw_engine::Mission,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
         async fn load_mission(
             &self,
-            _: ironclaw_engine::MissionId,
-        ) -> Result<Option<ironclaw_engine::Mission>, ironclaw_engine::EngineError> {
+            _: bastionclaw_engine::MissionId,
+        ) -> Result<Option<bastionclaw_engine::Mission>, bastionclaw_engine::EngineError> {
             Ok(None)
         }
         async fn list_missions(
             &self,
-            _: ironclaw_engine::ProjectId,
+            _: bastionclaw_engine::ProjectId,
             _user_id: &str,
-        ) -> Result<Vec<ironclaw_engine::Mission>, ironclaw_engine::EngineError> {
+        ) -> Result<Vec<bastionclaw_engine::Mission>, bastionclaw_engine::EngineError> {
             Ok(vec![])
         }
         async fn update_mission_status(
             &self,
-            _: ironclaw_engine::MissionId,
-            _: ironclaw_engine::MissionStatus,
-        ) -> Result<(), ironclaw_engine::EngineError> {
+            _: bastionclaw_engine::MissionId,
+            _: bastionclaw_engine::MissionStatus,
+        ) -> Result<(), bastionclaw_engine::EngineError> {
             Ok(())
         }
     }
 
     fn sample_pending_gate(
         user_id: &str,
-        thread_id: ironclaw_engine::ThreadId,
-        resume_kind: ironclaw_engine::ResumeKind,
+        thread_id: bastionclaw_engine::ThreadId,
+        resume_kind: bastionclaw_engine::ResumeKind,
     ) -> PendingGate {
         PendingGate {
             request_id: uuid::Uuid::new_v4(),
@@ -4234,7 +4248,7 @@ mod tests {
             user_id: user_id.into(),
             thread_id,
             scope_thread_id: None,
-            conversation_id: ironclaw_engine::ConversationId::new(),
+            conversation_id: bastionclaw_engine::ConversationId::new(),
             source_channel: "web".into(),
             action_name: "shell".into(),
             call_id: format!("call-{thread_id}"),
@@ -4300,8 +4314,8 @@ mod tests {
             store: None,
             llm: Arc::new(StaticLlmProvider),
             cheap_llm: None,
-            safety: Arc::new(ironclaw_safety::SafetyLayer::new(
-                &ironclaw_safety::SafetyConfig {
+            safety: Arc::new(bastionclaw_safety::SafetyLayer::new(
+                &bastionclaw_safety::SafetyConfig {
                     max_output_length: 100_000,
                     injection_check_enabled: true,
                 },
@@ -4381,11 +4395,11 @@ mod tests {
         let mut state = make_expected_test_state(store);
         state.sse = Some(Arc::clone(&sse));
 
-        let thread_id = ironclaw_engine::ThreadId::new();
+        let thread_id = bastionclaw_engine::ThreadId::new();
         let pending = sample_pending_gate(
             "alice",
             thread_id,
-            ironclaw_engine::ResumeKind::Authentication {
+            bastionclaw_engine::ResumeKind::Authentication {
                 credential_name: "google_oauth_token".to_string(),
                 instructions: "Sign in with Google".to_string(),
                 auth_url: Some("https://example.test/oauth".to_string()),
@@ -4436,11 +4450,11 @@ mod tests {
         let mut state = make_expected_test_state(store);
         state.sse = Some(Arc::clone(&sse));
 
-        let thread_id = ironclaw_engine::ThreadId::new();
+        let thread_id = bastionclaw_engine::ThreadId::new();
         let pending = sample_pending_gate(
             "alice",
             thread_id,
-            ironclaw_engine::ResumeKind::Approval { allow_always: true },
+            bastionclaw_engine::ResumeKind::Approval { allow_always: true },
         );
         let request_id = pending.request_id.to_string();
         state.pending_gates.insert(pending).await.unwrap();
@@ -4495,13 +4509,13 @@ mod tests {
     #[tokio::test]
     async fn resolve_pending_gate_is_thread_scoped() {
         let store = crate::gate::store::PendingGateStore::in_memory();
-        let thread_a = ironclaw_engine::ThreadId::new();
-        let thread_b = ironclaw_engine::ThreadId::new();
+        let thread_a = bastionclaw_engine::ThreadId::new();
+        let thread_b = bastionclaw_engine::ThreadId::new();
         store
             .insert(sample_pending_gate(
                 "alice",
                 thread_a,
-                ironclaw_engine::ResumeKind::Approval { allow_always: true },
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
             ))
             .await
             .unwrap();
@@ -4509,7 +4523,7 @@ mod tests {
             .insert(sample_pending_gate(
                 "alice",
                 thread_b,
-                ironclaw_engine::ResumeKind::Approval { allow_always: true },
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
             ))
             .await
             .unwrap();
@@ -4529,16 +4543,16 @@ mod tests {
         store
             .insert(sample_pending_gate(
                 "alice",
-                ironclaw_engine::ThreadId::new(),
-                ironclaw_engine::ResumeKind::Approval { allow_always: true },
+                bastionclaw_engine::ThreadId::new(),
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
             ))
             .await
             .unwrap();
         store
             .insert(sample_pending_gate(
                 "alice",
-                ironclaw_engine::ThreadId::new(),
-                ironclaw_engine::ResumeKind::Approval { allow_always: true },
+                bastionclaw_engine::ThreadId::new(),
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
             ))
             .await
             .unwrap();
@@ -4550,12 +4564,12 @@ mod tests {
     #[tokio::test]
     async fn resolve_pending_gate_filters_by_kind() {
         let store = crate::gate::store::PendingGateStore::in_memory();
-        let thread_id = ironclaw_engine::ThreadId::new();
+        let thread_id = bastionclaw_engine::ThreadId::new();
         store
             .insert(sample_pending_gate(
                 "alice",
                 thread_id,
-                ironclaw_engine::ResumeKind::Authentication {
+                bastionclaw_engine::ResumeKind::Authentication {
                     credential_name: "github".into(),
                     instructions: "paste token".into(),
                     auth_url: None,
@@ -4572,28 +4586,71 @@ mod tests {
         };
         assert!(matches!(
             gate.resume_kind,
-            ironclaw_engine::ResumeKind::Authentication { .. }
+            bastionclaw_engine::ResumeKind::Authentication { .. }
         ));
+    }
+
+    #[tokio::test]
+    async fn handle_approval_ignores_pending_gate_from_different_thread() {
+        let _guard = ENGINE_STATE_TEST_LOCK.lock().await;
+        let lock = ENGINE_STATE.get_or_init(|| RwLock::new(None));
+        *lock.write().await = None;
+
+        let outcome = async {
+            let store = Arc::new(TestStore::new());
+            let state = make_expected_test_state(store);
+            let pending_thread_id = bastionclaw_engine::ThreadId::new();
+            let active_thread_id = bastionclaw_engine::ThreadId::new();
+            let pending = sample_pending_gate(
+                "alice",
+                pending_thread_id,
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
+            );
+            state
+                .pending_gates
+                .insert(pending)
+                .await
+                .expect("insert pending gate");
+
+            *lock.write().await = Some(state);
+
+            let (agent, _statuses) = make_router_test_agent(None).await;
+            let message = IncomingMessage::new("gateway", "alice", "/approve")
+                .with_thread(active_thread_id.to_string());
+
+            let result = handle_approval(&agent, &message, true, false)
+                .await
+                .expect("handle approval");
+
+            assert_eq!(
+                result.as_deref(),
+                Some("No pending approval for this thread.")
+            );
+        }
+        .await;
+
+        *lock.write().await = None;
+        outcome
     }
 
     #[test]
     fn resolved_call_id_prefers_stored_id_for_parallel_same_name_calls() {
-        let mut thread = ironclaw_engine::Thread::new(
+        let mut thread = bastionclaw_engine::Thread::new(
             "goal",
-            ironclaw_engine::ThreadType::Foreground,
-            ironclaw_engine::ProjectId::new(),
+            bastionclaw_engine::ThreadType::Foreground,
+            bastionclaw_engine::ProjectId::new(),
             "alice",
-            ironclaw_engine::ThreadConfig::default(),
+            bastionclaw_engine::ThreadConfig::default(),
         );
-        thread.add_message(ironclaw_engine::ThreadMessage::assistant_with_actions(
+        thread.add_message(bastionclaw_engine::ThreadMessage::assistant_with_actions(
             Some("parallel shell calls".to_string()),
             vec![
-                ironclaw_engine::ActionCall {
+                bastionclaw_engine::ActionCall {
                     id: "call-1".to_string(),
                     action_name: "shell".to_string(),
                     parameters: serde_json::json!({"cmd": "pwd"}),
                 },
-                ironclaw_engine::ActionCall {
+                bastionclaw_engine::ActionCall {
                     id: "call-2".to_string(),
                     action_name: "shell".to_string(),
                     parameters: serde_json::json!({"cmd": "ls"}),
@@ -4607,7 +4664,7 @@ mod tests {
             ..sample_pending_gate(
                 "alice",
                 thread.id,
-                ironclaw_engine::ResumeKind::Approval { allow_always: true },
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
             )
         };
 
@@ -4619,29 +4676,29 @@ mod tests {
 
     #[test]
     fn resolved_call_id_legacy_fallback_uses_last_unresolved_parallel_call() {
-        let mut thread = ironclaw_engine::Thread::new(
+        let mut thread = bastionclaw_engine::Thread::new(
             "goal",
-            ironclaw_engine::ThreadType::Foreground,
-            ironclaw_engine::ProjectId::new(),
+            bastionclaw_engine::ThreadType::Foreground,
+            bastionclaw_engine::ProjectId::new(),
             "alice",
-            ironclaw_engine::ThreadConfig::default(),
+            bastionclaw_engine::ThreadConfig::default(),
         );
-        thread.add_message(ironclaw_engine::ThreadMessage::assistant_with_actions(
+        thread.add_message(bastionclaw_engine::ThreadMessage::assistant_with_actions(
             Some("parallel shell calls".to_string()),
             vec![
-                ironclaw_engine::ActionCall {
+                bastionclaw_engine::ActionCall {
                     id: "call-1".to_string(),
                     action_name: "shell".to_string(),
                     parameters: serde_json::json!({"cmd": "pwd"}),
                 },
-                ironclaw_engine::ActionCall {
+                bastionclaw_engine::ActionCall {
                     id: "call-2".to_string(),
                     action_name: "shell".to_string(),
                     parameters: serde_json::json!({"cmd": "ls"}),
                 },
             ],
         ));
-        thread.add_message(ironclaw_engine::ThreadMessage::action_result(
+        thread.add_message(bastionclaw_engine::ThreadMessage::action_result(
             "call-1",
             "shell",
             "{\"ok\":true}",
@@ -4652,7 +4709,7 @@ mod tests {
             ..sample_pending_gate(
                 "alice",
                 thread.id,
-                ironclaw_engine::ResumeKind::Approval { allow_always: true },
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
             )
         };
 
@@ -4664,19 +4721,19 @@ mod tests {
 
     #[test]
     fn resolved_call_id_returns_none_when_no_history_match() {
-        let thread = ironclaw_engine::Thread::new(
+        let thread = bastionclaw_engine::Thread::new(
             "goal",
-            ironclaw_engine::ThreadType::Foreground,
-            ironclaw_engine::ProjectId::new(),
+            bastionclaw_engine::ThreadType::Foreground,
+            bastionclaw_engine::ProjectId::new(),
             "alice",
-            ironclaw_engine::ThreadConfig::default(),
+            bastionclaw_engine::ThreadConfig::default(),
         );
         let pending = PendingGate {
             call_id: String::new(),
             ..sample_pending_gate(
                 "alice",
                 thread.id,
-                ironclaw_engine::ResumeKind::Approval { allow_always: true },
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
             )
         };
 
@@ -4688,15 +4745,15 @@ mod tests {
         let _guard = ENGINE_STATE_TEST_LOCK.lock().await;
         let store = Arc::new(TestStore::new());
         let state = make_expected_test_state(store);
-        let thread_a = ironclaw_engine::ThreadId::new();
-        let thread_b = ironclaw_engine::ThreadId::new();
+        let thread_a = bastionclaw_engine::ThreadId::new();
+        let thread_b = bastionclaw_engine::ThreadId::new();
 
         state
             .pending_gates
             .insert(sample_pending_gate(
                 "alice",
                 thread_a,
-                ironclaw_engine::ResumeKind::Authentication {
+                bastionclaw_engine::ResumeKind::Authentication {
                     credential_name: "github_token".into(),
                     instructions: "paste token".into(),
                     auth_url: None,
@@ -4709,7 +4766,7 @@ mod tests {
             .insert(sample_pending_gate(
                 "alice",
                 thread_b,
-                ironclaw_engine::ResumeKind::Authentication {
+                bastionclaw_engine::ResumeKind::Authentication {
                     credential_name: "linear_token".into(),
                     instructions: "paste token".into(),
                     auth_url: None,
@@ -4738,15 +4795,15 @@ mod tests {
         let _guard = ENGINE_STATE_TEST_LOCK.lock().await;
         let store = Arc::new(TestStore::new());
         let state = make_expected_test_state(store);
-        let thread_a = ironclaw_engine::ThreadId::new();
-        let thread_b = ironclaw_engine::ThreadId::new();
+        let thread_a = bastionclaw_engine::ThreadId::new();
+        let thread_b = bastionclaw_engine::ThreadId::new();
 
         state
             .pending_gates
             .insert(sample_pending_gate(
                 "alice",
                 thread_a,
-                ironclaw_engine::ResumeKind::Authentication {
+                bastionclaw_engine::ResumeKind::Authentication {
                     credential_name: "github_token".into(),
                     instructions: "paste token".into(),
                     auth_url: None,
@@ -4759,7 +4816,7 @@ mod tests {
             .insert(sample_pending_gate(
                 "alice",
                 thread_b,
-                ironclaw_engine::ResumeKind::Authentication {
+                bastionclaw_engine::ResumeKind::Authentication {
                     credential_name: "linear_token".into(),
                     instructions: "paste token".into(),
                     auth_url: None,
@@ -4785,23 +4842,24 @@ mod tests {
 
     /// Build a minimal EngineState backed by a TestStore for /expected tests.
     fn make_expected_test_state(store: Arc<TestStore>) -> EngineState {
-        use ironclaw_engine::{
+        use bastionclaw_engine::{
             CapabilityRegistry, ConversationManager, LeaseManager, PolicyEngine, ThreadManager,
         };
 
         // Minimal mocks — /expected doesn't execute threads, just reads state
         struct NoopLlm;
         #[async_trait::async_trait]
-        impl ironclaw_engine::LlmBackend for NoopLlm {
+        impl bastionclaw_engine::LlmBackend for NoopLlm {
             async fn complete(
                 &self,
-                _: &[ironclaw_engine::ThreadMessage],
-                _: &[ironclaw_engine::ActionDef],
-                _: &ironclaw_engine::LlmCallConfig,
-            ) -> Result<ironclaw_engine::LlmOutput, ironclaw_engine::EngineError> {
-                Ok(ironclaw_engine::LlmOutput {
-                    response: ironclaw_engine::LlmResponse::Text("done".into()),
-                    usage: ironclaw_engine::TokenUsage::default(),
+                _: &[bastionclaw_engine::ThreadMessage],
+                _: &[bastionclaw_engine::ActionDef],
+                _: &bastionclaw_engine::LlmCallConfig,
+            ) -> Result<bastionclaw_engine::LlmOutput, bastionclaw_engine::EngineError>
+            {
+                Ok(bastionclaw_engine::LlmOutput {
+                    response: bastionclaw_engine::LlmResponse::Text("done".into()),
+                    usage: bastionclaw_engine::TokenUsage::default(),
                 })
             }
             fn model_name(&self) -> &str {
@@ -4811,20 +4869,22 @@ mod tests {
 
         struct NoopEffects;
         #[async_trait::async_trait]
-        impl ironclaw_engine::EffectExecutor for NoopEffects {
+        impl bastionclaw_engine::EffectExecutor for NoopEffects {
             async fn execute_action(
                 &self,
                 _: &str,
                 _: serde_json::Value,
-                _: &ironclaw_engine::CapabilityLease,
-                _: &ironclaw_engine::ThreadExecutionContext,
-            ) -> Result<ironclaw_engine::ActionResult, ironclaw_engine::EngineError> {
+                _: &bastionclaw_engine::CapabilityLease,
+                _: &bastionclaw_engine::ThreadExecutionContext,
+            ) -> Result<bastionclaw_engine::ActionResult, bastionclaw_engine::EngineError>
+            {
                 unreachable!()
             }
             async fn available_actions(
                 &self,
-                _: &[ironclaw_engine::CapabilityLease],
-            ) -> Result<Vec<ironclaw_engine::ActionDef>, ironclaw_engine::EngineError> {
+                _: &[bastionclaw_engine::CapabilityLease],
+            ) -> Result<Vec<bastionclaw_engine::ActionDef>, bastionclaw_engine::EngineError>
+            {
                 Ok(vec![])
             }
         }
@@ -4832,8 +4892,8 @@ mod tests {
         let store_dyn: Arc<dyn Store> = store;
         let effect_adapter = Arc::new(EffectBridgeAdapter::new(
             Arc::new(crate::tools::ToolRegistry::new()),
-            Arc::new(ironclaw_safety::SafetyLayer::new(
-                &ironclaw_safety::SafetyConfig {
+            Arc::new(bastionclaw_safety::SafetyLayer::new(
+                &bastionclaw_safety::SafetyConfig {
                     max_output_length: 10_000,
                     injection_check_enabled: false,
                 },
@@ -4857,7 +4917,7 @@ mod tests {
             conversation_manager: cm,
             effect_adapter,
             store: store_dyn,
-            default_project_id: ironclaw_engine::ProjectId::new(),
+            default_project_id: bastionclaw_engine::ProjectId::new(),
             pending_gates: Arc::new(crate::gate::store::PendingGateStore::in_memory()),
             sse: None,
             db: None,
@@ -4947,11 +5007,11 @@ mod tests {
         let outcome = async {
             let store = Arc::new(TestStore::new());
             let state = make_expected_test_state(store);
-            let thread_id = ironclaw_engine::ThreadId::new();
+            let thread_id = bastionclaw_engine::ThreadId::new();
             let pending = sample_pending_gate(
                 "alice",
                 thread_id,
-                ironclaw_engine::ResumeKind::Approval { allow_always: true },
+                bastionclaw_engine::ResumeKind::Approval { allow_always: true },
             );
             state
                 .pending_gates
@@ -5009,19 +5069,19 @@ mod tests {
         let state = make_expected_test_state(store.clone());
 
         let project_id = state.default_project_id;
-        let mut thread = ironclaw_engine::Thread::new(
+        let mut thread = bastionclaw_engine::Thread::new(
             "test goal",
-            ironclaw_engine::ThreadType::Foreground,
+            bastionclaw_engine::ThreadType::Foreground,
             project_id,
             "alice",
-            ironclaw_engine::ThreadConfig::default(),
+            bastionclaw_engine::ThreadConfig::default(),
         );
-        thread.add_message(ironclaw_engine::ThreadMessage::user("hello"));
-        thread.add_message(ironclaw_engine::ThreadMessage::assistant("hi there"));
+        thread.add_message(bastionclaw_engine::ThreadMessage::user("hello"));
+        thread.add_message(bastionclaw_engine::ThreadMessage::assistant("hi there"));
         let tid = thread.id;
         store.save_thread(&thread).await.unwrap();
 
-        let mut conv = ironclaw_engine::ConversationSurface::new("web", "alice");
+        let mut conv = bastionclaw_engine::ConversationSurface::new("web", "alice");
         conv.track_thread(tid);
         let conv_opt = Some(conv);
 
@@ -5036,7 +5096,7 @@ mod tests {
         let store = Arc::new(TestStore::new());
         let state = make_expected_test_state(store);
 
-        let conv = Some(ironclaw_engine::ConversationSurface::new("web", "alice"));
+        let conv = Some(bastionclaw_engine::ConversationSurface::new("web", "alice"));
         let result = find_most_recent_thread(&state, &conv, "alice").await;
         assert!(result.is_none());
     }
@@ -5048,17 +5108,17 @@ mod tests {
         let state = make_expected_test_state(store.clone());
 
         let project_id = state.default_project_id;
-        let thread = ironclaw_engine::Thread::new(
+        let thread = bastionclaw_engine::Thread::new(
             "bob's thread",
-            ironclaw_engine::ThreadType::Foreground,
+            bastionclaw_engine::ThreadType::Foreground,
             project_id,
             "bob", // owned by bob
-            ironclaw_engine::ThreadConfig::default(),
+            bastionclaw_engine::ThreadConfig::default(),
         );
         let tid = thread.id;
         store.save_thread(&thread).await.unwrap();
 
-        let mut conv = ironclaw_engine::ConversationSurface::new("web", "alice");
+        let mut conv = bastionclaw_engine::ConversationSurface::new("web", "alice");
         conv.track_thread(tid);
 
         // Alice should NOT see Bob's thread
@@ -5074,21 +5134,21 @@ mod tests {
         let state = make_expected_test_state(store.clone());
 
         let project_id = state.default_project_id;
-        let mut thread = ironclaw_engine::Thread::new(
+        let mut thread = bastionclaw_engine::Thread::new(
             "completed goal",
-            ironclaw_engine::ThreadType::Foreground,
+            bastionclaw_engine::ThreadType::Foreground,
             project_id,
             "alice",
-            ironclaw_engine::ThreadConfig::default(),
+            bastionclaw_engine::ThreadConfig::default(),
         );
-        thread.add_message(ironclaw_engine::ThreadMessage::user("do something"));
-        thread.add_message(ironclaw_engine::ThreadMessage::assistant("done"));
+        thread.add_message(bastionclaw_engine::ThreadMessage::user("do something"));
+        thread.add_message(bastionclaw_engine::ThreadMessage::assistant("done"));
         let tid = thread.id;
         store.save_thread(&thread).await.unwrap();
 
         // Conversation with no active threads, but an entry referencing the thread
-        let mut conv = ironclaw_engine::ConversationSurface::new("web", "alice");
-        conv.add_entry(ironclaw_engine::ConversationEntry::agent(tid, "done"));
+        let mut conv = bastionclaw_engine::ConversationSurface::new("web", "alice");
+        conv.add_entry(bastionclaw_engine::ConversationEntry::agent(tid, "done"));
         // Thread is NOT in active_threads (it completed and was untracked)
 
         let result = find_most_recent_thread(&state, &Some(conv), "alice").await;

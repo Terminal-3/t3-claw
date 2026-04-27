@@ -1,7 +1,7 @@
 //! Pending gate state — unified type replacing `PendingApproval` and `PendingAuth`.
 
+use bastionclaw_engine::{ResumeKind, ThreadId};
 use chrono::{DateTime, Utc};
-use ironclaw_engine::{ResumeKind, ThreadId};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -38,7 +38,7 @@ pub struct PendingGate {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scope_thread_id: Option<String>,
     /// Conversation the thread belongs to.
-    pub conversation_id: ironclaw_engine::ConversationId,
+    pub conversation_id: bastionclaw_engine::ConversationId,
     /// Channel that originated the request.
     /// Resolution MUST come from the same channel (or a trusted channel).
     pub source_channel: String,
@@ -130,7 +130,7 @@ mod tests {
             user_id: "user1".into(),
             thread_id: ThreadId::new(),
             scope_thread_id: None,
-            conversation_id: ironclaw_engine::ConversationId::new(),
+            conversation_id: bastionclaw_engine::ConversationId::new(),
             source_channel: "telegram".into(),
             action_name: "shell".into(),
             call_id: "call_1".into(),

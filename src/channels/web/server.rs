@@ -29,7 +29,7 @@ use uuid::Uuid;
 use axum::http::HeaderMap;
 
 use crate::agent::SessionManager;
-use crate::bootstrap::ironclaw_base_dir;
+use crate::bootstrap::bastionclaw_base_dir;
 use crate::channels::IncomingMessage;
 use crate::channels::relay::DEFAULT_RELAY_NAME;
 use crate::channels::web::auth::{
@@ -424,9 +424,9 @@ pub struct GatewayState {
     /// LLM provider for OpenAI-compatible API proxy.
     pub llm_provider: Option<Arc<dyn crate::llm::LlmProvider>>,
     /// Skill registry for skill management API.
-    pub skill_registry: Option<Arc<std::sync::RwLock<ironclaw_skills::SkillRegistry>>>,
+    pub skill_registry: Option<Arc<std::sync::RwLock<bastionclaw_skills::SkillRegistry>>>,
     /// Skill catalog for searching the ClawHub registry.
-    pub skill_catalog: Option<Arc<ironclaw_skills::catalog::SkillCatalog>>,
+    pub skill_catalog: Option<Arc<bastionclaw_skills::catalog::SkillCatalog>>,
     /// Shared auth manager for gateway auth submission and readiness checks.
     pub auth_manager: Option<Arc<crate::bridge::auth_manager::AuthManager>>,
     /// Scheduler for sending follow-up messages to running agent jobs.
@@ -759,6 +759,10 @@ pub async fn start_server(
             "/api/admin/users/{id}/activate",
             post(super::handlers::users::users_activate_handler),
         )
+        .route(
+            "/api/admin/users/{id}/token",
+            post(super::handlers::users::users_create_token_handler),
+        )
         // Admin secrets provisioning (per-user)
         .route(
             "/api/admin/users/{user_id}/secrets",
@@ -1045,8 +1049,8 @@ fn generate_csp_nonce() -> String {
 
 // --- Frontend bundle assembly ---
 
-use ironclaw_gateway::assets;
-use ironclaw_gateway::{FrontendBundle, LayoutConfig, NONCE_PLACEHOLDER};
+use bastionclaw_gateway::assets;
+use bastionclaw_gateway::{FrontendBundle, LayoutConfig, NONCE_PLACEHOLDER};
 
 use crate::channels::web::handlers::frontend::{load_resolved_widgets, read_layout_config};
 
@@ -1106,8 +1110,8 @@ async fn compute_frontend_cache_key(workspace: &crate::workspace::Workspace) -> 
 /// customization can ride a future JS-side fetch against
 /// `/api/frontend/layout`, which is authenticated and routes through
 /// `resolve_workspace(&state, &user)` so it returns the right workspace.
-/// See `crates/ironclaw_gateway/static/app.js` — the layout-config IIFE
-/// already reads `window.__IRONCLAW_LAYOUT__`, which a future change can
+/// See `crates/bastionclaw_gateway/static/app.js` — the layout-config IIFE
+/// already reads `window.__BASTIONCLAW_LAYOUT__`, which a future change can
 /// populate from a `fetch('/api/frontend/layout')` after auth.
 ///
 /// **Cache key TOCTOU window (known and accepted).** The fast-path cache
@@ -1174,7 +1178,7 @@ async fn build_frontend_html(state: &GatewayState) -> Option<String> {
             // double-application — see the doc comment on this function.
             custom_css: None,
         };
-        Some(ironclaw_gateway::assemble_index(
+        Some(bastionclaw_gateway::assemble_index(
             assets::INDEX_HTML,
             &bundle,
         ))
@@ -1232,7 +1236,7 @@ fn layout_has_customizations(layout: &LayoutConfig) -> bool {
 
 // --- Static file handlers ---
 //
-// All frontend assets are embedded in the `ironclaw_gateway` crate.
+// All frontend assets are embedded in the `bastionclaw_gateway` crate.
 // These handlers serve them with appropriate MIME types and cache headers.
 
 /// Substitute [`NONCE_PLACEHOLDER`] sentinels in the assembled HTML with a
@@ -1242,14 +1246,14 @@ fn layout_has_customizations(layout: &LayoutConfig) -> bool {
 /// assembled HTML embeds widget JavaScript inline (so a CSP-protected
 /// `<script src>` doesn't need to authenticate against `/api/frontend/widget/...`).
 /// A widget author has every right to write the literal string
-/// `__IRONCLAW_CSP_NONCE__` inside their own source — in a comment, a log
+/// `__BASTIONCLAW_CSP_NONCE__` inside their own source — in a comment, a log
 /// line, a test fixture, or just as a constant they happen to define. A
 /// naive `html.replace(NONCE_PLACEHOLDER, nonce)` would silently rewrite
 /// every such occurrence into a per-request nonce, mutating widget code
 /// in a way the author didn't ask for.
 ///
 /// The substitution here targets the full attribute form
-/// `nonce="__IRONCLAW_CSP_NONCE__"`, which is the exact shape
+/// `nonce="__BASTIONCLAW_CSP_NONCE__"`, which is the exact shape
 /// `assemble_index` emits when stamping nonces onto `<script>` tags. The
 /// double-quoted sentinel is unambiguous in HTML context — it can never
 /// accidentally match free text in a JS module body, a comment, or a
@@ -1498,7 +1502,7 @@ fn oauth_error_page(label: &str) -> axum::response::Response {
 /// redirect the user's browser here. The `state` query parameter correlates
 /// the callback with a pending OAuth flow registered by `start_wasm_oauth()`.
 ///
-/// Used on hosted instances where `IRONCLAW_OAUTH_CALLBACK_URL` points to
+/// Used on hosted instances where `BASTIONCLAW_OAUTH_CALLBACK_URL` points to
 /// the gateway (e.g., `https://kind-deer.agent1.near.ai/oauth/callback`).
 /// Local/desktop mode continues to use the TCP listener on port 9876.
 async fn oauth_callback_handler(
@@ -1519,14 +1523,14 @@ async fn oauth_callback_handler(
     let state_param = match params.get("state") {
         Some(s) if !s.is_empty() => s.clone(),
         _ => {
-            return oauth_error_page("IronClaw");
+            return oauth_error_page("BastionClaw");
         }
     };
 
     let code = match params.get("code") {
         Some(c) if !c.is_empty() => c.clone(),
         _ => {
-            return oauth_error_page("IronClaw");
+            return oauth_error_page("BastionClaw");
         }
     };
 
@@ -1534,7 +1538,7 @@ async fn oauth_callback_handler(
     let ext_mgr = match state.extension_manager.as_ref() {
         Some(mgr) => mgr,
         None => {
-            return oauth_error_page("IronClaw");
+            return oauth_error_page("BastionClaw");
         }
     };
 
@@ -1548,7 +1552,7 @@ async fn oauth_callback_handler(
                 "OAuth callback received with malformed state"
             );
             clear_auth_mode(&state, &state.owner_id).await;
-            return oauth_error_page("IronClaw");
+            return oauth_error_page("BastionClaw");
         }
     };
     let lookup_key = decoded_state.flow_id.clone();
@@ -1569,7 +1573,7 @@ async fn oauth_callback_handler(
                 lookup_key = %redacted_lookup_key,
                 "OAuth callback received with unknown or expired state"
             );
-            return oauth_error_page("IronClaw");
+            return oauth_error_page("BastionClaw");
         }
     };
 
@@ -2125,7 +2129,7 @@ async fn slack_relay_oauth_callback_handler(
         axum::response::Html(
             "<html><body style='font-family: system-ui; text-align: center; padding: 60px;'>\
              <h2>Slack Connected!</h2>\
-             <p>You can close this tab and return to IronClaw.</p>\
+             <p>You can close this tab and return to BastionClaw.</p>\
              <script>window.close()</script>\
              </body></html>"
                 .to_string(),
@@ -3228,7 +3232,7 @@ async fn extensions_install_handler(
                 crate::extensions::ExtensionSource::WasmBuildable { .. } => {
                     format!(
                         "'{}' requires building from source. \
-                         Run `ironclaw registry install {}` from the CLI.",
+                         Run `bastionclaw registry install {}` from the CLI.",
                         req.name, req.name
                     )
                 }
@@ -3414,7 +3418,7 @@ async fn verify_project_ownership(state: &GatewayState, project_id: &str, user_i
     }
 }
 
-/// Shared logic: resolve the file inside `~/.ironclaw/projects/{project_id}/`,
+/// Shared logic: resolve the file inside `~/.bastionclaw/projects/{project_id}/`,
 /// guard against path traversal, and stream the content with the right MIME type.
 async fn serve_project_file(project_id: &str, path: &str) -> axum::response::Response {
     // Reject project_id values that could escape the projects directory.
@@ -3426,7 +3430,7 @@ async fn serve_project_file(project_id: &str, path: &str) -> axum::response::Res
         return (StatusCode::BAD_REQUEST, "Invalid project ID").into_response();
     }
 
-    let base = ironclaw_base_dir().join("projects").join(project_id);
+    let base = bastionclaw_base_dir().join("projects").join(project_id);
 
     let file_path = base.join(path);
 
@@ -3778,7 +3782,7 @@ async fn gateway_status_handler(
         (None, None, None)
     };
 
-    let restart_enabled = std::env::var("IRONCLAW_IN_DOCKER")
+    let restart_enabled = std::env::var("BASTIONCLAW_IN_DOCKER")
         .map(|v| v.to_lowercase() == "true")
         .unwrap_or(false);
 
@@ -4672,7 +4676,7 @@ mod tests {
         use tower::ServiceExt;
 
         // DB-backed manager so the install path does not fall back to the
-        // developer's real `~/.ironclaw/mcp-servers.json` (which would
+        // developer's real `~/.bastionclaw/mcp-servers.json` (which would
         // panic with `AlreadyInstalled("notion")` on dev machines that
         // already have a notion entry configured).
         let (ext_mgr, _wasm_tools_dir, _wasm_channels_dir, _db_dir) = test_ext_mgr_with_db().await;
@@ -5343,7 +5347,7 @@ mod tests {
         // Regression for the PR #1725 Copilot finding: a bare-string
         // replace would also rewrite any *body content* that happens to
         // contain the literal sentinel — e.g. a widget JS module that
-        // mentions `__IRONCLAW_CSP_NONCE__` in a comment, log line, or
+        // mentions `__BASTIONCLAW_CSP_NONCE__` in a comment, log line, or
         // string constant. The attribute-targeted replace must leave
         // those untouched.
         //
@@ -5995,8 +5999,8 @@ mod tests {
         // sees a stable proxy URL/token configuration throughout the test.
         let _env_guard = crate::config::helpers::lock_env();
         let _exchange_url_guard =
-            set_env_var("IRONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
-        let _proxy_auth_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
+            set_env_var("BASTIONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
+        let _proxy_auth_guard = set_env_var("BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
         let _gateway_token_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-test-token"));
 
         let secrets = test_secrets_store();
@@ -6092,9 +6096,9 @@ mod tests {
         // sees a stable proxy URL/token configuration throughout the test.
         let _env_guard = crate::config::helpers::lock_env();
         let _exchange_url_guard =
-            set_env_var("IRONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
+            set_env_var("BASTIONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
         let _proxy_auth_guard = set_env_var(
-            "IRONCLAW_OAUTH_PROXY_AUTH_TOKEN",
+            "BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN",
             Some("shared-oauth-proxy-secret"),
         );
         let _gateway_token_guard = set_env_var("GATEWAY_AUTH_TOKEN", None);
@@ -6189,8 +6193,8 @@ mod tests {
         let proxy = MockOauthProxyServer::start().await;
         let _env_guard = crate::config::helpers::lock_env();
         let _exchange_url_guard =
-            set_env_var("IRONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
-        let _proxy_auth_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
+            set_env_var("BASTIONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
+        let _proxy_auth_guard = set_env_var("BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
         let _gateway_token_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-test-token"));
 
         let secrets = test_secrets_store();
@@ -6253,8 +6257,8 @@ mod tests {
 
         let _env_guard = crate::config::helpers::lock_env();
         let _exchange_url_guard =
-            set_env_var("IRONCLAW_OAUTH_EXCHANGE_URL", Some("http://127.0.0.1:1"));
-        let _proxy_auth_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
+            set_env_var("BASTIONCLAW_OAUTH_EXCHANGE_URL", Some("http://127.0.0.1:1"));
+        let _proxy_auth_guard = set_env_var("BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
         let _gateway_token_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-test-token"));
 
         let secrets = test_secrets_store();
@@ -6356,7 +6360,7 @@ mod tests {
     ///
     /// `test_ext_mgr` builds the manager with `store: None`, which makes
     /// `load_mcp_servers` fall back to the file-based path
-    /// `~/.ironclaw/mcp-servers.json`. Any test that calls `install` for an
+    /// `~/.bastionclaw/mcp-servers.json`. Any test that calls `install` for an
     /// MCP server with `store: None` will read the developer's real config
     /// and may panic with `AlreadyInstalled("notion")` (or similar) on
     /// machines that have configured MCP servers locally.
@@ -6380,7 +6384,7 @@ mod tests {
         let (db, db_dir) = crate::testing::test_db().await;
 
         // Pre-seed an empty servers list so the DB-backed loader does not
-        // fall back to `~/.ironclaw/mcp-servers.json` on dev machines.
+        // fall back to `~/.bastionclaw/mcp-servers.json` on dev machines.
         let empty_servers = crate::tools::mcp::config::McpServersFile::default();
         crate::tools::mcp::config::save_mcp_servers_to_db(db.as_ref(), "test", &empty_servers)
             .await

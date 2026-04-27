@@ -603,23 +603,7 @@ fn write_routine_verification_record(
 }
 
 fn canonicalize_json_value(value: Value) -> Value {
-    match value {
-        Value::Array(items) => {
-            Value::Array(items.into_iter().map(canonicalize_json_value).collect())
-        }
-        Value::Object(obj) => {
-            let mut keys: Vec<String> = obj.keys().cloned().collect();
-            keys.sort();
-            let mut canonical = Map::new();
-            for key in keys {
-                if let Some(value) = obj.get(&key) {
-                    canonical.insert(key, canonicalize_json_value(value.clone()));
-                }
-            }
-            Value::Object(canonical)
-        }
-        other => other,
-    }
+    crate::util::canonicalize_json_value(value)
 }
 
 pub fn routine_verification_fingerprint(routine: &Routine) -> String {
@@ -971,7 +955,7 @@ mod tests {
     #[test]
     fn test_system_event_trigger_roundtrip() {
         let mut filters = std::collections::HashMap::new();
-        filters.insert("repo".to_string(), "nearai/ironclaw".to_string());
+        filters.insert("repo".to_string(), "nearai/bastionclaw".to_string());
         filters.insert("action".to_string(), "opened".to_string());
         let trigger = Trigger::SystemEvent {
             source: "github".to_string(),
@@ -1113,12 +1097,12 @@ mod tests {
     #[test]
     fn test_system_event_fingerprint_is_stable_when_filter_insertion_order_differs() {
         let mut first_filters = std::collections::HashMap::new();
-        first_filters.insert("repo".to_string(), "nearai/ironclaw".to_string());
+        first_filters.insert("repo".to_string(), "nearai/bastionclaw".to_string());
         first_filters.insert("action".to_string(), "opened".to_string());
 
         let mut second_filters = std::collections::HashMap::new();
         second_filters.insert("action".to_string(), "opened".to_string());
-        second_filters.insert("repo".to_string(), "nearai/ironclaw".to_string());
+        second_filters.insert("repo".to_string(), "nearai/bastionclaw".to_string());
 
         let mut first = make_verification_test_routine();
         first.trigger = Trigger::SystemEvent {

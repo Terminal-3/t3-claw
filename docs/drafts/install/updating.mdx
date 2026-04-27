@@ -1,16 +1,16 @@
 ---
-title: Updating IronClaw
+title: Updating BastionClaw
 sidebarTitle: Updating
-description: How to update IronClaw to the latest version
+description: How to update BastionClaw to the latest version
 ---
 
-Keep IronClaw up to date for the latest features and security patches.
+Keep BastionClaw up to date for the latest features and security patches.
 
 ## Check Current Version
 
 ```bash
-ironclaw --version
-# ironclaw 0.13.0
+bastionclaw --version
+# bastionclaw 0.13.0
 ```
 
 ## Update by Installation Method
@@ -19,36 +19,36 @@ ironclaw --version
   <Tab title="Linux (Shell Script)">
     ```bash
     # Re-run the install script (updates in place)
-    curl -fsSL https://install.ironclaw.ai | bash
+    curl -fsSL https://install.bastionclaw.ai | bash
 
     # Verify update
-    ironclaw --version
+    bastionclaw --version
     ```
   </Tab>
 
   <Tab title="Ubuntu/Debian (APT)">
     ```bash
     sudo apt update
-    sudo apt upgrade ironclaw
+    sudo apt upgrade bastionclaw
     ```
   </Tab>
 
   <Tab title="macOS (Homebrew)">
     ```bash
     brew update
-    brew upgrade ironclaw
+    brew upgrade bastionclaw
     ```
   </Tab>
 
   <Tab title="Docker">
     ```bash
     # Pull latest image
-    docker pull nearai/ironclaw:latest
+    docker pull nearai/bastionclaw:latest
 
     # Recreate container
-    docker stop ironclaw
-    docker rm ironclaw
-    docker run -d --name ironclaw ...
+    docker stop bastionclaw
+    docker rm bastionclaw
+    docker run -d --name bastionclaw ...
 
     # Or with docker compose
     docker compose pull
@@ -58,10 +58,10 @@ ironclaw --version
 
   <Tab title="From Source">
     ```bash
-    cd /path/to/ironclaw
+    cd /path/to/bastionclaw
     git pull origin main
     cargo build --release
-    sudo cp target/release/ironclaw /usr/local/bin/
+    sudo cp target/release/bastionclaw /usr/local/bin/
     ```
   </Tab>
 </Tabs>
@@ -74,10 +74,10 @@ Check what changed in the new version:
 
 ```bash
 # View changelog (if installed from source)
-cat /usr/local/share/ironclaw/CHANGELOG.md
+cat /usr/local/share/bastionclaw/CHANGELOG.md
 
 # Or online
-open https://github.com/nearai/ironclaw/releases
+open https://github.com/nearai/bastionclaw/releases
 ```
 
 ### 2. Run Migrations
@@ -85,7 +85,7 @@ open https://github.com/nearai/ironclaw/releases
 Database migrations run automatically on startup, but verify:
 
 ```bash
-ironclaw run
+bastionclaw run
 # Look for: "Running migrations..." in logs
 ```
 
@@ -95,14 +95,14 @@ If running as a service:
 
 ```bash
 # systemd (Linux)
-sudo systemctl restart ironclaw
+sudo systemctl restart bastionclaw
 
 # launchd (macOS)
-launchctl unload ~/Library/LaunchAgents/ai.ironclaw.service.plist
-launchctl load ~/Library/LaunchAgents/ai.ironclaw.service.plist
+launchctl unload ~/Library/LaunchAgents/ai.bastionclaw.service.plist
+launchctl load ~/Library/LaunchAgents/ai.bastionclaw.service.plist
 
 # Homebrew
-brew services restart ironclaw
+brew services restart bastionclaw
 ```
 
 ## Downgrading
@@ -112,10 +112,10 @@ If you need to rollback:
 ```bash
 # Linux/macOS shell script
 # Download specific version
-curl -fsSL https://install.ironclaw.ai | bash -s -- --version 0.12.0
+curl -fsSL https://install.bastionclaw.ai | bash -s -- --version 0.12.0
 
 # Docker
-docker pull nearai/ironclaw:v0.12.0
+docker pull nearai/bastionclaw:v0.12.0
 ```
 
 <Warning>
@@ -127,18 +127,18 @@ Downgrading may require manual database rollback if migrations were applied. Alw
 ### systemd Timer (Linux)
 
 ```bash
-sudo tee /etc/systemd/system/ironclaw-update.service <<EOF
+sudo tee /etc/systemd/system/bastionclaw-update.service <<EOF
 [Unit]
-Description=IronClaw Update Check
+Description=BastionClaw Update Check
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'curl -fsSL https://install.ironclaw.ai | bash'
+ExecStart=/bin/bash -c 'curl -fsSL https://install.bastionclaw.ai | bash'
 EOF
 
-sudo tee /etc/systemd/system/ironclaw-update.timer <<EOF
+sudo tee /etc/systemd/system/bastionclaw-update.timer <<EOF
 [Unit]
-Description=Run IronClaw update check daily
+Description=Run BastionClaw update check daily
 
 [Timer]
 OnCalendar=daily
@@ -148,7 +148,7 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-sudo systemctl enable --now ironclaw-update.timer
+sudo systemctl enable --now bastionclaw-update.timer
 ```
 
 ## Troubleshooting Updates
@@ -157,31 +157,31 @@ sudo systemctl enable --now ironclaw-update.timer
   <Accordion title="Update fails with permission denied" icon="lock">
     ```bash
     # Fix permissions
-    sudo chown -R $USER:$USER ~/.local/bin/ironclaw
+    sudo chown -R $USER:$USER ~/.local/bin/bastionclaw
 
     # Or update with sudo
-    sudo curl -fsSL https://install.ironclaw.ai | bash
+    sudo curl -fsSL https://install.bastionclaw.ai | bash
     ```
   </Accordion>
 
   <Accordion title="Database migration fails" icon="database">
-    1. Stop IronClaw
+    1. Stop BastionClaw
     2. Backup database
-    3. Run with debug logging: `RUST_LOG=debug ironclaw run`
+    3. Run with debug logging: `RUST_LOG=debug bastionclaw run`
     4. Check specific migration error
   </Accordion>
 
   <Accordion title="Service won't start after update" icon="x-circle">
     ```bash
     # Check logs
-    sudo journalctl -u ironclaw -n 50
+    sudo journalctl -u bastionclaw -n 50
 
     # Verify binary
-    which ironclaw
-    ironclaw --version
+    which bastionclaw
+    bastionclaw --version
 
     # Reinstall if corrupted
-    curl -fsSL https://install.ironclaw.ai | bash
+    curl -fsSL https://install.bastionclaw.ai | bash
     ```
   </Accordion>
 </AccordionGroup>

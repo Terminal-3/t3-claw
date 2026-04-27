@@ -3,7 +3,7 @@ title: "Discord"
 description: "Interact with your agent through Discord"
 ---
 
-You can create a Discord application and connect your IronClaw agent to it. Once configured, you can talk to your agent in direct messages or add it to a group chat so it can participate there.
+You can create a Discord application and connect your BastionClaw agent to it. Once configured, you can talk to your agent in direct messages or add it to a group chat so it can participate there.
 
 <Note>
 If you haven't set up your agent yet, follow our [Quickstart guide](../quickstart)
@@ -21,20 +21,20 @@ In order to create a new Discord application, navigate to the [Developer Portal]
 
 <Steps>
     <Step title="New Application">
-      Click on the "New Application" button, give it a name (e.g. IronClaw), and click "Create".
+      Click on the "New Application" button, give it a name (e.g. BastionClaw), and click "Create".
     </Step>
     <Step title="Get your bot token">
-    Navigate to the "Bot" tab on the left sidebar, under the "Token" section click on "Reset Token" and copy the token that is generated. You will need this token to connect your Discord application to IronClaw.
+    Navigate to the "Bot" tab on the left sidebar, under the "Token" section click on "Reset Token" and copy the token that is generated. You will need this token to connect your Discord application to BastionClaw.
     </Step>
 </Steps>
 
 </Step>
-<Step title="Configure the Discord channel in IronClaw">
+<Step title="Configure the Discord channel in BastionClaw">
 
-    Invoke the IronClaw CLI onboard wizard using the `--channels-only` flag to configure only the channels without going through the entire onboarding process again:
+    Invoke the BastionClaw CLI onboard wizard using the `--channels-only` flag to configure only the channels without going through the entire onboarding process again:
 
     ```
-    ironclaw onboard --channels-only
+    bastionclaw onboard --channels-only
     ```
 
     <Steps>
@@ -51,11 +51,11 @@ In order to create a new Discord application, navigate to the [Developer Portal]
         </Step>
     </Steps>
 </Step>
-<Step title="Start IronClaw">
-    Start the `ironclaw` agent:
+<Step title="Start BastionClaw">
+    Start the `bastionclaw` agent:
 
     ```
-    ironclaw
+    bastionclaw
     ```
 </Step>
 
@@ -80,7 +80,7 @@ In order to create a new Discord application, navigate to the [Developer Portal]
 </Step>
 
 <Step title="Enable mentions in group chats">
-  In order to be able to trigger the bot in group chats, you need to edit the `.ironclaw/channels/discord.capabilities.json` file and add the `channel ID` of the channel where you want the bot to be active to the `mention_channel_ids` list.
+  In order to be able to trigger the bot in group chats, you need to edit the `.bastionclaw/channels/discord.capabilities.json` file and add the `channel ID` of the channel where you want the bot to be active to the `mention_channel_ids` list.
   
   <Tip>
   To get the channel ID, **enable Developer Mode** in your **Discord settings**, right-click on the channel where you want the bot to be active, and click "Copy ID".

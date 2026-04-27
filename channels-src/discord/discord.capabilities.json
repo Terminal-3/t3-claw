@@ -46,8 +46,8 @@
         "intents": 4609,
         "properties": {
           "os": "linux",
-          "browser": "ironclaw",
-          "device": "ironclaw"
+          "browser": "bastionclaw",
+          "device": "bastionclaw"
         }
       }
     },

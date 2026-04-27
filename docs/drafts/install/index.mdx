@@ -1,16 +1,16 @@
 ---
 title: Installation
 sidebarTitle: Overview
-description: Choose how to install IronClaw
+description: Choose how to install BastionClaw
 ---
 
-IronClaw can run in multiple environments — from your local machine to a cloud VPS. Choose the installation method that fits your needs.
+BastionClaw can run in multiple environments — from your local machine to a cloud VPS. Choose the installation method that fits your needs.
 
 ## Installation Methods
 
 <CardGroup cols={2}>
   <Card title="Local Install" icon="monitor" href="/install/local">
-    Run IronClaw directly on your machine. Best for personal use.
+    Run BastionClaw directly on your machine. Best for personal use.
 
     - **Linux**: Shell script or package manager
     - **macOS**: Homebrew or shell script
@@ -18,7 +18,7 @@ IronClaw can run in multiple environments — from your local machine to a cloud
   </Card>
 
   <Card title="Docker" icon="container" href="/install/docker">
-    Run IronClaw in a container. Good for consistent environments.
+    Run BastionClaw in a container. Good for consistent environments.
 
     - Docker Compose available
     - Volume persistence
@@ -71,7 +71,7 @@ IronClaw can run in multiple environments — from your local machine to a cloud
   </Accordion>
 
   <Accordion title="Optional: Docker" icon="box">
-    Docker is **optional** for running IronClaw itself, but required if you want to use:
+    Docker is **optional** for running BastionClaw itself, but required if you want to use:
     - Sandboxed job execution (Docker isolation)
     - Claude Code mode
     - Automatic WASM tool compilation
@@ -94,13 +94,13 @@ IronClaw can run in multiple environments — from your local machine to a cloud
 For local installations, we recommend **libSQL** (embedded SQLite) as your database backend:
 
 - **Zero-dependency**: No separate database server to install
-- **Auto-created**: Database created automatically at `~/.ironclaw/ironclaw.db`
+- **Auto-created**: Database created automatically at `~/.bastionclaw/bastionclaw.db`
 - **Zero-config**: Works out of the box
 - **Turso option**: Can sync to Turso cloud for backup
 
 ```bash
 # During wizard Step 1, select "libSQL"
-# Path: ~/.ironclaw/ironclaw.db (default)
+# Path: ~/.bastionclaw/bastionclaw.db (default)
 ```
 
 **When to use PostgreSQL instead:**
@@ -122,8 +122,8 @@ Before installing:
 
 After installation:
 
-- [ ] Run the onboarding wizard: `ironclaw onboard`
-- [ ] Start IronClaw: `ironclaw run`
+- [ ] Run the onboarding wizard: `bastionclaw onboard`
+- [ ] Start BastionClaw: `bastionclaw run`
 - [ ] Verify Web Gateway loads (if enabled)
 - [ ] Test sending a message
 
@@ -136,13 +136,13 @@ After installation:
 ## What's Next?
 
 <Steps>
-  <Step title="Install IronClaw" icon="download">
+  <Step title="Install BastionClaw" icon="download">
     Follow the installation guide for your chosen method
   </Step>
   <Step title="Run the Wizard" icon="settings">
     Configure your database, LLM, and channels
   </Step>
-  <Step title="Start Using IronClaw" icon="message-square">
+  <Step title="Start Using BastionClaw" icon="message-square">
     Open the Web Gateway or chat via Telegram
   </Step>
 </Steps>

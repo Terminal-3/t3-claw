@@ -212,6 +212,14 @@ pub struct ReasoningContext {
     /// instead of the provider's default. Only effective with providers that
     /// support per-request model overrides (e.g. NearAI).
     pub model_override: Option<String>,
+    /// User-configured default temperature. When set, overrides the hardcoded
+    /// 0.7 default in `respond_with_tools`. Per-request temperature from API
+    /// callers takes precedence over this.
+    pub temperature: Option<f32>,
+    /// Set by `execute_tool_calls` to indicate whether every tool in the last
+    /// batch failed. Used by the duplicate tool call tracker in the agentic loop.
+    /// Reset to `false` at the start of each iteration.
+    pub last_tool_batch_all_failed: bool,
 }
 
 impl ReasoningContext {
@@ -226,6 +234,8 @@ impl ReasoningContext {
             force_text: false,
             system_prompt: None,
             model_override: None,
+            temperature: None,
+            last_tool_batch_all_failed: false,
         }
     }
 
@@ -263,6 +273,12 @@ impl ReasoningContext {
     /// Set metadata (forwarded to the LLM provider).
     pub fn with_metadata(mut self, metadata: std::collections::HashMap<String, String>) -> Self {
         self.metadata = metadata;
+        self
+    }
+
+    /// Set default temperature for LLM requests.
+    pub fn with_temperature(mut self, temperature: f32) -> Self {
+        self.temperature = Some(temperature);
         self
     }
 }
@@ -398,7 +414,7 @@ pub struct Reasoning {
     /// This is passed to the LLM to provide clarity about who/group it's talking to.
     conversation_context: std::collections::HashMap<String, String>,
     /// Platform identity and runtime metadata for self-awareness.
-    platform_info: Option<ironclaw_engine::PlatformInfo>,
+    platform_info: Option<bastionclaw_engine::PlatformInfo>,
 }
 
 impl Reasoning {
@@ -456,7 +472,7 @@ impl Reasoning {
     }
 
     /// Set platform metadata for self-awareness in system prompts.
-    pub fn with_platform_info(mut self, info: ironclaw_engine::PlatformInfo) -> Self {
+    pub fn with_platform_info(mut self, info: bastionclaw_engine::PlatformInfo) -> Self {
         self.platform_info = Some(info);
         self
     }
@@ -727,11 +743,16 @@ Respond in JSON format:
             context.available_tools.clone()
         };
 
+        // Clamp to the provider-supported range. The frontend enforces this
+        // too, but a bad DB value or per-request override must not reach the
+        // provider — some backends reject out-of-range temperatures outright.
+        let temperature = context.temperature.unwrap_or(0.7).clamp(0.0, 2.0);
+
         // If we have tools, use tool completion mode
         if !effective_tools.is_empty() {
             let mut request = ToolCompletionRequest::new(messages, effective_tools)
                 .with_max_tokens(4096)
-                .with_temperature(0.7)
+                .with_temperature(temperature)
                 .with_tool_choice("auto");
             request.metadata = context.metadata.clone();
             if let Some(ref model) = context.model_override {
@@ -848,7 +869,7 @@ Respond in JSON format:
             // No tools, use simple completion
             let mut request = CompletionRequest::new(messages)
                 .with_max_tokens(4096)
-                .with_temperature(0.7);
+                .with_temperature(temperature);
             request.metadata = context.metadata.clone();
             if let Some(ref model) = context.model_override {
                 request.model = Some(model.clone());
@@ -1031,7 +1052,7 @@ Respond directly with your final answer. Do not wrap your response in any specia
         };
 
         format!(
-            r#"You are IronClaw Agent, a secure autonomous assistant.
+            r#"You are BastionClaw Agent, a secure autonomous assistant.
 
 {response_format}
 
@@ -2252,10 +2273,10 @@ That's my plan."#;
 
     #[test]
     fn test_clean_response_thinking_tags_reasoning_properly_tagged() {
-        let input = "<thinking>The user is asking about my name.</thinking>\n\nI'm IronClaw, a secure personal AI assistant.";
+        let input = "<thinking>The user is asking about my name.</thinking>\n\nI'm BastionClaw, a secure personal AI assistant.";
         assert_eq!(
             clean_response(input),
-            "I'm IronClaw, a secure personal AI assistant."
+            "I'm BastionClaw, a secure personal AI assistant."
         );
     }
 

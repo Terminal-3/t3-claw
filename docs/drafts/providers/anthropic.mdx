@@ -18,7 +18,7 @@ Anthropic provides state-of-the-art language models with exceptional reasoning c
 ## Configuration
 
 ```bash
-# ~/.ironclaw/.env
+# ~/.bastionclaw/.env
 
 LLM_BACKEND=anthropic
 ANTHROPIC_API_KEY=sk-ant-api03-...
@@ -44,7 +44,7 @@ ANTHROPIC_API_KEY=sk-ant-api03-...
 ### Via Wizard
 
 ```bash
-ironclaw onboard
+bastionclaw onboard
 ```
 
 1. Step 3: Select "Anthropic"
@@ -54,7 +54,7 @@ ironclaw onboard
 ### Manual Configuration
 
 ```bash
-# Edit ~/.ironclaw/.env
+# Edit ~/.bastionclaw/.env
 export LLM_BACKEND=anthropic
 export ANTHROPIC_API_KEY=sk-ant-api03-...
 
@@ -62,9 +62,9 @@ export ANTHROPIC_API_KEY=sk-ant-api03-...
 export ANTHROPIC_BASE_URL=https://api.anthropic.com
 ```
 
-Restart IronClaw:
+Restart BastionClaw:
 ```bash
-ironclaw run
+bastionclaw run
 ```
 
 ## Enterprise / Custom Base URL

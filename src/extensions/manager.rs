@@ -38,7 +38,7 @@ use crate::tools::mcp::auth::{
     authorize_mcp_server, canonical_resource_uri, discover_full_oauth_metadata,
     find_available_port, is_authenticated, register_client,
 };
-use crate::tools::mcp::config::McpServerConfig;
+use crate::tools::mcp::config::{LocalMcpAuthConfig, McpServerConfig};
 use crate::tools::mcp::session::McpSessionManager;
 use crate::tools::wasm::{WasmToolLoader, WasmToolRuntime, discover_tools};
 
@@ -262,7 +262,7 @@ struct TelegramUser {
     is_bot: bool,
 }
 
-const TELEGRAM_TEST_API_BASE_ENV: &str = "IRONCLAW_TEST_TELEGRAM_API_BASE_URL";
+const TELEGRAM_TEST_API_BASE_ENV: &str = "BASTIONCLAW_TEST_TELEGRAM_API_BASE_URL";
 const TELEGRAM_DEFAULT_API_BASE: &str = "https://api.telegram.org";
 
 fn telegram_api_base_url() -> String {
@@ -311,7 +311,7 @@ fn channel_auth_instructions(
 ) -> String {
     if channel_name == TELEGRAM_CHANNEL_NAME && secret.name == "telegram_bot_token" {
         return format!(
-            "{} After you submit it, IronClaw will show a one-time verification code. Send `/start CODE` to your bot in Telegram and IronClaw will finish setup automatically.",
+            "{} After you submit it, BastionClaw will show a one-time verification code. Send `/start CODE` to your bot in Telegram and BastionClaw will finish setup automatically.",
             secret.prompt
         );
     }
@@ -339,12 +339,12 @@ impl TelegramVerificationFlow {
     fn instructions(bot_username: Option<&str>, code: &str) -> String {
         if let Some(username) = bot_username.filter(|username| !username.trim().is_empty()) {
             return format!(
-                "Send `/start {code}` to @{username} in Telegram. IronClaw will finish setup automatically."
+                "Send `/start {code}` to @{username} in Telegram. BastionClaw will finish setup automatically."
             );
         }
 
         format!(
-            "Send `/start {code}` to your Telegram bot. IronClaw will finish setup automatically."
+            "Send `/start {code}` to your Telegram bot. BastionClaw will finish setup automatically."
         )
     }
 }
@@ -497,7 +497,7 @@ pub struct ExtensionManager {
     /// `/oauth/callback` handler.
     pending_oauth_flows: crate::auth::oauth::PendingOAuthRegistry,
     /// OAuth proxy auth token for authenticating with the hosted token exchange proxy.
-    /// Resolved once at construction from `IRONCLAW_OAUTH_PROXY_AUTH_TOKEN`,
+    /// Resolved once at construction from `BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN`,
     /// then `GATEWAY_AUTH_TOKEN` as a backward-compatible fallback.
     oauth_proxy_auth_token: Option<String>,
     /// Relay config captured at startup. Used by `auth_channel_relay` and
@@ -710,7 +710,7 @@ impl ExtensionManager {
     /// instead of calling `open::that()` on the server.
     ///
     /// `base_url` is the gateway's own public URL (e.g. `https://my-gateway.example.com`),
-    /// used to build OAuth redirect URIs when `IRONCLAW_OAUTH_CALLBACK_URL` is not set.
+    /// used to build OAuth redirect URIs when `BASTIONCLAW_OAUTH_CALLBACK_URL` is not set.
     pub async fn enable_gateway_mode(&self, base_url: String) {
         self.gateway_mode
             .store(true, std::sync::atomic::Ordering::Release);
@@ -722,7 +722,7 @@ impl ExtensionManager {
     ///
     /// Gateway mode is active when any of:
     /// - `enable_gateway_mode()` was called (web gateway is running), OR
-    /// - `IRONCLAW_OAUTH_CALLBACK_URL` is set to a non-loopback URL, OR
+    /// - `BASTIONCLAW_OAUTH_CALLBACK_URL` is set to a non-loopback URL, OR
     /// - `self.tunnel_url` is set to a non-loopback URL
     pub fn should_use_gateway_mode(&self) -> bool {
         if self.gateway_mode.load(std::sync::atomic::Ordering::Acquire) {
@@ -743,7 +743,7 @@ impl ExtensionManager {
     /// Returns the OAuth redirect URI for gateway mode, or `None` for local mode.
     ///
     /// Priority:
-    /// 1. `IRONCLAW_OAUTH_CALLBACK_URL` env var (via `callback_url()`)
+    /// 1. `BASTIONCLAW_OAUTH_CALLBACK_URL` env var (via `callback_url()`)
     /// 2. `gateway_base_url` (set by `enable_gateway_mode()`)
     /// 3. `tunnel_url` (from config)
     /// 4. `None` (local/CLI mode)
@@ -974,7 +974,7 @@ impl ExtensionManager {
     /// `activation_status` instead of relying on `ext.active` as a proxy.
     ///
     /// Returns false if no DB-backed pairing store is available — the noop
-    /// pairing store cannot have rows. See nearai/ironclaw#1921.
+    /// pairing store cannot have rows. See nearai/bastionclaw#1921.
     pub async fn has_wasm_channel_pairing(&self, name: &str) -> bool {
         let rt_guard = self.channel_runtime.read().await;
         let Some(ref rt) = *rt_guard else {
@@ -1407,7 +1407,7 @@ impl ExtensionManager {
     /// Broadcast an extension status change to the web UI via SSE.
     async fn broadcast_extension_status(&self, name: &str, status: &str, message: Option<&str>) {
         if let Some(ref sse) = *self.sse_manager.read().await {
-            sse.broadcast(ironclaw_common::AppEvent::ExtensionStatus {
+            sse.broadcast(bastionclaw_common::AppEvent::ExtensionStatus {
                 extension_name: name.to_string(),
                 status: status.to_string(),
                 message: message.map(|m| m.to_string()),
@@ -1481,7 +1481,7 @@ impl ExtensionManager {
                     ))
                 }
                 ExtensionKind::AcpAgent => Err(ExtensionError::InstallFailed(
-                    "ACP agents are configured via 'ironclaw acp add', not the extension manager"
+                    "ACP agents are configured via 'bastionclaw acp add', not the extension manager"
                         .to_string(),
                 )),
             }
@@ -1544,7 +1544,7 @@ impl ExtensionManager {
                 kind: ExtensionKind::AcpAgent,
                 tools_loaded: Vec::new(),
                 message: format!(
-                    "ACP agent '{}' is managed via 'ironclaw acp' commands",
+                    "ACP agent '{}' is managed via 'bastionclaw acp' commands",
                     name
                 ),
             }),
@@ -2273,7 +2273,7 @@ impl ExtensionManager {
                     .await;
 
                 Ok(format!(
-                    "Removed channel '{}'. Restart IronClaw for the change to take effect.",
+                    "Removed channel '{}'. Restart BastionClaw for the change to take effect.",
                     name
                 ))
             }
@@ -2351,9 +2351,9 @@ impl ExtensionManager {
                 Ok(format!("Removed channel relay '{}'", name))
             }
             ExtensionKind::AcpAgent => {
-                // ACP agents are managed via `ironclaw acp remove`
+                // ACP agents are managed via `bastionclaw acp remove`
                 Ok(format!(
-                    "ACP agent '{}' should be removed via 'ironclaw acp remove {}'",
+                    "ACP agent '{}' should be removed via 'bastionclaw acp remove {}'",
                     name, name
                 ))
             }
@@ -2988,7 +2988,7 @@ impl ExtensionManager {
                 })
             }
             ExtensionKind::AcpAgent => Err(ExtensionError::InstallFailed(
-                "ACP agents are configured via 'ironclaw acp add', not the registry".to_string(),
+                "ACP agents are configured via 'bastionclaw acp add', not the registry".to_string(),
             )),
         }
     }
@@ -3418,7 +3418,7 @@ impl ExtensionManager {
                 ExtensionError::InstallFailed(format!(
                     "'{}' requires building from source. Build artifact not found. \
                          Run `cargo component build --release` in {} first, \
-                         or use `ironclaw registry install {}`.",
+                         or use `bastionclaw registry install {}`.",
                     name,
                     resolved_dir.display(),
                     name,
@@ -3464,7 +3464,54 @@ impl ExtensionManager {
         })
     }
 
+    async fn local_mcp_auth_confirmed(&self, server: &McpServerConfig, user_id: &str) -> bool {
+        let Some(secret_name) = server.local_auth_completion_secret_name() else {
+            return false;
+        };
+        self.secrets
+            .exists(user_id, &secret_name)
+            .await
+            .unwrap_or(false)
+    }
+
+    fn local_mcp_auth_instructions(local_auth: &LocalMcpAuthConfig) -> String {
+        let base = local_auth.instructions.trim();
+        let needs_confirmation = !base.to_ascii_lowercase().contains("reply 'done'")
+            && !base.to_ascii_lowercase().contains("reply \"done\"")
+            && !base.to_ascii_lowercase().contains("type 'done'")
+            && !base.to_ascii_lowercase().contains("type \"done\"");
+        if needs_confirmation {
+            format!("{base} When finished, return here and reply 'done' to confirm.")
+        } else {
+            base.to_string()
+        }
+    }
+
+    fn validate_local_mcp_auth_confirmation(
+        &self,
+        name: &str,
+        token: &str,
+    ) -> Result<(), ExtensionError> {
+        let normalized = token.trim().to_ascii_lowercase();
+        let accepted = matches!(
+            normalized.as_str(),
+            "done" | "ready" | "complete" | "completed" | "authorised" | "authorized"
+        );
+        if accepted {
+            Ok(())
+        } else {
+            Err(ExtensionError::ValidationFailed(format!(
+                "Finish the external setup for '{}' first, then reply 'done' to confirm.",
+                name
+            )))
+        }
+    }
+
     async fn mcp_has_configured_auth(&self, server: &McpServerConfig, user_id: &str) -> bool {
+        if server.is_local_transport() {
+            return server.local_auth.is_some()
+                && self.local_mcp_auth_confirmed(server, user_id).await;
+        }
         server.has_custom_auth_header() || is_authenticated(server, &self.secrets, user_id).await
     }
 
@@ -3473,6 +3520,25 @@ impl ExtensionManager {
             .get_mcp_server(name, user_id)
             .await
             .map_err(|e| ExtensionError::NotInstalled(e.to_string()))?;
+
+        // Local transports (stdio, unix socket) never use HTTP-level auth.
+        // Any authentication the MCP server needs happens inside the server
+        // process itself (e.g. Trinity's PRIVATE_KEY → createT3nAuthSession).
+        if server.is_local_transport() {
+            if let Some(local_auth) = &server.local_auth {
+                if self.local_mcp_auth_confirmed(&server, user_id).await {
+                    return Ok(AuthResult::authenticated(name, ExtensionKind::McpServer));
+                }
+                return Ok(AuthResult::awaiting_token_with_link(
+                    name,
+                    ExtensionKind::McpServer,
+                    Self::local_mcp_auth_instructions(local_auth),
+                    local_auth.auth_url.clone(),
+                    local_auth.auth_url.clone(),
+                ));
+            }
+            return Ok(AuthResult::no_auth_required(name, ExtensionKind::McpServer));
+        }
 
         // Check if already authenticated
         if self.mcp_has_configured_auth(&server, user_id).await {
@@ -3543,12 +3609,21 @@ impl ExtensionManager {
     /// `/oauth/callback` handler can complete the token exchange — the auth
     /// URL is sent to the frontend which opens it in the same browser.
     /// In local/CLI mode, builds the URL for the user to open manually.
+    ///
+    /// Only valid for HTTP-transport MCP servers — local transports (stdio,
+    /// unix) have no URL to discover OAuth metadata from.
     async fn auth_mcp_build_url(
         &self,
         name: &str,
         server: &McpServerConfig,
         user_id: &str,
     ) -> Result<AuthResult, ExtensionError> {
+        if server.is_local_transport() {
+            return Err(ExtensionError::AuthNotSupported(
+                "Local transports (stdio, unix) do not support OAuth".to_string(),
+            ));
+        }
+
         let is_gateway = self.should_use_gateway_mode();
         self.clear_pending_extension_auth(name).await;
 
@@ -3974,6 +4049,11 @@ impl ExtensionManager {
     }
 
     async fn mcp_supports_auth(&self, server: &McpServerConfig) -> bool {
+        // Local transports never participate in HTTP-level auth.
+        if server.is_local_transport() {
+            return false;
+        }
+
         if server.oauth.is_some() || server.requires_auth() {
             return true;
         }
@@ -4181,6 +4261,9 @@ impl ExtensionManager {
                 plan.add_base_secret(&token_secret_name);
                 plan.add_base_secret(server.client_id_secret_name());
                 plan.add_base_secret(server.client_secret_secret_name());
+                if let Some(local_completion_secret) = server.local_auth_completion_secret_name() {
+                    plan.add_base_secret(local_completion_secret);
+                }
                 // MCP OAuth can persist companion secrets through two paths:
                 // the MCP auth helper uses `mcp_<name>_refresh_token`, while the
                 // hosted gateway callback stores companions alongside the access
@@ -4373,12 +4456,14 @@ impl ExtensionManager {
     }
 
     fn mcp_server_secret_names(server: &McpServerConfig) -> HashSet<String> {
-        [
+        let mut names = HashSet::from([
             server.token_secret_name().to_lowercase(),
             server.client_id_secret_name().to_lowercase(),
-        ]
-        .into_iter()
-        .collect()
+        ]);
+        if let Some(secret_name) = server.local_auth_completion_secret_name() {
+            names.insert(secret_name.to_lowercase());
+        }
+        names
     }
 
     /// Collect merged OAuth scopes from all installed tools sharing the same secret_name.
@@ -4791,7 +4876,7 @@ impl ExtensionManager {
                 }
 
                 if let Some(ref sse) = sse_manager {
-                    sse.broadcast(ironclaw_common::AppEvent::AuthCompleted {
+                    sse.broadcast(bastionclaw_common::AppEvent::AuthCompleted {
                         extension_name: ext_name,
                         success,
                         message,
@@ -5933,7 +6018,7 @@ impl ExtensionManager {
             ExtensionError::Config(e.to_string())
         })?;
 
-        // Generate CSRF nonce — IronClaw validates this on the callback to ensure
+        // Generate CSRF nonce — BastionClaw validates this on the callback to ensure
         // the OAuth completion is legitimate. Channel-relay embeds it in the signed
         // state and appends it to the post-OAuth redirect URL.
         let state_nonce = uuid::Uuid::new_v4().to_string();
@@ -6930,6 +7015,9 @@ impl ExtensionManager {
                     .map_err(|e| ExtensionError::NotInstalled(e.to_string()))?;
                 let mut names = std::collections::HashSet::new();
                 names.insert(server.token_secret_name());
+                if let Some(secret_name) = server.local_auth_completion_secret_name() {
+                    names.insert(secret_name);
+                }
                 (names, Vec::new())
             }
             ExtensionKind::ChannelRelay => {
@@ -7431,7 +7519,21 @@ impl ExtensionManager {
                     .get_mcp_server(name, user_id)
                     .await
                     .map_err(|e| ExtensionError::NotInstalled(e.to_string()))?;
-                server.token_secret_name()
+                if server.is_local_transport() {
+                    if server.local_auth.is_some() {
+                        self.validate_local_mcp_auth_confirmation(name, token)?;
+                        server
+                            .local_auth_completion_secret_name()
+                            .unwrap_or_else(|| server.token_secret_name())
+                    } else {
+                        return Err(ExtensionError::Other(format!(
+                            "MCP server '{}' does not require local setup confirmation",
+                            name
+                        )));
+                    }
+                } else {
+                    server.token_secret_name()
+                }
             }
             ExtensionKind::ChannelRelay => {
                 return Err(ExtensionError::AuthRequired);
@@ -7718,7 +7820,7 @@ mod tests {
     };
     use crate::pairing::PairingStore;
     use crate::secrets::CreateSecretParams;
-    use crate::tools::mcp::McpServerConfig;
+    use crate::tools::mcp::{LocalMcpAuthConfig, McpServerConfig};
 
     fn require(condition: bool, message: impl Into<String>) -> Result<(), String> {
         if condition {
@@ -8116,7 +8218,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn ensure_extension_ready_reports_needs_auth_for_wasm_channel() {
-        // Serialize against tests that mutate IRONCLAW_OAUTH_CALLBACK_URL
+        // Serialize against tests that mutate BASTIONCLAW_OAUTH_CALLBACK_URL
         // (e.g. `auth_wasm_channel_status_uses_persisted_secret_oauth_descriptor`):
         // without the env lock the auth path nondeterministically returns
         // "awaiting_authorization" instead of "awaiting_token".
@@ -8228,7 +8330,7 @@ mod tests {
         let _env_guard = crate::config::helpers::lock_env();
         unsafe {
             std::env::set_var(
-                "IRONCLAW_OAUTH_CALLBACK_URL",
+                "BASTIONCLAW_OAUTH_CALLBACK_URL",
                 "https://example.com/oauth/callback",
             );
         }
@@ -8292,7 +8394,7 @@ mod tests {
         );
 
         unsafe {
-            std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
         }
     }
 
@@ -8386,7 +8488,7 @@ mod tests {
         );
     }
 
-    /// Regression for nearai/ironclaw#1921's sibling: registry-backed wasm
+    /// Regression for nearai/bastionclaw#1921's sibling: registry-backed wasm
     /// tools that are not yet installed should appear as latent provider
     /// actions so the agent can request them by name and trigger
     /// auto-install. This pins the registry-discovery half of
@@ -9684,7 +9786,7 @@ mod tests {
                 Ok(TelegramBindingResult::Pending(VerificationChallenge {
                     code: "iclaw-7qk2m9".to_string(),
                     instructions:
-                        "Send `/start iclaw-7qk2m9` to @test_hot_bot in Telegram. IronClaw will finish setup automatically."
+                        "Send `/start iclaw-7qk2m9` to @test_hot_bot in Telegram. BastionClaw will finish setup automatically."
                             .to_string(),
                     deep_link: Some("https://t.me/test_hot_bot?start=iclaw-7qk2m9".to_string()),
                 }))
@@ -9809,7 +9911,7 @@ mod tests {
         Ok(())
     }
 
-    /// Regression for nearai/ironclaw#1921 — caller-level coverage.
+    /// Regression for nearai/bastionclaw#1921 — caller-level coverage.
     ///
     /// The web extensions list handler used to derive
     /// `activation_status` from `derive_activation_status(ext, has_owner_binding)`,
@@ -10908,6 +11010,232 @@ mod tests {
         assert_eq!(oauth.scopes, vec!["search:read".to_string()]);
     }
 
+    #[tokio::test]
+    async fn auth_mcp_returns_guidance_for_local_server_with_local_auth() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let (store, _db_dir) = make_test_store().await;
+        let mgr = make_test_manager_with_dirs(
+            None,
+            dir.path().join("tools"),
+            dir.path().join("channels"),
+            Some(Arc::clone(&store)),
+        );
+        let server = McpServerConfig::new_unix("t3n-mcp", "/var/run/t3n-mcp/t3n-mcp.sock")
+            .with_local_auth(
+                LocalMcpAuthConfig::new(
+                    "Sign in to Trinity and grant the agent access to your profile/data.",
+                )
+                .with_auth_url("https://staging.network.terminal3.io/login"),
+            );
+        mgr.add_mcp_server(server, "test")
+            .await
+            .expect("add unix mcp server");
+
+        let result = mgr.auth_mcp("t3n-mcp", "test").await.expect("auth_mcp");
+        assert_eq!(result.status_str(), "awaiting_token");
+        assert_eq!(
+            result.auth_url(),
+            Some("https://staging.network.terminal3.io/login")
+        );
+        assert!(
+            result
+                .instructions()
+                .is_some_and(|msg| msg.contains("reply 'done'")),
+            "local MCP auth should explain the confirmation step: {result:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn configure_token_confirms_local_mcp_auth_and_marks_server_authenticated() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let (store, _db_dir) = make_test_store().await;
+        let mgr = make_test_manager_with_dirs(
+            None,
+            dir.path().join("tools"),
+            dir.path().join("channels"),
+            Some(Arc::clone(&store)),
+        );
+        let server = McpServerConfig::new_unix("t3n-mcp", "/var/run/t3n-mcp/t3n-mcp.sock")
+            .with_local_auth(
+                LocalMcpAuthConfig::new(
+                    "Sign in to Trinity and grant the agent access to your profile/data.",
+                )
+                .with_auth_url("https://staging.network.terminal3.io/login"),
+            );
+        let completion_secret = server
+            .local_auth_completion_secret_name()
+            .expect("completion secret");
+        mgr.add_mcp_server(server, "test")
+            .await
+            .expect("add unix mcp server");
+
+        let result = mgr
+            .configure_token("t3n-mcp", "done", "test")
+            .await
+            .expect("configure_token");
+        assert!(
+            !result.message.is_empty(),
+            "configure_token should return a user-facing message"
+        );
+        assert!(
+            mgr.secrets
+                .exists("test", &completion_secret)
+                .await
+                .expect("exists query"),
+            "local MCP completion marker should be stored"
+        );
+
+        let auth = mgr.auth_mcp("t3n-mcp", "test").await.expect("auth_mcp");
+        assert_eq!(auth.status_str(), "authenticated");
+    }
+
+    /// Regression: Unix-socket MCP servers must not trigger OAuth discovery.
+    ///
+    /// Before this fix, clicking "Activate" on a unix-transport MCP server
+    /// in the gateway UI would call `discover_full_oauth_metadata("")`
+    /// (empty URL), producing "Invalid URL: relative URL without a base".
+    #[tokio::test]
+    async fn auth_mcp_returns_no_auth_required_for_unix_socket_server() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let (store, _db_dir) = make_test_store().await;
+        let mgr = make_test_manager_with_dirs(
+            None,
+            dir.path().join("tools"),
+            dir.path().join("channels"),
+            Some(Arc::clone(&store)),
+        );
+
+        let server = McpServerConfig::new_unix("t3n-mcp", "/var/run/t3n-mcp/t3n-mcp.sock");
+        mgr.add_mcp_server(server, "test")
+            .await
+            .expect("add unix mcp server");
+
+        let result = mgr.auth_mcp("t3n-mcp", "test").await.expect("auth_mcp");
+        assert_eq!(
+            result.status_str(),
+            "no_auth_required",
+            "unix-socket MCP servers must skip OAuth entirely"
+        );
+    }
+
+    /// Same regression for stdio-transport MCP servers.
+    #[tokio::test]
+    async fn auth_mcp_returns_no_auth_required_for_stdio_server() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let (store, _db_dir) = make_test_store().await;
+        let mgr = make_test_manager_with_dirs(
+            None,
+            dir.path().join("tools"),
+            dir.path().join("channels"),
+            Some(Arc::clone(&store)),
+        );
+
+        let server = McpServerConfig::new_stdio(
+            "local-mcp",
+            "npx",
+            vec!["t3n-mcp".to_string()],
+            std::collections::HashMap::new(),
+        );
+        mgr.add_mcp_server(server, "test")
+            .await
+            .expect("add stdio mcp server");
+
+        let result = mgr.auth_mcp("local-mcp", "test").await.expect("auth_mcp");
+        assert_eq!(
+            result.status_str(),
+            "no_auth_required",
+            "stdio MCP servers must skip OAuth entirely"
+        );
+    }
+
+    /// `auth_mcp_build_url` must reject local transports immediately.
+    #[tokio::test]
+    async fn auth_mcp_build_url_rejects_unix_transport() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let mgr = make_test_manager_with_dirs(
+            None,
+            dir.path().join("tools"),
+            dir.path().join("channels"),
+            None,
+        );
+        let server = McpServerConfig::new_unix("t3n-mcp", "/var/run/t3n-mcp/t3n-mcp.sock");
+
+        let err = mgr
+            .auth_mcp_build_url("t3n-mcp", &server, "test")
+            .await
+            .expect_err("should reject unix transport");
+        assert!(
+            matches!(err, ExtensionError::AuthNotSupported(_)),
+            "expected AuthNotSupported, got: {err:?}"
+        );
+    }
+
+    /// `mcp_supports_auth` must return false for local transports without
+    /// making any network requests.
+    #[tokio::test]
+    async fn mcp_supports_auth_false_for_local_transports() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let mgr = make_test_manager_with_dirs(
+            None,
+            dir.path().join("tools"),
+            dir.path().join("channels"),
+            None,
+        );
+
+        let unix = McpServerConfig::new_unix("unix-srv", "/tmp/mcp.sock");
+        assert!(
+            !mgr.mcp_supports_auth(&unix).await,
+            "unix-socket server must not report auth support"
+        );
+
+        let stdio = McpServerConfig::new_stdio(
+            "stdio-srv",
+            "node",
+            vec![],
+            std::collections::HashMap::new(),
+        );
+        assert!(
+            !mgr.mcp_supports_auth(&stdio).await,
+            "stdio server must not report auth support"
+        );
+    }
+
+    #[tokio::test]
+    async fn remove_mcp_server_deletes_local_auth_confirmation_secret() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let (store, _db_dir) = make_test_store().await;
+        let mgr = make_test_manager_with_dirs(
+            None,
+            dir.path().join("tools"),
+            dir.path().join("channels"),
+            Some(Arc::clone(&store)),
+        );
+        let server = McpServerConfig::new_unix("t3n_mcp", "/var/run/t3n-mcp/t3n-mcp.sock")
+            .with_local_auth(
+                LocalMcpAuthConfig::new("Finish setup.")
+                    .with_completion_secret_name("t3n_local_setup_done"),
+            );
+        let completion_secret = server
+            .local_auth_completion_secret_name()
+            .expect("completion secret");
+        mgr.add_mcp_server(server, "test")
+            .await
+            .expect("add unix mcp server");
+        store_test_secret(&mgr, &completion_secret, "confirmed").await;
+
+        mgr.remove("t3n_mcp", "test")
+            .await
+            .expect("remove should succeed");
+
+        assert!(
+            !mgr.secrets
+                .exists("test", &completion_secret)
+                .await
+                .expect("exists query"),
+            "local MCP completion marker should be deleted"
+        );
+    }
+
     #[test]
     fn test_sanitize_url_with_query_params() {
         let url = "https://api.example.com/path?api_key=secret123&token=abc";
@@ -11004,7 +11332,7 @@ mod tests {
     // Regression tests for a bug where MCP OAuth called `open::that()` on the
     // server machine instead of returning an auth URL to the gateway frontend.
     // The root cause was that `should_use_gateway_mode()` only checked the
-    // `IRONCLAW_OAUTH_CALLBACK_URL` env var, ignoring `self.tunnel_url`.
+    // `BASTIONCLAW_OAUTH_CALLBACK_URL` env var, ignoring `self.tunnel_url`.
 
     /// Build a minimal ExtensionManager with a custom tunnel_url.
     fn make_manager_with_tunnel(tunnel_url: Option<String>) -> ExtensionManager {
@@ -11018,7 +11346,7 @@ mod tests {
             Arc::new(InMemorySecretsStore::new(crypto));
         let tools = Arc::new(crate::tools::ToolRegistry::new());
         let mcp = Arc::new(McpSessionManager::new());
-        let dir = std::env::temp_dir().join("ironclaw-test-gateway-mode");
+        let dir = std::env::temp_dir().join("bastionclaw-test-gateway-mode");
 
         ExtensionManager::new(
             mcp,
@@ -11039,10 +11367,10 @@ mod tests {
     #[test]
     fn should_use_gateway_mode_true_for_tunnel_url() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
         }
 
         let mgr = make_manager_with_tunnel(Some("https://my-gateway.example.com".into()));
@@ -11053,7 +11381,7 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             }
         }
     }
@@ -11061,9 +11389,9 @@ mod tests {
     #[test]
     fn should_use_gateway_mode_false_without_tunnel() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         unsafe {
-            std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
         }
 
         let mgr = make_manager_with_tunnel(None);
@@ -11074,7 +11402,7 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             }
         }
     }
@@ -11082,9 +11410,9 @@ mod tests {
     #[test]
     fn should_use_gateway_mode_false_for_loopback_tunnel() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         unsafe {
-            std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
         }
 
         let mgr = make_manager_with_tunnel(Some("http://127.0.0.1:3001".into()));
@@ -11095,13 +11423,13 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             }
         }
     }
 
     /// Helper to run an async test body while holding the env mutex.
-    /// Clears `IRONCLAW_OAUTH_CALLBACK_URL` for the duration, restoring on drop.
+    /// Clears `BASTIONCLAW_OAUTH_CALLBACK_URL` for the duration, restoring on drop.
     struct EnvGuard {
         original: Option<String>,
         _mutex: std::sync::MutexGuard<'static, ()>,
@@ -11110,10 +11438,10 @@ mod tests {
     impl EnvGuard {
         fn new() -> Self {
             let guard = crate::config::helpers::lock_env();
-            let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+            let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
             // SAFETY: Under ENV_MUTEX, no concurrent env access.
             unsafe {
-                std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
             }
             Self {
                 original,
@@ -11127,9 +11455,9 @@ mod tests {
             // SAFETY: Under ENV_MUTEX (still held by _mutex), no concurrent env access.
             unsafe {
                 if let Some(ref val) = self.original {
-                    std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                    std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
                 } else {
-                    std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+                    std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
                 }
             }
         }
@@ -11203,10 +11531,10 @@ mod tests {
     #[test]
     fn gateway_callback_redirect_uri_does_not_duplicate_callback_path_from_env() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         unsafe {
             std::env::set_var(
-                "IRONCLAW_OAUTH_CALLBACK_URL",
+                "BASTIONCLAW_OAUTH_CALLBACK_URL",
                 "https://oauth.test.example/oauth/callback",
             );
         }
@@ -11219,9 +11547,9 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             } else {
-                std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
             }
         }
     }
@@ -11229,10 +11557,10 @@ mod tests {
     #[test]
     fn gateway_callback_redirect_uri_trims_trailing_slash_from_env_callback() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("IRONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
         unsafe {
             std::env::set_var(
-                "IRONCLAW_OAUTH_CALLBACK_URL",
+                "BASTIONCLAW_OAUTH_CALLBACK_URL",
                 "https://oauth.test.example/oauth/callback/",
             );
         }
@@ -11245,9 +11573,9 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("IRONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
             } else {
-                std::env::remove_var("IRONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
             }
         }
     }
@@ -12018,7 +12346,7 @@ mod tests {
     #[test]
     fn test_telegram_token_colon_preserved_in_validation_url() {
         // ScopedEnvVar holds ENV_MUTEX for the test's lifetime, preventing
-        // a concurrent test from setting IRONCLAW_TEST_TELEGRAM_API_BASE_URL.
+        // a concurrent test from setting BASTIONCLAW_TEST_TELEGRAM_API_BASE_URL.
         // Setting to "" is equivalent to unset — telegram_api_base_url()
         // filters empty values. ScopedEnvVar restores the previous value on drop.
         let _env = ScopedEnvVar::set(TELEGRAM_TEST_API_BASE_ENV, "");

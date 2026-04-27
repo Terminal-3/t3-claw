@@ -1,6 +1,6 @@
 ---
 title: "OAuth Setup"
-description: "One-time setup for any Google extension in IronClaw"
+description: "One-time setup for any Google extension in BastionClaw"
 ---
 
 All Google extensions share the same OAuth 2.0 setup. Complete these steps once — you can reuse the same Google Cloud project and credentials for every Google extension you install.
@@ -14,7 +14,7 @@ All Google extensions share the same OAuth 2.0 setup. Complete these steps once 
 Go to [Google Cloud Console](https://console.cloud.google.com) and create a new project (or select an existing one).
 
 1. Click **Select a project** → **New Project**
-2. Give it a name (e.g. `ironclaw`) and click **Create**
+2. Give it a name (e.g. `bastionclaw`) and click **Create**
 
 </Step>
 
@@ -24,7 +24,7 @@ Go to [**Google Auth Platform → Clients**](https://console.cloud.google.com/au
 
 1. Click **Create client**
 2. Set **Application type** to **Web application**
-3. Give it a name (e.g. `ironclaw`)
+3. Give it a name (e.g. `bastionclaw`)
 4. Under **Authorized redirect URIs**, click **+ Add URI** and enter:
 
    ```
@@ -48,12 +48,12 @@ Only test users can complete the OAuth flow while the app is in Testing mode. If
 </Step>
 
 <Step title="Open the SSH Tunnel">
-To complete the OAuth flow, we need to allow Google to reach the IronClaw server. Since port 9876 is only accessible from within the server, you need to open an SSH tunnel that forwards your local port 9876 to the server.
+To complete the OAuth flow, we need to allow Google to reach the BastionClaw server. Since port 9876 is only accessible from within the server, you need to open an SSH tunnel that forwards your local port 9876 to the server.
 
 Open a new SSH session using port forwarding:
 
 ```bash
-# ssh -p <SSH-PORT> -L 9876:127.0.0.1:9876 <user>@<ironclaw-server-ip>
+# ssh -p <SSH-PORT> -L 9876:127.0.0.1:9876 <user>@<bastionclaw-server-ip>
 ssh -p 15222 -L 9876:127.0.0.1:9876 liquid-zebra@agent4.near.ai
 ```
 

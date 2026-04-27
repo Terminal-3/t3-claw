@@ -30,7 +30,7 @@ use crate::worker::autonomous_recovery::{
     EMPTY_TOOL_COMPLETION_NUDGE, FORCE_TEXT_RECOVERY_PROMPT,
 };
 use crate::worker::proxy_llm::ProxyLlmProvider;
-use ironclaw_safety::SafetyLayer;
+use bastionclaw_safety::SafetyLayer;
 
 /// Configuration for the worker runtime.
 pub struct WorkerConfig {
@@ -72,7 +72,7 @@ pub struct WorkerRuntime {
 impl WorkerRuntime {
     /// Create a new worker runtime.
     ///
-    /// Reads `IRONCLAW_WORKER_TOKEN` from the environment for auth.
+    /// Reads `BASTIONCLAW_WORKER_TOKEN` from the environment for auth.
     pub fn new(config: WorkerConfig) -> Result<Self, WorkerError> {
         let client = Arc::new(WorkerHttpClient::from_env(
             config.orchestrator_url.clone(),
@@ -536,6 +536,8 @@ impl LoopDelegate for ContainerDelegate {
             ));
 
         // Execute tools sequentially (container context — no parallel execution)
+        let mut tool_failure_count: usize = 0;
+        let total_tools = tool_calls.len();
         for tc in tool_calls {
             self.post_event(
                 "tool_use",
@@ -573,6 +575,10 @@ impl LoopDelegate for ContainerDelegate {
             )
             .await;
 
+            if result.is_err() {
+                tool_failure_count += 1;
+            }
+
             if let Ok(ref output) = result {
                 *self.last_output.lock().await = output.clone();
             }
@@ -581,6 +587,9 @@ impl LoopDelegate for ContainerDelegate {
             let (_, message) = process_tool_result(&self.safety, &tc.name, &tc.id, &result);
             reason_ctx.messages.push(message);
         }
+
+        reason_ctx.last_tool_batch_all_failed =
+            total_tools > 0 && tool_failure_count == total_tools;
 
         Ok(None)
     }

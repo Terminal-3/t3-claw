@@ -4,7 +4,7 @@
 //! `TestRigBuilder::with_engine_v2()`) to prove tool dispatch, conversation
 //! continuity, error handling, and status events work correctly.
 //!
-//! The v2 engine routes through `src/bridge/router.rs` → `ironclaw_engine`
+//! The v2 engine routes through `src/bridge/router.rs` → `bastionclaw_engine`
 //! instead of the v1 agentic loop in `src/agent/dispatcher.rs`.
 
 #[cfg(feature = "libsql")]
@@ -20,8 +20,8 @@ mod engine_v2_tests {
 
     use crate::support::test_rig::TestRigBuilder;
     use crate::support::trace_llm::{LlmTrace, TraceResponse, TraceStep, TraceToolCall};
-    use ironclaw::context::JobContext;
-    use ironclaw::tools::{ApprovalRequirement, Tool, ToolError, ToolOutput};
+    use bastionclaw::context::JobContext;
+    use bastionclaw::tools::{ApprovalRequirement, Tool, ToolError, ToolOutput};
 
     fn engine_v2_test_lock() -> &'static Mutex<()> {
         static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -281,7 +281,7 @@ mod engine_v2_tests {
             !rig.captured_status_events().iter().any(|status| {
                 matches!(
                     status,
-                    ironclaw::channels::StatusUpdate::ApprovalNeeded { .. }
+                    bastionclaw::channels::StatusUpdate::ApprovalNeeded { .. }
                 )
             }),
             "engine v2 should not emit ApprovalNeeded when global auto-approve is enabled"

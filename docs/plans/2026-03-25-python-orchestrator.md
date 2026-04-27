@@ -448,7 +448,7 @@ Replace `ExecutionLoop::run()` body with:
 
 ### Step 3: Write the default orchestrator
 
-Create `crates/ironclaw_engine/orchestrator/default.py` with the v0 code shown above.
+Create `crates/bastionclaw_engine/orchestrator/default.py` with the v0 code shown above.
 
 ### Step 4: Wire versioning into the self-improvement Mission
 

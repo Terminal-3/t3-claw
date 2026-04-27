@@ -3,7 +3,7 @@ title: "Telegram"
 description: "Interact with your agent through Telegram"
 ---
 
-You can create a Telegram bot and connect your IronClaw agent to it. Once configured, you can talk to your agent in direct messages or add it to a group chat so it can participate there.
+You can create a Telegram bot and connect your BastionClaw agent to it. Once configured, you can talk to your agent in direct messages or add it to a group chat so it can participate there.
 
 <Note>
 If you haven't set up your agent yet, follow our [Quickstart guide](../quickstart)
@@ -27,17 +27,17 @@ In order to create a new Telegram bot, you need to talk to [BotFather](https://t
     Send the command `/newbot` to BotFather and follow the instructions to create a new bot. You will need to choose a name and a username for your bot. The username must end with "bot". For example, "my_agent_bot".
     </Step>
     <Step title="Get your bot token">
-    After creating your bot, BotFather will give you a token that looks like this: `123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ`. This token is used to authenticate your bot and allow it to access the Telegram API. Keep this token safe and do not share it with anyone. You will need it later to configure the Telegram channel in IronClaw.
+    After creating your bot, BotFather will give you a token that looks like this: `123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ`. This token is used to authenticate your bot and allow it to access the Telegram API. Keep this token safe and do not share it with anyone. You will need it later to configure the Telegram channel in BastionClaw.
     </Step>
 </Steps>
 
 </Step>
-<Step title="Configure the Telegram channel in IronClaw">
+<Step title="Configure the Telegram channel in BastionClaw">
 
-    Invoke the IronClaw CLI onboard wizard using the `--channels-only` flag to configure only the channels without going through the entire onboarding process again:
+    Invoke the BastionClaw CLI onboard wizard using the `--channels-only` flag to configure only the channels without going through the entire onboarding process again:
 
     ```
-    ironclaw onboard --channels-only
+    bastionclaw onboard --channels-only
     ```
 
     <Steps>
@@ -57,16 +57,16 @@ In order to create a new Telegram bot, you need to talk to [BotFather](https://t
 </Step>
 
 <Step title="Test your Telegram channel">
-    Now that you have configured your Telegram channel, it is time to test it out. Start the `ironclaw` agent if it is not already running:
+    Now that you have configured your Telegram channel, it is time to test it out. Start the `bastionclaw` agent if it is not already running:
 
     ```
-    ironclaw
+    bastionclaw
     ```
 
     Send a message to your bot in Telegram. It will respond with a command that you will need to execute in the terminal to complete the channel setup:
 
     ```
-    ironclaw pairing approve telegram <PAIRING_CODE>
+    bastionclaw pairing approve telegram <PAIRING_CODE>
     ```
 </Step>
 
@@ -98,7 +98,7 @@ When toggling privacy mode, remove and re-add the bot in each group so Telegram 
 ## Configuration Options
 
 You can configure the behavior of the Telegram channel through the
-`.ironclaw/channels/telegram.capabilities.json` file, which is created
+`.bastionclaw/channels/telegram.capabilities.json` file, which is created
 automatically after you set up the channel for the first time.
 
 <Accordion title="Options Overview">
@@ -189,7 +189,7 @@ with the desired polling interval in milliseconds (default is 30000ms, which is 
 
 ## Group Chat Participation
 
-IronClaw can be configured to participate in Telegram group chats, by default the bot will only respond to commands (use `/help` to see the
+BastionClaw can be configured to participate in Telegram group chats, by default the bot will only respond to commands (use `/help` to see the
 list of available commands). If you want the bot to respond to mentions or all messages in a group you need to configure it.
 
 ### Adding the Bot to Groups
@@ -205,10 +205,10 @@ list of available commands). If you want the bot to respond to mentions or all m
    - Add member → Search for your bot username
    - Grant admin permissions (optional but recommended)
 
-3. **Configure `bot_username`** in IronClaw:
+3. **Configure `bot_username`** in BastionClaw:
    ```json
    {
-     "bot_username": "MyIronClawBot"
+     "bot_username": "MyBastionClawBot"
    }
    ```
 
@@ -216,7 +216,7 @@ list of available commands). If you want the bot to respond to mentions or all m
 
 #### Commands & Mentions
 
-The bot responds when a command is used, e.g. `/skills`, or when the bot is mentioned, e.g. `@MyIronClawBot what's the weather?`
+The bot responds when a command is used, e.g. `/skills`, or when the bot is mentioned, e.g. `@MyBastionClawBot what's the weather?`
 
 Configuration:
 
@@ -225,7 +225,7 @@ Configuration:
 
 ```json
 {
-  "bot_username": "MyIronClawBot",
+  "bot_username": "MyBastionClawBot",
   "respond_to_all_group_messages": false
 }
 ```
@@ -245,7 +245,7 @@ The bot processes and responds to every message in the group.
 Configuration:
 ```json
 {
-  "bot_username": "MyIronClawBot",
+  "bot_username": "MyBastionClawBot",
   "respond_to_all_group_messages": true
 }
 ```
@@ -279,11 +279,11 @@ Use cases:
 
 ## Webhook Secret (Optional)
 
-When IronClaw is running in webhook mode, Telegram delivers messages by sending HTTP requests to your public URL. Because that URL is reachable from the internet, any third party could send fake requests to it.
+When BastionClaw is running in webhook mode, Telegram delivers messages by sending HTTP requests to your public URL. Because that URL is reachable from the internet, any third party could send fake requests to it.
 
-A webhook secret is a shared token you configure in IronClaw. Telegram includes that token in every request it sends. IronClaw rejects any request that does not carry the correct token, so only genuine Telegram traffic reaches your agent.
+A webhook secret is a shared token you configure in BastionClaw. Telegram includes that token in every request it sends. BastionClaw rejects any request that does not carry the correct token, so only genuine Telegram traffic reaches your agent.
 
-To enable it, add `telegram_webhook_secret` to your `.ironclaw/channels/telegram.capabilities.json`:
+To enable it, add `telegram_webhook_secret` to your `.bastionclaw/channels/telegram.capabilities.json`:
 
 ```json
 {
@@ -333,6 +333,6 @@ The webhook secret is only relevant when `polling_enabled` is `false`. If you ar
   </Accordion>
 
   <Accordion title="Owner binding timeout during setup">
-    The wizard waits 120 seconds for the first message. If it times out, send `/start` to your bot in Telegram and re-run `ironclaw onboard --channels-only`.
+    The wizard waits 120 seconds for the first message. If it times out, send `/start` to your bot in Telegram and re-run `bastionclaw onboard --channels-only`.
   </Accordion>
 </AccordionGroup>

@@ -31,7 +31,7 @@ use crate::tools::wasm::host::{HostState, LogLevel};
 use crate::tools::wasm::limits::{ResourceLimits, WasmResourceLimiter};
 use crate::tools::wasm::runtime::{EPOCH_TICK_INTERVAL, PreparedModule, WasmToolRuntime};
 use crate::tools::wasm::{ssrf_safe_client_builder_for_target, validate_and_resolve_http_target};
-use ironclaw_safety::LeakDetector;
+use bastionclaw_safety::LeakDetector;
 
 // Generate component model bindings from the WIT file.
 //
@@ -2880,11 +2880,11 @@ mod tests {
         impl Drop for EnvGuard {
             fn drop(&mut self) {
                 // safety: env mutation in tests; var is test-only.
-                unsafe { std::env::remove_var("IRONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK") };
+                unsafe { std::env::remove_var("BASTIONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK") };
             }
         }
         // safety: env mutation in tests; var is test-only.
-        unsafe { std::env::set_var("IRONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK", "1") };
+        unsafe { std::env::set_var("BASTIONCLAW_OAUTH_PROXY_ALLOW_LOOPBACK", "1") };
         let _proxy_loopback_guard = EnvGuard;
 
         let proxy = MockProxyServer::start().await;
@@ -3415,7 +3415,7 @@ mod tests {
     /// tool's own legitimate outbound request.
     #[test]
     fn test_leak_scan_runs_before_credential_injection() {
-        use ironclaw_safety::LeakDetector;
+        use bastionclaw_safety::LeakDetector;
 
         // Simulate pre-injection headers: WASM only sees the placeholder, not the real token.
         let raw_headers: Vec<(String, String)> = vec![

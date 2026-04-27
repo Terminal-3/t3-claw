@@ -123,9 +123,9 @@ fn process_builder_tool_result(
     tool_call_id: &str,
     result: &Result<String, impl std::fmt::Display>,
 ) -> (String, ChatMessage) {
-    static SAFETY: std::sync::LazyLock<ironclaw_safety::SafetyLayer> =
+    static SAFETY: std::sync::LazyLock<bastionclaw_safety::SafetyLayer> =
         std::sync::LazyLock::new(|| {
-            ironclaw_safety::SafetyLayer::new(&crate::config::SafetyConfig {
+            bastionclaw_safety::SafetyLayer::new(&crate::config::SafetyConfig {
                 max_output_length: 100_000,
                 injection_check_enabled: true,
             })
@@ -306,7 +306,7 @@ pub struct BuilderConfig {
 impl Default for BuilderConfig {
     fn default() -> Self {
         Self {
-            build_dir: std::env::temp_dir().join("ironclaw-builds"),
+            build_dir: std::env::temp_dir().join("bastionclaw-builds"),
             max_iterations: 10,
             timeout: Duration::from_secs(600), // 10 minutes
             cleanup_on_failure: false,         // Keep for debugging
@@ -1388,8 +1388,8 @@ mod tests {
             config
                 .build_dir
                 .to_string_lossy()
-                .contains("ironclaw-builds"),
-            "build_dir should contain 'ironclaw-builds'"
+                .contains("bastionclaw-builds"),
+            "build_dir should contain 'bastionclaw-builds'"
         );
     }
 

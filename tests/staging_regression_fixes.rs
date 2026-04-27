@@ -15,8 +15,8 @@
 //!    `agent_jobs.restart_params` and the SandboxJobRecord round-trips it.
 //!
 //! 3. The orchestrator hardcoded the master MCP config path to
-//!    `/opt/ironclaw/config/worker/mcp-servers.json`, but the real config
-//!    lives at `~/.ironclaw/mcp-servers.json` and bootstrap migrates that
+//!    `/opt/bastionclaw/config/worker/mcp-servers.json`, but the real config
+//!    lives at `~/.bastionclaw/mcp-servers.json` and bootstrap migrates that
 //!    file into the per-user `mcp_servers` setting in the DB on first run,
 //!    leaving both paths empty. With `MCP_PER_JOB_ENABLED=true` the feature
 //!    silently no-op'd on every typical install. Fix: the orchestrator now
@@ -33,10 +33,10 @@
 
 #![cfg(feature = "libsql")]
 
-use ironclaw::db::libsql::LibSqlBackend;
-use ironclaw::db::{ConversationStore, Database};
-use ironclaw::history::{SandboxJobRecord, SandboxRestartParams};
-use ironclaw::tools::mcp::config::{
+use bastionclaw::db::libsql::LibSqlBackend;
+use bastionclaw::db::{ConversationStore, Database};
+use bastionclaw::history::{SandboxJobRecord, SandboxRestartParams};
+use bastionclaw::tools::mcp::config::{
     McpServerConfig, McpServersFile, load_mcp_servers_from_db, save_mcp_servers_to_db,
 };
 use std::error::Error;
@@ -363,7 +363,7 @@ async fn issue_3_orchestrator_master_config_loads_from_db_setting() -> TestResul
 /// widening MCP exposure: an explicit "no servers" choice must be honored
 /// rather than collapsed into the disk-fallback default.
 ///
-/// Note: `load_mcp_servers_from_db` falls back to `~/.ironclaw/mcp-servers.json`
+/// Note: `load_mcp_servers_from_db` falls back to `~/.bastionclaw/mcp-servers.json`
 /// when the DB has no entry at all. This test deliberately writes an empty
 /// `McpServersFile` so the loader takes the DB path (not the disk fallback)
 /// and we can assert the empty result independently of host state.

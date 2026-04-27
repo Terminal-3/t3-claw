@@ -15,7 +15,7 @@ use crate::db::UserStore;
 use crate::secrets::SecretsStore;
 use crate::tools::tool::{ApprovalRequirement, Tool, ToolError, ToolOutput, require_str};
 use crate::tools::wasm::{InjectedCredentials, SharedCredentialRegistry, inject_credential};
-use ironclaw_safety::LeakDetector;
+use bastionclaw_safety::LeakDetector;
 
 #[cfg(feature = "html-to-markdown")]
 use crate::tools::builtin::convert_html_to_markdown;
@@ -44,9 +44,9 @@ const MAX_REDIRECTS: usize = 3;
 
 /// Descriptive User-Agent so public APIs don't reject bare requests.
 const USER_AGENT: &str = concat!(
-    "IronClaw-Agent/",
+    "BastionClaw-Agent/",
     env!("CARGO_PKG_VERSION"),
-    " (https://github.com/nearai/ironclaw)"
+    " (https://github.com/nearai/bastionclaw)"
 );
 
 /// Tool for making HTTP requests.
@@ -1017,7 +1017,7 @@ impl Tool for HttpTool {
     }
 
     fn requires_approval(&self, params: &serde_json::Value) -> ApprovalRequirement {
-        let has_credentials = ironclaw_safety::params_contain_manual_credentials(params)
+        let has_credentials = bastionclaw_safety::params_contain_manual_credentials(params)
             || (self.credential_registry.as_ref().is_some_and(|registry| {
                 extract_host_from_params(params)
                     .is_some_and(|host| registry.has_credentials_for_host(&host))
@@ -1653,16 +1653,16 @@ mod tests {
 
     #[test]
     fn test_save_to_accepts_simple_tmp_path() {
-        let path = validate_save_to_path("/tmp/test_ironclaw_photo.jpg").unwrap();
+        let path = validate_save_to_path("/tmp/test_bastionclaw_photo.jpg").unwrap();
         assert!(path.starts_with("/tmp"));
         let _ = std::fs::remove_file(&path);
     }
 
     #[test]
     fn test_save_to_accepts_nested_tmp_path() {
-        let path = validate_save_to_path("/tmp/ironclaw_test_subdir/nested/file.png").unwrap();
+        let path = validate_save_to_path("/tmp/bastionclaw_test_subdir/nested/file.png").unwrap();
         assert!(path.starts_with("/tmp"));
-        let _ = std::fs::remove_dir_all("/tmp/ironclaw_test_subdir");
+        let _ = std::fs::remove_dir_all("/tmp/bastionclaw_test_subdir");
     }
 
     #[test]

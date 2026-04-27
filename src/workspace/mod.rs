@@ -94,7 +94,7 @@ use deadpool_postgres::Pool;
 use uuid::Uuid;
 
 use crate::error::WorkspaceError;
-use ironclaw_safety::{Sanitizer, Severity};
+use bastionclaw_safety::{Sanitizer, Severity};
 
 /// Files injected into the system prompt. Writes to these are scanned for
 /// prompt injection patterns and rejected if high-severity matches are found.
@@ -167,7 +167,7 @@ fn reject_if_injected(path: &str, content: &str) -> Result<(), WorkspaceError> {
             .map(|w| w.description.as_str())
             .collect();
         tracing::warn!(
-            target: "ironclaw::safety",
+            target: "bastionclaw::safety",
             file = %path,
             "workspace write rejected: prompt injection detected ({})",
             descriptions.join("; "),
@@ -179,7 +179,7 @@ fn reject_if_injected(path: &str, content: &str) -> Result<(), WorkspaceError> {
     }
     for w in &warnings {
         tracing::warn!(
-            target: "ironclaw::safety",
+            target: "bastionclaw::safety",
             file = %path, severity = ?w.severity, pattern = %w.pattern,
             "workspace write warning: {}", w.description,
         );

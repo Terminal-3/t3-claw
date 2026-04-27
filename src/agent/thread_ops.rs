@@ -23,7 +23,7 @@ use crate::context::JobContext;
 use crate::error::Error;
 use crate::llm::{ChatMessage, ToolCall};
 use crate::tools::redact_params;
-use ironclaw_common::truncate_preview;
+use bastionclaw_common::truncate_preview;
 
 const FORGED_THREAD_ID_ERROR: &str = "Invalid or unauthorized thread ID.";
 const INVALID_AUTH_TOKEN_MESSAGE: &str = "Invalid token. Please try again.";
@@ -402,7 +402,7 @@ impl Agent {
                         let violations = self.safety().check_policy(content);
                         if violations
                             .iter()
-                            .any(|rule| rule.action == ironclaw_safety::PolicyAction::Block)
+                            .any(|rule| rule.action == bastionclaw_safety::PolicyAction::Block)
                         {
                             return Ok(SubmissionResult::error("Input rejected by safety policy."));
                         }
@@ -489,7 +489,7 @@ impl Agent {
         let violations = self.safety().check_policy(content);
         if violations
             .iter()
-            .any(|rule| rule.action == ironclaw_safety::PolicyAction::Block)
+            .any(|rule| rule.action == bastionclaw_safety::PolicyAction::Block)
         {
             return Ok(SubmissionResult::error("Input rejected by safety policy."));
         }
@@ -2352,9 +2352,9 @@ mod tests {
     use crate::hooks::HookRegistry;
     use crate::testing::{StubChannel, StubLlm};
     use crate::tools::ToolRegistry;
+    use bastionclaw_safety::SafetyLayer;
     use chrono::TimeZone;
     use futures::stream;
-    use ironclaw_safety::SafetyLayer;
     use rust_decimal::Decimal;
     use std::sync::Arc;
     use std::time::Duration;
@@ -2453,8 +2453,8 @@ mod tests {
             store: None,
             llm: Arc::new(StaticLlmProvider),
             cheap_llm: None,
-            safety: Arc::new(ironclaw_safety::SafetyLayer::new(
-                &ironclaw_safety::SafetyConfig {
+            safety: Arc::new(bastionclaw_safety::SafetyLayer::new(
+                &bastionclaw_safety::SafetyConfig {
                     max_output_length: 100_000,
                     injection_check_enabled: true,
                 },

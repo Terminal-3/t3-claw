@@ -9,7 +9,7 @@
 //! # Usage
 //!
 //! ```rust,no_run
-//! use ironclaw::testing::TestHarnessBuilder;
+//! use bastionclaw::testing::TestHarnessBuilder;
 //!
 //! #[tokio::test]
 //! async fn test_something() {
@@ -504,7 +504,7 @@ impl TestHarnessBuilder {
         use crate::agent::cost_guard::{CostGuard, CostGuardConfig};
         use crate::config::{SafetyConfig, SkillsConfig};
         use crate::hooks::HookRegistry;
-        use ironclaw_safety::SafetyLayer;
+        use bastionclaw_safety::SafetyLayer;
 
         let (db, temp_dir) = if let Some(db) = self.db {
             // Caller provided a DB; create a dummy temp dir to satisfy the struct.

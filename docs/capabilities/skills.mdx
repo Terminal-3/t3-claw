@@ -6,7 +6,7 @@ description: Prompt extensions that activate based on context
 Skills are markdown files that contain domain-specific instructions. When a skill activates, its markdown body is injected into the LLM context — giving the agent specialized knowledge and behavior without retraining.
 
 <Tip>
-IronClaw can search and install skills from the ClawHub registry, a community-driven repository of pre-built skills covering various domains and use cases.
+BastionClaw can search and install skills from the ClawHub registry, a community-driven repository of pre-built skills covering various domains and use cases.
 </Tip>
 
 ---
@@ -71,7 +71,7 @@ Skills pass through four stages before injection:
     | `max_context_tokens` | Token budget this skill may consume per turn. Omitting it leaves the skill with a 2000-token budget, effectively excluding it. |
 
     <Tip>
-    If a skill appears in `ironclaw skills list` but the agent doesn't use it, the most common cause is a missing or empty `activation` block.
+    If a skill appears in `bastionclaw skills list` but the agent doesn't use it, the most common cause is a missing or empty `activation` block.
     </Tip>
 
   </Step>
@@ -91,31 +91,31 @@ Skills pass through four stages before injection:
 
 | Trust Level   | Source                                                      | Tool Access                                             |
 |---------------|-------------------------------------------------------------|---------------------------------------------------------|
-| **Trusted**   | User-placed in `~/.ironclaw/skills/` or workspace `skills/` | All tools available to the agent                        |
+| **Trusted**   | User-placed in `~/.bastionclaw/skills/` or workspace `skills/` | All tools available to the agent                        |
 | **Installed** | Downloaded from ClawHub registry via `skill_install`        | Read-only tools only — no shell, no file write, no HTTP |
 
 <Warning>
-Never place a skill file in the trusted directories unless you have reviewed its contents. A skill in `~/.ironclaw/skills/` has the same tool access as you do.
+Never place a skill file in the trusted directories unless you have reviewed its contents. A skill in `~/.bastionclaw/skills/` has the same tool access as you do.
 </Warning>
 
 ---
 
 ## Skill Directories
 
-IronClaw discovers skills from three locations, checked in order:
+BastionClaw discovers skills from three locations, checked in order:
 
 | Directory                       | Trust     | Description                                                 |
 |---------------------------------|-----------|-------------------------------------------------------------|
-| `~/.ironclaw/skills/`           | Trusted   | User's global skills, available in all sessions             |
+| `~/.bastionclaw/skills/`           | Trusted   | User's global skills, available in all sessions             |
 | `<workspace>/skills/`           | Trusted   | Per-workspace skills, activated in that workspace's context |
-| `~/.ironclaw/installed_skills/` | Installed | Registry-installed skills from ClawHub                      |
+| `~/.bastionclaw/installed_skills/` | Installed | Registry-installed skills from ClawHub                      |
 
 Skills in trusted directories are loaded as-is. Skills in `installed_skills/` have their tool access capped by the attenuation layer regardless of what they declare.
 
 Each skill lives in its own subdirectory named after the skill:
 
 ```
-~/.ironclaw/skills/
+~/.bastionclaw/skills/
 └── my-skill/
     └── SKILL.md
 ```
@@ -123,7 +123,7 @@ Each skill lives in its own subdirectory named after the skill:
 To verify that a skill was picked up correctly:
 
 ```bash
-ironclaw skills list
+bastionclaw skills list
 ```
 
 A correctly installed skill appears with its name, version, and trust level. If a skill is missing from the list, check the directory structure and SKILL.md validity.
@@ -132,7 +132,7 @@ A correctly installed skill appears with its name, version, and trust level. If 
 
 ## Auto-Discovery
 
-When `SKILLS_AUTO_DISCOVER=true` (the default), IronClaw scans all skill directories at startup and indexes all valid SKILL.md files. New skills added while the agent is running are picked up on the next restart.
+When `SKILLS_AUTO_DISCOVER=true` (the default), BastionClaw scans all skill directories at startup and indexes all valid SKILL.md files. New skills added while the agent is running are picked up on the next restart.
 
 ```bash
 # Enable auto-discovery (default: true)

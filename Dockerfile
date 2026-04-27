@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for the IronClaw agent (cloud deployment).
+# Multi-stage Dockerfile for the BastionClaw agent (cloud deployment).
 #
 # Uses cargo-chef for dependency caching — only rebuilds deps when
 # Cargo.toml/Cargo.lock change, not on every source edit.
@@ -8,10 +8,10 @@
 # database reopen), so we use glibc.
 #
 # Build:
-#   docker build --platform linux/amd64 -t ironclaw:latest .
+#   docker build --platform linux/amd64 -t bastionclaw:latest .
 #
 # Run:
-#   docker run --env-file .env -p 3000:3000 ironclaw:latest
+#   docker run --env-file .env -p 3000:3000 bastionclaw:latest
 
 # Stage 1: Install cargo-chef
 FROM rust:1.92-bookworm AS chef
@@ -49,7 +49,7 @@ ENV CARGO_PROFILE_DIST_PANIC=abort \
 COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --profile dist --recipe-path recipe.json
 
-# Stage 4: Build the actual binary (only recompiles ironclaw source)
+# Stage 4: Build the actual binary (only recompiles bastionclaw source)
 FROM deps AS builder
 
 COPY Cargo.toml Cargo.lock ./
@@ -65,7 +65,7 @@ COPY wit/ wit/
 COPY providers.json providers.json
 COPY profiles/ profiles/
 
-RUN cargo build --profile dist --bin ironclaw
+RUN cargo build --profile dist --bin bastionclaw
 
 # Stage 4b: Build all WASM extensions from source (only used by runtime-staging)
 FROM builder AS wasm-builder
@@ -118,28 +118,36 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/dist/ironclaw /usr/local/bin/ironclaw
+# Install the Docker CLI so the sandbox detector can find it on PATH.
+# We copy only the static binary from the official Docker CLI image rather than
+# pulling in the full Docker APT repository — keeps the image lean and avoids
+# an extra external apt source to maintain.
+# The daemon itself never runs inside this container; the socket at
+# /var/run/docker.sock is mounted from the host at runtime.
+COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
+
+COPY --from=builder /app/target/dist/bastionclaw /usr/local/bin/bastionclaw
 COPY --from=builder /app/migrations /app/migrations
 
 # Non-root user
-ENV HOME=/home/ironclaw
-RUN useradd -m -d /home/ironclaw -u 1000 ironclaw \
-    && mkdir -p /home/ironclaw/.ironclaw \
-    && chown -R ironclaw:ironclaw /home/ironclaw
-WORKDIR /home/ironclaw
+ENV HOME=/home/bastionclaw
+RUN useradd -m -d /home/bastionclaw -u 1000 bastionclaw \
+    && mkdir -p /home/bastionclaw/.bastionclaw \
+    && chown -R bastionclaw:bastionclaw /home/bastionclaw
+WORKDIR /home/bastionclaw
 
 EXPOSE 3000
 
-ENV RUST_LOG=ironclaw=info
+ENV RUST_LOG=bastionclaw=info
 
-ENTRYPOINT ["ironclaw"]
+ENTRYPOINT ["bastionclaw"]
 
 # Stage 5b: Staging runtime (with pre-built WASM extensions)
 FROM runtime-base AS runtime-staging
-COPY --from=wasm-builder --chown=ironclaw:ironclaw /app/wasm-bundles/tools/ /home/ironclaw/.ironclaw/tools/
-COPY --from=wasm-builder --chown=ironclaw:ironclaw /app/wasm-bundles/channels/ /home/ironclaw/.ironclaw/channels/
-USER ironclaw
+COPY --from=wasm-builder --chown=bastionclaw:bastionclaw /app/wasm-bundles/tools/ /home/bastionclaw/.bastionclaw/tools/
+COPY --from=wasm-builder --chown=bastionclaw:bastionclaw /app/wasm-bundles/channels/ /home/bastionclaw/.bastionclaw/channels/
+USER bastionclaw
 
 # Stage 5c: Production runtime (default — no pre-bundled extensions)
 FROM runtime-base AS runtime
-USER ironclaw
+USER bastionclaw

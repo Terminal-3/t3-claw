@@ -1,4 +1,4 @@
-//! Configuration for IronClaw.
+//! Configuration for BastionClaw.
 //!
 //! Settings are loaded with priority: **DB/TOML > env > default**.
 //!
@@ -15,7 +15,7 @@
 //!   cost limits, auth tokens): env-only
 //! - API keys: env/secrets store only
 //!
-//! `DATABASE_URL` lives in `~/.ironclaw/.env` (loaded via dotenvy early
+//! `DATABASE_URL` lives in `~/.bastionclaw/.env` (loaded via dotenvy early
 //! in startup).
 
 pub mod acp;
@@ -184,7 +184,7 @@ impl Config {
                 gateway: None,
                 signal: None,
                 tui: None,
-                wasm_channels_dir: std::env::temp_dir().join("ironclaw-test-channels"),
+                wasm_channels_dir: std::env::temp_dir().join("bastionclaw-test-channels"),
                 wasm_channels_enabled: false,
                 wasm_channel_owner_ids: HashMap::new(),
             },
@@ -278,14 +278,34 @@ impl Config {
         is_operator: bool,
     ) -> Result<Self, ConfigError> {
         let _ = dotenvy::dotenv();
-        crate::bootstrap::load_ironclaw_env();
+        crate::bootstrap::load_bastionclaw_env();
 
-        // Start with defaults, apply deployment profile, then TOML overlay.
+        // Resolution layers (lowest -> highest priority):
+        //   defaults -> deployment profile -> TOML -> admin DB -> per-user DB
         let mut settings = Settings::default();
         profile::apply_profile(&mut settings)?;
         Self::apply_toml_overlay(&mut settings, toml_path)?;
 
-        // Overlay DB settings on top so DB values win over TOML.
+        // Layer admin-scope defaults between TOML and per-user settings.
+        // This lets an admin set instance-wide defaults (e.g. temperature,
+        // model) that members inherit unless they override per-user.
+        // Skip if the user IS the admin scope to avoid a redundant merge.
+        let admin_scope = crate::tools::permissions::ADMIN_SETTINGS_USER_ID;
+        if user_id != admin_scope
+            && let Ok(mut admin_map) = store.get_all_settings(admin_scope).await
+            && !admin_map.is_empty()
+        {
+            // Defense-in-depth: even though the admin-scope map is written
+            // by an operator, never let admin-only LLM endpoint settings
+            // (private/loopback URLs) propagate down to non-operators.
+            if !is_operator {
+                crate::config::helpers::strip_admin_only_llm_keys(&mut admin_map);
+            }
+            let admin_settings = Settings::from_db_map(&admin_map);
+            settings.merge_from(&admin_settings);
+        }
+
+        // Overlay per-user DB settings on top (highest priority).
         match store.get_all_settings(user_id).await {
             Ok(mut map) => {
                 if !is_operator {
@@ -308,7 +328,7 @@ impl Config {
     /// and by CLI commands that don't have DB access.
     /// Falls back to legacy `settings.json` on disk if present.
     ///
-    /// Loads both `./.env` (standard, higher priority) and `~/.ironclaw/.env`
+    /// Loads both `./.env` (standard, higher priority) and `~/.bastionclaw/.env`
     /// (lower priority) via dotenvy, which never overwrites existing vars.
     pub async fn from_env() -> Result<Self, ConfigError> {
         Self::from_env_with_toml(None).await
@@ -325,7 +345,7 @@ impl Config {
     /// Load and merge a TOML config file into settings.
     ///
     /// If `explicit_path` is `Some`, loads from that path (errors are fatal).
-    /// If `None`, tries the default path `~/.ironclaw/config.toml` (missing
+    /// If `None`, tries the default path `~/.bastionclaw/config.toml` (missing
     /// file is silently ignored).
     fn apply_toml_overlay(
         settings: &mut Settings,
@@ -392,10 +412,21 @@ impl Config {
         is_operator: bool,
     ) -> Result<(), ConfigError> {
         let mut settings = if let Some(store) = store {
-            // Profile as base, then TOML, then DB on top (DB wins).
+            // Resolution layers: profile -> TOML -> admin DB -> per-user DB.
             let mut s = Settings::default();
             profile::apply_profile(&mut s)?;
             Self::apply_toml_overlay(&mut s, toml_path)?;
+            let admin_scope = crate::tools::permissions::ADMIN_SETTINGS_USER_ID;
+            if user_id != admin_scope
+                && let Ok(mut admin_map) = store.get_all_settings(admin_scope).await
+                && !admin_map.is_empty()
+            {
+                if !is_operator {
+                    crate::config::helpers::strip_admin_only_llm_keys(&mut admin_map);
+                }
+                let admin_settings = Settings::from_db_map(&admin_map);
+                s.merge_from(&admin_settings);
+            }
             if let Ok(mut map) = store.get_all_settings(user_id).await {
                 if !is_operator {
                     crate::config::helpers::strip_admin_only_llm_keys(&mut map);
@@ -469,7 +500,7 @@ pub(crate) fn load_bootstrap_settings(
     toml_path: Option<&std::path::Path>,
 ) -> Result<Settings, ConfigError> {
     let _ = dotenvy::dotenv();
-    crate::bootstrap::load_ironclaw_env();
+    crate::bootstrap::load_bastionclaw_env();
 
     let mut settings = Settings::default();
     profile::apply_profile(&mut settings)?;
@@ -478,7 +509,7 @@ pub(crate) fn load_bootstrap_settings(
 }
 
 pub(crate) fn resolve_owner_id(settings: &Settings) -> Result<String, ConfigError> {
-    let env_owner_id = self::helpers::optional_env("IRONCLAW_OWNER_ID")?;
+    let env_owner_id = self::helpers::optional_env("BASTIONCLAW_OWNER_ID")?;
     let settings_owner_id = settings.owner_id.clone();
     let configured_owner_id = env_owner_id.clone().or(settings_owner_id.clone());
 
@@ -495,7 +526,7 @@ pub(crate) fn resolve_owner_id(settings: &Settings) -> Result<String, ConfigErro
     {
         WARNED_EXPLICIT_DEFAULT_OWNER_ID.call_once(|| {
             tracing::warn!(
-                "IRONCLAW_OWNER_ID resolved to the legacy 'default' scope explicitly; durable state will keep legacy owner behavior"
+                "BASTIONCLAW_OWNER_ID resolved to the legacy 'default' scope explicitly; durable state will keep legacy owner behavior"
             );
         });
     }
@@ -993,7 +1024,7 @@ mod tests {
     }
 
     fn config_for_owner(owner_id: &str) -> Config {
-        let tmp = std::env::temp_dir().join(format!("ironclaw-resolve-test-{owner_id}"));
+        let tmp = std::env::temp_dir().join(format!("bastionclaw-resolve-test-{owner_id}"));
         let mut cfg = Config::for_testing(tmp.clone(), tmp.clone(), tmp);
         cfg.owner_id = owner_id.to_string();
         cfg
@@ -1062,6 +1093,78 @@ mod tests {
         )
         .await
         .expect("resolve should succeed for operator");
+    }
+
+    #[tokio::test]
+    async fn re_resolve_llm_strips_admin_scope_admin_only_keys_for_non_operator() {
+        // Regression: a non-operator member must not inherit admin-only LLM
+        // keys from the admin-defaults scope, even when the admin scope was
+        // populated by an actual operator. The poisoned model below would
+        // propagate to `cfg.llm.nearai.model` if the strip filter was not
+        // applied to the admin-scope merge inside `re_resolve_llm_with_secrets`.
+        let store = FakeSettingsStore::new();
+        store
+            .seed(
+                crate::tools::permissions::ADMIN_SETTINGS_USER_ID,
+                "llm_builtin_overrides",
+                serde_json::json!({
+                    "nearai": {
+                        "model": "admin-poison-model"
+                    }
+                }),
+            )
+            .await;
+
+        let mut cfg = config_for_owner("operator-user");
+        cfg.re_resolve_llm_with_secrets(
+            Some(&store as &(dyn crate::db::SettingsStore + Sync)),
+            "member-user",
+            None,
+            None,
+            false,
+        )
+        .await
+        .expect("resolve should succeed for non-operator member");
+
+        assert_ne!(
+            cfg.llm.nearai.model, "admin-poison-model",
+            "admin-scope llm_builtin_overrides must not propagate to a non-operator member"
+        );
+    }
+
+    #[tokio::test]
+    async fn re_resolve_llm_keeps_admin_scope_admin_only_keys_for_operator() {
+        // Mirror of the above: an operator may legitimately inherit admin
+        // defaults, including admin-only LLM keys, since they could set them
+        // themselves directly.
+        let store = FakeSettingsStore::new();
+        store
+            .seed(
+                crate::tools::permissions::ADMIN_SETTINGS_USER_ID,
+                "llm_builtin_overrides",
+                serde_json::json!({
+                    "nearai": {
+                        "model": "admin-set-model"
+                    }
+                }),
+            )
+            .await;
+
+        let mut cfg = config_for_owner("operator-user");
+        cfg.re_resolve_llm_with_secrets(
+            Some(&store as &(dyn crate::db::SettingsStore + Sync)),
+            "another-operator",
+            None,
+            None,
+            true,
+        )
+        .await
+        .expect("resolve should succeed for operator");
+
+        assert_eq!(
+            cfg.llm.nearai.model, "admin-set-model",
+            "operator must inherit admin-scope builtin override model"
+        );
     }
 
     #[tokio::test]
