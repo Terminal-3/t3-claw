@@ -31,6 +31,16 @@ async def _send_and_get_response(
     """Send a chat message and return the newest assistant response text."""
     chat_input = page.locator(SEL["chat_input"])
     await chat_input.wait_for(state="visible", timeout=5000)
+    if await chat_input.evaluate("el => !!el.disabled"):
+        await page.keyboard.press("Control+n")
+        await page.wait_for_function(
+            """selector => {
+                const input = document.querySelector(selector);
+                return !!input && !input.disabled;
+            }""",
+            arg=SEL["chat_input"],
+            timeout=10000,
+        )
 
     assistant_sel = SEL["message_assistant"]
     before_count = await page.locator(assistant_sel).count()
@@ -182,7 +192,7 @@ async def _poll_sleep() -> None:
 
 async def test_http_channel_created_routine_is_visible_in_web_routines_tab(
     page,
-    ironclaw_server,
+    t3claw_server,
     http_channel_server,
 ):
     """A routine created from the HTTP channel is visible in the web owner UI."""
@@ -196,7 +206,7 @@ async def test_http_channel_created_routine_is_visible_in_web_routines_tab(
     )
     assert routine_name in response_text
 
-    await _wait_for_routine(ironclaw_server, routine_name)
+    await _wait_for_routine(t3claw_server, routine_name)
 
     await _open_tab(page, "routines")
     await page.locator(SEL["routine_row"]).filter(has_text=routine_name).first.wait_for(
@@ -207,7 +217,7 @@ async def test_http_channel_created_routine_is_visible_in_web_routines_tab(
 
 async def test_web_created_routine_is_listed_from_http_channel_across_senders(
     page,
-    ironclaw_server,
+    t3claw_server,
     http_channel_server,
 ):
     """Routines created in web chat remain owner-global across HTTP senders/threads."""
@@ -220,7 +230,7 @@ async def test_web_created_routine_is_listed_from_http_channel_across_senders(
     )
     assert routine_name in assistant_text
 
-    await _wait_for_routine(ironclaw_server, routine_name)
+    await _wait_for_routine(t3claw_server, routine_name)
 
     first_sender_text = await _post_http_webhook(
         http_channel_server,
@@ -241,7 +251,7 @@ async def test_web_created_routine_is_listed_from_http_channel_across_senders(
 
 async def test_http_created_full_job_routine_is_visible_in_web_after_approval(
     page,
-    ironclaw_server,
+    t3claw_server,
     http_channel_server,
 ):
     """A full-job routine created via HTTP appears in the web owner UI after approval."""
@@ -255,16 +265,16 @@ async def test_http_created_full_job_routine_is_visible_in_web_after_approval(
         wait_for_response=False,
     )
 
-    thread_id = await _wait_for_http_thread(ironclaw_server, routine_name)
-    pending = await _wait_for_pending_gate(ironclaw_server, thread_id)
+    thread_id = await _wait_for_http_thread(t3claw_server, routine_name)
+    pending = await _wait_for_pending_gate(t3claw_server, thread_id)
     assert pending["tool_name"] == "routine_create"
     await _approve_pending_request(
-        ironclaw_server,
+        t3claw_server,
         thread_id,
         pending["request_id"],
     )
 
-    routine = await _wait_for_routine(ironclaw_server, routine_name)
+    routine = await _wait_for_routine(t3claw_server, routine_name)
     assert routine["action_type"] == "full_job"
 
     await _open_tab(page, "routines")

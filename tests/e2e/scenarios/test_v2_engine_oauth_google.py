@@ -38,8 +38,8 @@ from helpers import api_get, api_post, AUTH_TOKEN, wait_for_ready
 # ---------------------------------------------------------------------------
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_GOOGLE_DB_TMPDIR = tempfile.TemporaryDirectory(prefix="ironclaw-v2-google-e2e-")
-_GOOGLE_HOME_TMPDIR = tempfile.TemporaryDirectory(prefix="ironclaw-v2-google-e2e-home-")
+_GOOGLE_DB_TMPDIR = tempfile.TemporaryDirectory(prefix="t3claw-v2-google-e2e-")
+_GOOGLE_HOME_TMPDIR = tempfile.TemporaryDirectory(prefix="t3claw-v2-google-e2e-home-")
 
 
 def _forward_coverage_env(env: dict):
@@ -52,15 +52,23 @@ def _forward_coverage_env(env: dict):
 
 async def _stop_process(proc, sig=signal.SIGINT, timeout=5):
     """Send signal and wait for process to exit."""
+    async def _drain_pipes():
+        try:
+            await asyncio.wait_for(proc.communicate(), timeout=1)
+        except (asyncio.TimeoutError, ValueError):
+            pass
+
     try:
         proc.send_signal(sig)
     except ProcessLookupError:
+        await _drain_pipes()
         return
     try:
         await asyncio.wait_for(proc.wait(), timeout=timeout)
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()
+    await _drain_pipes()
 
 
 # ---------------------------------------------------------------------------
@@ -213,7 +221,7 @@ def _find_secret_row(
             """
             SELECT user_id, expires_at, updated_at
             FROM secrets
-            WHERE name = ?1
+            WHERE name = ?
             ORDER BY updated_at DESC
             LIMIT 1
             """,
@@ -229,7 +237,7 @@ def _expire_access_token(db_path: str, user_id: str, secret_name: str) -> None:
             """
             UPDATE secrets
             SET expires_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour')
-            WHERE user_id = ?1 AND name = ?2
+            WHERE user_id = ? AND name = ?
             """,
             (user_id, secret_name),
         )
@@ -254,7 +262,13 @@ async def _wait_for_response(
     timeout: float = 45.0,
     expect_substring: str | None = None,
 ) -> dict:
-    """Poll chat history until an assistant response appears."""
+    """Poll chat history until an assistant response appears or a pending_gate is raised.
+
+    Either surface counts as "thread is done acting on the latest input" —
+    auth/approval prompts are now delivered as pending_gate SSE events, so a
+    retry that hits another auth gate will not produce a turn response but
+    still advances the flow.
+    """
     for _ in range(int(timeout * 2)):
         r = await api_get(
             base_url,
@@ -269,6 +283,8 @@ async def _wait_for_response(
             if last_response:
                 if expect_substring is None or expect_substring.lower() in last_response.lower():
                     return history
+        if expect_substring is None and history.get("pending_gate"):
+            return history
         await asyncio.sleep(0.5)
 
     raise AssertionError(
@@ -284,16 +300,7 @@ async def _wait_for_auth_prompt(
     *,
     timeout: float = 45.0,
 ) -> dict:
-    """Poll until response mentions authentication or credential prompt."""
-    auth_indicators = [
-        "authentication",
-        "credential",
-        "paste your token",
-        "token below",
-        "google_drive_token",
-        "api key",
-        "access token",
-    ]
+    """Poll until the thread is gate-paused for authentication via pending_gate."""
     for _ in range(int(timeout * 2)):
         r = await api_get(
             base_url,
@@ -302,10 +309,13 @@ async def _wait_for_auth_prompt(
         )
         r.raise_for_status()
         history = r.json()
-        turns = history.get("turns", [])
-        if turns:
-            last_response = (turns[-1].get("response") or "").lower()
-            if last_response and any(ind in last_response for ind in auth_indicators):
+        pending = history.get("pending_gate")
+        if isinstance(pending, dict):
+            resume_kind = pending.get("resume_kind") or {}
+            gate_name = (pending.get("gate_name") or "").lower()
+            if gate_name == "authentication" or (
+                isinstance(resume_kind, dict) and "Authentication" in resume_kind
+            ):
                 return history
         await asyncio.sleep(0.5)
 
@@ -327,8 +337,8 @@ async def mock_google_api():
 
 
 @pytest.fixture(scope="module")
-async def v2_google_server(ironclaw_binary, mock_llm_server, mock_google_api):
-    """Start ironclaw with ENGINE_V2=true and a google_drive skill pointing to mock Google API."""
+async def v2_google_server(t3claw_binary, mock_llm_server, mock_google_api):
+    """Start t3claw with ENGINE_V2=true and a google_drive skill pointing to mock Google API."""
     mock_api_url = mock_google_api["url"]
     mock_api_host = mock_api_url.replace("http://", "")
 
@@ -341,12 +351,12 @@ async def v2_google_server(ironclaw_binary, mock_llm_server, mock_google_api):
         assert r.status_code == 200
 
     home_dir = _GOOGLE_HOME_TMPDIR.name
-    skills_dir = os.path.join(home_dir, ".ironclaw", "skills")
+    skills_dir = os.path.join(home_dir, ".t3claw", "skills")
     os.makedirs(skills_dir, exist_ok=True)
     _write_google_skill(skills_dir, mock_api_host)
 
     # Install real google-drive WASM tool for OAuth redirect test
-    wasm_tools_dir = os.path.join(home_dir, ".ironclaw", "wasm_tools")
+    wasm_tools_dir = os.path.join(home_dir, ".t3claw", "wasm_tools")
     os.makedirs(wasm_tools_dir, exist_ok=True)
     _install_google_drive_wasm(wasm_tools_dir)
 
@@ -366,8 +376,8 @@ async def v2_google_server(ironclaw_binary, mock_llm_server, mock_google_api):
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": home_dir,
-        "IRONCLAW_BASE_DIR": os.path.join(home_dir, ".ironclaw"),
-        "RUST_LOG": "ironclaw=debug",
+        "IRONCLAW_BASE_DIR": os.path.join(home_dir, ".t3claw"),
+        "RUST_LOG": "t3claw=debug",
         "RUST_BACKTRACE": "1",
         "ENGINE_V2": "true",
         "HTTP_ALLOW_LOCALHOST": "true",
@@ -392,7 +402,7 @@ async def v2_google_server(ironclaw_binary, mock_llm_server, mock_google_api):
         "EMBEDDING_ENABLED": "false",
         "WASM_ENABLED": "true",
         "WASM_TOOLS_DIR": wasm_tools_dir,
-        "WASM_CHANNELS_DIR": os.path.join(home_dir, ".ironclaw", "wasm_channels"),
+        "WASM_CHANNELS_DIR": os.path.join(home_dir, ".t3claw", "wasm_channels"),
         "ONBOARD_COMPLETED": "true",
         "GOOGLE_OAUTH_CLIENT_ID": "test-google-client-id",
         "IRONCLAW_OAUTH_EXCHANGE_URL": mock_llm_server,
@@ -402,7 +412,7 @@ async def v2_google_server(ironclaw_binary, mock_llm_server, mock_google_api):
     _forward_coverage_env(env)
 
     proc = await asyncio.create_subprocess_exec(
-        ironclaw_binary, "--no-onboard",
+        t3claw_binary, "--no-onboard",
         stdin=asyncio.subprocess.DEVNULL,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -428,7 +438,7 @@ async def v2_google_server(ironclaw_binary, mock_llm_server, mock_google_api):
             except asyncio.TimeoutError:
                 pass
         pytest.fail(
-            f"v2 google ironclaw server failed to start on port {gateway_port}.\n"
+            f"v2 google t3claw server failed to start on port {gateway_port}.\n"
             f"stderr: {stderr_bytes.decode('utf-8', errors='replace')}"
         )
     finally:
@@ -436,6 +446,28 @@ async def v2_google_server(ironclaw_binary, mock_llm_server, mock_google_api):
             await _stop_process(proc, sig=signal.SIGINT, timeout=10)
             if proc.returncode is None:
                 await _stop_process(proc, sig=signal.SIGTERM, timeout=5)
+
+
+@pytest.fixture(autouse=True)
+async def _pin_mock_drive_api_url(mock_llm_server, mock_google_api):
+    """Point the mock LLM's tool-call URL at this module's Google Drive mock.
+
+    The mock LLM uses a single module-level `_github_api_url` to compose
+    every tool-call URL it synthesizes (GitHub, Drive, and any other
+    per-test HTTP destination that needs to look real to the engine). The
+    control endpoint is historically named `/__mock/set_github_api_url`
+    because the Drive test suite was added later and reused the same
+    knob — see `mock_llm.py`. A rename would cascade into every test file
+    that calls the endpoint, so the fixture keeps the existing wire name
+    and documents the shared nature here.
+    """
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{mock_llm_server}/__mock/set_github_api_url",
+            json={"url": mock_google_api["url"]},
+        )
+        response.raise_for_status()
+    yield
 
 
 # ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@ t3claw onboard [--skip-auth] [--channels-only] [--provider-only] [--quick]
 Explicit invocation. Loads `.env` files, runs the wizard, exits.
 
 ```
-t3claw          (first run, no database configured)
+ironclaw          (first run, no database configured)
 ```
 
 Auto-detection via `check_onboard_needed()` in `main.rs`. Skips onboarding
@@ -56,16 +56,27 @@ The `--no-onboard` CLI flag suppresses auto-detection.
 
 Quick mode (`--quick` flag, or auto-triggered on first run) provides a
 near-instant onboarding experience by auto-defaulting everything except
-the LLM provider and model selection.
+the local deployment profile, LLM provider, and model selection.
 
 ```
+Local Usage Profile     ← choose local or local-sandbox when unset
 auto_setup_database()    → libsql at ~/.t3claw/t3claw.db (zero prompts)
 auto_setup_security()    → keychain or env var (zero prompts)
-Step 1/2: Inference Provider  ← only interactive step
-Step 2/2: Model Selection     ← only interactive step
+Step 1/2: Inference Provider  ← interactive unless provider env is detected
+Step 2/2: Model Selection     ← interactive unless defaulted by detected provider
        ↓
    save_and_summarize()      → includes tip to run `t3claw onboard`
 ```
+
+**Local usage profile:** If `IRONCLAW_PROFILE` is already set, quick mode
+respects it and does not prompt. On a true first run with no profile and no
+existing DB settings, quick mode asks whether the user wants:
+- `local`: TUI, local libSQL, background tasks enabled, no Docker sandbox
+- `local-sandbox`: TUI, local libSQL, background tasks enabled, Docker sandbox enabled with read-only policy
+
+The selected profile is written to `~/.t3claw/.env` as `IRONCLAW_PROFILE`
+so subsequent startups apply the same built-in profile before database-backed
+settings are loaded.
 
 **`auto_setup_database()`:** Uses existing env vars if set (`DATABASE_URL`
 for postgres, `LIBSQL_PATH` for libsql) without prompting. Otherwise
@@ -346,10 +357,18 @@ key first, then falls back to the standard env var.
 - Reads `capabilities.json` for `setup.required_secrets`
 - For each secret: check existing, prompt or auto-generate, validate regex
 - Save each secret via `SecretsContext`
+- Persist selected channel names in `settings.channels.wasm_channels` as a
+  first-run startup fallback. Once the running app writes
+  `activated_channels`, that runtime state becomes the authoritative restore
+  source, including an explicit empty list after deactivation.
 
 **Telegram special case** (`setup_telegram`):
 - Validates bot token via Telegram `getMe` API
 - Owner binding: polls `getUpdates` for 120s to capture sender's user ID
+- Pairing mode is the right choice if you want a Telegram conversation to
+  continue in the browser history sidebar. Open mode keeps the bot usable in
+  Telegram, but it creates a split identity that does not automatically merge
+  into the web UI thread list.
 - Optional webhook secret auto-generation for webhook mode
 
 **SecretsContext creation** (`init_secrets_context`):
@@ -415,9 +434,10 @@ Settings are persisted in two places:
 **Layer 1: `~/.t3claw/.env`** (bootstrap vars)
 
 Contains only the settings needed BEFORE database connection. Written by
-`save_bootstrap_env()` in `bootstrap.rs`.
+`write_bootstrap_env()` in `wizard.rs` via `upsert_bootstrap_vars()`.
 
 ```env
+IRONCLAW_PROFILE="local"
 DATABASE_BACKEND="libsql"
 LIBSQL_PATH="/Users/name/.t3claw/t3claw.db"
 SECRETS_MASTER_KEY="..."   # only if env key source selected
@@ -426,6 +446,7 @@ ONBOARD_COMPLETED="true"
 
 Or for PostgreSQL:
 ```env
+IRONCLAW_PROFILE="local"
 DATABASE_BACKEND="postgres"
 DATABASE_URL="postgres://user:pass@localhost/t3claw"
 SECRETS_MASTER_KEY="..."
@@ -433,8 +454,9 @@ ONBOARD_COMPLETED="true"
 ```
 
 **Why separate?** Chicken-and-egg: you need `DATABASE_BACKEND` to know
-which database to connect to, and `SECRETS_MASTER_KEY` to decrypt the
-secrets store — neither can be stored in the database. LLM settings
+which database to connect to, `IRONCLAW_PROFILE` to apply built-in defaults
+before DB overlays, and `SECRETS_MASTER_KEY` to decrypt the
+secrets store; none of these can rely on database settings. LLM settings
 (`LLM_BACKEND`, base URLs, model names) are persisted to the DB via
 `persist_settings()` and loaded after connection. API keys are stored
 encrypted in the secrets DB.
@@ -501,6 +523,7 @@ Final step of the wizard:
 
 Bootstrap vars written to `~/.t3claw/.env` (only true chicken-and-egg vars
 that are needed before the DB is connected):
+- `IRONCLAW_PROFILE` (when quick first-run setup selected a profile)
 - `DATABASE_BACKEND` (always)
 - `DATABASE_URL` (if postgres)
 - `LIBSQL_PATH` (if libsql)
@@ -660,11 +683,11 @@ local browser.
    and the encrypted secrets store. Uses the OpenAI-compatible
    ChatCompletions API mode.
 
-2. **Custom callback URL:** Set `T3CLAW_OAUTH_CALLBACK_URL` to a
+2. **Custom callback URL:** Set `IRONCLAW_OAUTH_CALLBACK_URL` to a
    publicly accessible URL (e.g., via SSH tunnel or reverse proxy) that
    forwards to port 9876 on the server:
    ```bash
-   export T3CLAW_OAUTH_CALLBACK_URL=https://myserver.example.com:9876
+   export IRONCLAW_OAUTH_CALLBACK_URL=https://myserver.example.com:9876
    ```
 
 The `callback_url()` function in `src/auth/oauth.rs` checks this env var

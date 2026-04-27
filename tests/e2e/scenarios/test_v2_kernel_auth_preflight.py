@@ -34,8 +34,8 @@ from helpers import api_get, api_post, AUTH_TOKEN, wait_for_ready
 # ---------------------------------------------------------------------------
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_DB_TMPDIR = tempfile.TemporaryDirectory(prefix="ironclaw-preflight-e2e-")
-_HOME_TMPDIR = tempfile.TemporaryDirectory(prefix="ironclaw-preflight-e2e-home-")
+_DB_TMPDIR = tempfile.TemporaryDirectory(prefix="t3claw-preflight-e2e-")
+_HOME_TMPDIR = tempfile.TemporaryDirectory(prefix="t3claw-preflight-e2e-home-")
 
 
 def _forward_coverage_env(env: dict):
@@ -47,15 +47,23 @@ def _forward_coverage_env(env: dict):
 
 
 async def _stop_process(proc, sig=signal.SIGINT, timeout=5):
+    async def _drain_pipes():
+        try:
+            await asyncio.wait_for(proc.communicate(), timeout=1)
+        except (asyncio.TimeoutError, ValueError):
+            pass
+
     try:
         proc.send_signal(sig)
     except ProcessLookupError:
+        await _drain_pipes()
         return
     try:
         await asyncio.wait_for(proc.wait(), timeout=timeout)
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()
+    await _drain_pipes()
 
 
 # ---------------------------------------------------------------------------
@@ -160,8 +168,8 @@ async def mock_api():
 
 
 @pytest.fixture(scope="module")
-async def v2_server(ironclaw_binary, mock_llm_server, mock_api):
-    """Start ironclaw with ENGINE_V2=true and github skill for preflight testing."""
+async def v2_server(t3claw_binary, mock_llm_server, mock_api):
+    """Start t3claw with ENGINE_V2=true and github skill for preflight testing."""
     mock_api_url = mock_api["url"]
     mock_api_host = mock_api_url.replace("http://", "")
 
@@ -173,7 +181,7 @@ async def v2_server(ironclaw_binary, mock_llm_server, mock_api):
         )
 
     home_dir = _HOME_TMPDIR.name
-    skills_dir = os.path.join(home_dir, ".ironclaw", "skills")
+    skills_dir = os.path.join(home_dir, ".t3claw", "skills")
     os.makedirs(skills_dir, exist_ok=True)
     _write_github_skill(skills_dir, mock_api_host)
 
@@ -190,8 +198,8 @@ async def v2_server(ironclaw_binary, mock_llm_server, mock_api):
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": home_dir,
-        "IRONCLAW_BASE_DIR": os.path.join(home_dir, ".ironclaw"),
-        "RUST_LOG": "ironclaw=debug",
+        "IRONCLAW_BASE_DIR": os.path.join(home_dir, ".t3claw"),
+        "RUST_LOG": "t3claw=debug",
         "RUST_BACKTRACE": "1",
         "ENGINE_V2": "true",
         # Auto-approve tools so the preflight test doesn't get stuck on a
@@ -229,7 +237,7 @@ async def v2_server(ironclaw_binary, mock_llm_server, mock_api):
     stderr_fh = open(stderr_log, "w")
 
     proc = await asyncio.create_subprocess_exec(
-        ironclaw_binary, "--no-onboard",
+        t3claw_binary, "--no-onboard",
         stdin=asyncio.subprocess.DEVNULL,
         stdout=asyncio.subprocess.PIPE,
         stderr=stderr_fh,
@@ -250,7 +258,7 @@ async def v2_server(ironclaw_binary, mock_llm_server, mock_api):
             except asyncio.TimeoutError:
                 pass
         pytest.fail(
-            f"v2 ironclaw server failed to start on port {gateway_port}.\n"
+            f"v2 t3claw server failed to start on port {gateway_port}.\n"
             f"stderr: {stderr_bytes.decode('utf-8', errors='replace')}"
         )
     finally:
@@ -260,31 +268,52 @@ async def v2_server(ironclaw_binary, mock_llm_server, mock_api):
                 await _stop_process(proc, sig=signal.SIGTERM, timeout=5)
 
 
+@pytest.fixture(autouse=True)
+async def _pin_mock_github_api_url(mock_llm_server, mock_api):
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{mock_llm_server}/__mock/set_github_api_url",
+            json={"url": mock_api["url"]},
+        )
+        response.raise_for_status()
+    yield
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 async def _wait_for_auth_prompt(base_url, thread_id, *, timeout=45.0):
-    auth_indicators = ["paste your token", "token below", "authentication required for"]
+    """Poll until the thread is gate-paused for authentication via pending_gate."""
     for _ in range(int(timeout * 2)):
         r = await api_get(base_url, f"/api/chat/history?thread_id={thread_id}", timeout=15)
         r.raise_for_status()
-        turns = r.json().get("turns", [])
-        if turns:
-            last = (turns[-1].get("response") or "").lower()
-            if last and any(ind in last for ind in auth_indicators):
-                return r.json()
+        history = r.json()
+        pending = history.get("pending_gate")
+        if isinstance(pending, dict):
+            resume_kind = pending.get("resume_kind") or {}
+            gate_name = (pending.get("gate_name") or "").lower()
+            if gate_name == "authentication" or (
+                isinstance(resume_kind, dict) and "Authentication" in resume_kind
+            ):
+                return history
         await asyncio.sleep(0.5)
 
     last = ""
+    pending_snapshot = None
     try:
         r = await api_get(base_url, f"/api/chat/history?thread_id={thread_id}", timeout=15)
-        turns = r.json().get("turns", [])
+        payload = r.json()
+        turns = payload.get("turns", [])
         if turns:
             last = turns[-1].get("response") or "(None)"
+        pending_snapshot = payload.get("pending_gate")
     except Exception:
         pass
-    raise AssertionError(f"Timed out waiting for auth prompt. Last response: {last[:500]}")
+    raise AssertionError(
+        f"Timed out waiting for auth prompt. "
+        f"Last response: {last[:500]}. pending_gate: {pending_snapshot}"
+    )
 
 
 async def _wait_for_response(base_url, thread_id, *, timeout=45.0, expect_substring=None):

@@ -474,9 +474,16 @@ impl exports::near::agent::tool::Guest for GitHubTool {
     }
 
     fn description() -> String {
-        "GitHub integration for repositories, issues, pull requests, search, \
-         branches, file reads and writes, releases, and workflows. \
-         Authentication is handled via the 'github_token' secret injected by the host."
+        "GitHub integration: repositories, issues, pull requests, branches, files, \
+         releases, and workflows. Search has exactly three actions: \
+         `search_repositories`, `search_code`, and `search_issues_pull_requests` \
+         (the last one covers BOTH issues and PRs; there is no separate \
+         `search_issues` action). For \"my PRs\" or \"my issues\" across all repos, \
+         use `search_issues_pull_requests` with a query like \
+         `is:pr author:@me sort:updated-desc` (the `@me` placeholder resolves to \
+         the authenticated user). `list_pull_requests` and `list_issues` require \
+         `owner` + `repo` and only return results from a single repo. \
+         Authentication is handled via the `github_token` secret injected by the host."
             .to_string()
     }
 }
@@ -2151,7 +2158,7 @@ const SCHEMA: &str = r#"{
         {
             "properties": {
                 "action": { "const": "search_issues_pull_requests" },
-                "query": { "type": "string", "description": "GitHub issue/PR search query" },
+                "query": { "type": "string", "description": "GitHub search query covering both issues and PRs. Filter with is:pr or is:issue. Supports @me, repo:, org:, label:, etc." },
                 "page": { "type": "integer" },
                 "limit": { "type": "integer", "default": 30 },
                 "sort": { "type": "string" },
@@ -2444,7 +2451,7 @@ mod tests {
         let payload = serde_json::json!({
             "action": "created",
             "repository": {
-                "full_name": "nearai/t3claw",
+                "full_name": "nearai/ironclaw",
                 "owner": { "login": "nearai" }
             },
             "sender": { "login": "maintainer1" },
@@ -2459,7 +2466,7 @@ mod tests {
             github_enriched_payload("issue_comment", &headers, &payload, "issue.comment.created");
         assert_eq!(
             enriched.get("repository_name").and_then(|v| v.as_str()),
-            Some("nearai/t3claw")
+            Some("nearai/ironclaw")
         );
         // Original repository object is preserved
         assert!(enriched
@@ -2483,10 +2490,10 @@ mod tests {
             "action": "created",
             "issue": {
                 "number": 42,
-                "pull_request": { "url": "https://api.github.com/repos/nearai/t3claw/pulls/42" }
+                "pull_request": { "url": "https://api.github.com/repos/nearai/ironclaw/pulls/42" }
             },
             "comment": { "body": "LGTM", "user": { "login": "reviewer" } },
-            "repository": { "full_name": "nearai/t3claw", "owner": { "login": "nearai" } },
+            "repository": { "full_name": "nearai/ironclaw", "owner": { "login": "nearai" } },
             "sender": { "login": "reviewer" }
         });
 
@@ -2521,7 +2528,7 @@ mod tests {
             body_json: Some(serde_json::json!({
                 "action":"opened",
                 "issue":{"number":42},
-                "repository":{"full_name":"nearai/t3claw"},
+                "repository":{"full_name":"nearai/ironclaw"},
                 "sender":{"login":"maintainer1"}
             })),
         })

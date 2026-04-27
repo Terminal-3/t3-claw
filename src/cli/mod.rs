@@ -68,9 +68,18 @@ use clap::{ColorChoice, Parser, Subcommand};
 #[command(
     about = "Secure personal AI assistant that protects your data and expands its capabilities"
 )]
-#[command(
-    long_about = "T3Claw is a secure AI assistant. Use 't3claw <subcommand> --help' for details.\nExamples:\n  t3claw run  # Start the agent\n  t3claw config list  # List configs"
-)]
+#[command(long_about = "T3Claw is a secure AI assistant.\n\n\
+     Getting started:\n  \
+       t3claw onboard              # Interactive setup wizard (recommended for first run)\n  \
+       t3claw onboard --quick      # Quick setup: just pick a provider and model\n  \
+       t3claw models set-provider openai  # Switch to a specific provider\n  \
+       t3claw doctor               # Check your configuration\n\n\
+     Common commands:\n  \
+       t3claw run                  # Start the agent\n  \
+       t3claw config list          # View all settings\n  \
+       t3claw models status        # Show current provider and model\n  \
+       t3claw models list          # List available providers\n\n\
+     Use 't3claw <subcommand> --help' for details on any command.")]
 #[command(version)]
 #[command(color = ColorChoice::Auto)] // Enable auto-color for help (if the terminal supports it)
 pub struct Cli {
@@ -117,8 +126,16 @@ pub enum Command {
 
     /// Interactive onboarding wizard
     #[command(
-        about = "Run interactive setup wizard",
-        long_about = "Guides through initial configuration.\nExamples:\n  t3claw onboard --skip-auth  # Skip auth step\n  t3claw onboard --channels-only  # Reconfigure channels\n  t3claw onboard --provider-only  # Change LLM provider and model"
+        about = "Run interactive setup wizard (start here if new to T3Claw)",
+        long_about = "Guides you through configuring T3Claw step by step.\n\n\
+         This is the recommended way to set up your LLM provider, API keys,\n\
+         database, and channels. Run it again any time to change settings.\n\n\
+         Examples:\n  \
+           t3claw onboard                    # Full setup wizard\n  \
+           t3claw onboard --quick            # Quick: just provider + model\n  \
+           t3claw onboard --step provider    # Change only the LLM provider\n  \
+           t3claw onboard --step channels    # Reconfigure messaging channels\n  \
+           t3claw onboard --step provider,model  # Change provider and model"
     )]
     Onboard {
         /// Skip authentication (use existing session)
@@ -145,8 +162,16 @@ pub enum Command {
     /// Manage configuration settings
     #[command(
         subcommand,
-        about = "Manage app configs",
-        long_about = "Commands for listing, getting, and setting configurations.\nExample: t3claw config list"
+        about = "Manage app configuration settings",
+        long_about = "View and modify T3Claw settings (stored in database and config.toml).\n\n\
+         For LLM provider/model changes, use `t3claw models` instead.\n\n\
+         Examples:\n  \
+           t3claw config list              # List all settings\n  \
+           t3claw config list -f agent     # Filter by prefix\n  \
+           t3claw config get agent.name    # Get a specific value\n  \
+           t3claw config set agent.name my-bot  # Change a value\n  \
+           t3claw config init              # Generate config.toml\n  \
+           t3claw config path              # Show where settings are stored"
     )]
     Config(ConfigCommand),
 
@@ -243,14 +268,25 @@ pub enum Command {
     #[command(
         subcommand,
         about = "Manage LLM providers and models",
-        long_about = "List providers, view current configuration, and set active provider/model.\nExamples:\n  t3claw models list\n  t3claw models list openai --verbose\n  t3claw models status\n  t3claw models set gpt-4o\n  t3claw models set-provider anthropic --model claude-sonnet-4-6-20250514"
+        long_about = "List providers, view current configuration, and set active provider/model.\n\n\
+         Use this to switch between AI providers without re-running the full setup wizard.\n\n\
+         Examples:\n  \
+           t3claw models list                          # List all providers\n  \
+           t3claw models list openai --verbose         # Show details for OpenAI\n  \
+           t3claw models status                        # Show current provider/model\n  \
+           t3claw models set gpt-4o                    # Change model\n  \
+           t3claw models set-provider anthropic        # Switch to Anthropic\n  \
+           t3claw models set-provider ollama --model llama3  # Switch to local Ollama"
     )]
     Models(ModelsCommand),
 
     /// Probe external dependencies and validate configuration
     #[command(
-        about = "Run diagnostics",
-        long_about = "Checks dependencies and config validity.\nExample: t3claw doctor"
+        about = "Run diagnostics (check if everything is configured correctly)",
+        long_about = "Probes LLM provider, database, channels, and external dependencies.\n\
+         Surfaces misconfiguration before it causes problems at runtime.\n\n\
+         Run this if something is not working — it will tell you what to fix.\n\n\
+         Example:\n  t3claw doctor"
     )]
     Doctor,
 
@@ -286,8 +322,11 @@ pub enum Command {
 
     /// Authenticate with a provider (re-login)
     #[command(
-        about = "Authenticate with a provider",
-        long_about = "Re-authenticate with an LLM provider.\nExample: t3claw login --openai-codex"
+        about = "Authenticate with a provider (re-login)",
+        long_about = "Re-authenticate with an LLM provider.\n\n\
+         For most providers, set the API key environment variable instead.\n\
+         For interactive setup: `t3claw onboard --step provider`\n\n\
+         Example:\n  t3claw login --openai-codex"
     )]
     Login {
         /// Authenticate with OpenAI Codex (ChatGPT subscription)
@@ -308,7 +347,7 @@ pub enum Command {
         orchestrator_url: String,
 
         /// Maximum iterations before stopping.
-        #[arg(long, env = "T3CLAW_MAX_ITERATIONS", default_value = "50")]
+        #[arg(long, env = "IRONCLAW_MAX_ITERATIONS", default_value = "50")]
         max_iterations: u32,
     },
 

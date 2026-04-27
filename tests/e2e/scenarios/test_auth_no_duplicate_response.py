@@ -1,17 +1,17 @@
-"""E2E regression test: auth_required SSE event fires without a duplicate response event.
+"""E2E regression test: auth onboarding SSE fires without a duplicate response event.
 
-Bug fix regression: previously, when a tool triggered auth_required, the gateway sent
-BOTH an auth_required SSE event AND a response SSE event containing the same auth
+Bug fix regression: previously, when a tool triggered auth onboarding, the gateway sent
+BOTH an onboarding_state SSE event AND a response SSE event containing the same auth
 instructions. This caused the web UI to render the instructions twice — once as chat
 text and once inside the config card. After the fix (SubmissionResult::AuthPending),
-only auth_required is emitted; no response event accompanies it.
+only onboarding_state is emitted; no response event accompanies it.
 
 This test:
-1. Starts an ironclaw instance with a GitHub skill + mock API (returns 401 without auth)
+1. Starts an t3claw instance with a GitHub skill + mock API (returns 401 without auth)
 2. Connects to the SSE stream
-3. Sends a chat message that triggers the GitHub skill → HTTP 401 → auth_required
+3. Sends a chat message that triggers the GitHub skill → HTTP 401 → auth onboarding
 4. Collects SSE events and asserts:
-   - auth_required event IS present
+   - onboarding_state/auth_required event IS present
    - No response event contains auth instruction text (the regression)
 """
 
@@ -33,8 +33,8 @@ from helpers import api_get, api_post, AUTH_TOKEN, sse_stream, wait_for_ready
 
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
-_DB_TMPDIR = tempfile.TemporaryDirectory(prefix="ironclaw-auth-sse-e2e-")
-_HOME_TMPDIR = tempfile.TemporaryDirectory(prefix="ironclaw-auth-sse-e2e-home-")
+_DB_TMPDIR = tempfile.TemporaryDirectory(prefix="t3claw-auth-sse-e2e-")
+_HOME_TMPDIR = tempfile.TemporaryDirectory(prefix="t3claw-auth-sse-e2e-home-")
 
 
 def _forward_coverage_env(env: dict):
@@ -45,15 +45,23 @@ def _forward_coverage_env(env: dict):
 
 
 async def _stop_process(proc, sig=signal.SIGINT, timeout=5):
+    async def _drain_pipes():
+        try:
+            await asyncio.wait_for(proc.communicate(), timeout=1)
+        except (asyncio.TimeoutError, ValueError):
+            pass
+
     try:
         proc.send_signal(sig)
     except ProcessLookupError:
+        await _drain_pipes()
         return
     try:
         await asyncio.wait_for(proc.wait(), timeout=timeout)
     except asyncio.TimeoutError:
         proc.kill()
         await proc.wait()
+    await _drain_pipes()
 
 
 # ---------------------------------------------------------------------------
@@ -119,10 +127,10 @@ async def mock_api():
 
 
 @pytest.fixture(scope="module")
-async def auth_sse_server(ironclaw_binary, mock_llm_server, mock_api):
+async def auth_sse_server(t3claw_binary, mock_llm_server, mock_api):
     mock_api_host = mock_api.replace("http://", "")
     home_dir = _HOME_TMPDIR.name
-    skills_dir = os.path.join(home_dir, ".ironclaw", "skills")
+    skills_dir = os.path.join(home_dir, ".t3claw", "skills")
     os.makedirs(skills_dir, exist_ok=True)
     _write_skill(skills_dir, mock_api_host)
 
@@ -146,8 +154,8 @@ async def auth_sse_server(ironclaw_binary, mock_llm_server, mock_api):
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "HOME": home_dir,
-        "IRONCLAW_BASE_DIR": os.path.join(home_dir, ".ironclaw"),
-        "RUST_LOG": "ironclaw=debug",
+        "IRONCLAW_BASE_DIR": os.path.join(home_dir, ".t3claw"),
+        "RUST_LOG": "t3claw=debug",
         "RUST_BACKTRACE": "1",
         "ENGINE_V2": "true",
         "HTTP_ALLOW_LOCALHOST": "true",
@@ -176,7 +184,7 @@ async def auth_sse_server(ironclaw_binary, mock_llm_server, mock_api):
     _forward_coverage_env(env)
 
     proc = await asyncio.create_subprocess_exec(
-        ironclaw_binary, "--no-onboard",
+        t3claw_binary, "--no-onboard",
         stdin=asyncio.subprocess.DEVNULL,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -207,12 +215,23 @@ async def auth_sse_server(ironclaw_binary, mock_llm_server, mock_api):
                 await _stop_process(proc, sig=signal.SIGTERM, timeout=5)
 
 
+@pytest.fixture(autouse=True)
+async def _pin_mock_github_api_url(mock_llm_server, mock_api):
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{mock_llm_server}/__mock/set_github_api_url",
+            json={"url": mock_api},
+        )
+        response.raise_for_status()
+    yield
+
+
 # ---------------------------------------------------------------------------
 # Test
 # ---------------------------------------------------------------------------
 
 async def test_auth_required_sse_without_duplicate_response(auth_sse_server):
-    """When auth is triggered, SSE emits auth_required but NOT a response with instructions."""
+    """When auth is triggered, SSE emits onboarding_state but NOT a response with instructions."""
     base_url = auth_sse_server
 
     # Create thread
@@ -243,7 +262,7 @@ async def test_auth_required_sse_without_duplicate_response(auth_sse_server):
     sse_task = asyncio.create_task(collect_sse())
     await asyncio.sleep(1)  # Let SSE connect
 
-    # Send message that triggers github skill → HTTP 401 → auth_required
+    # Send message that triggers github skill → HTTP 401 → auth onboarding
     send_r = await api_post(
         base_url,
         "/api/chat/send",
@@ -255,13 +274,16 @@ async def test_auth_required_sse_without_duplicate_response(auth_sse_server):
     )
     assert send_r.status_code == 202
 
-    # Wait for auth_required, then collect for a grace period to catch any
+    # Wait for onboarding_state/auth_required, then collect for a grace period to catch any
     # trailing duplicate response events that might arrive shortly after.
     deadline = asyncio.get_running_loop().time() + 45
     auth_seen_at = None
     while asyncio.get_running_loop().time() < deadline:
-        event_types = [e.get("type") for e in collected_events]
-        if "auth_required" in event_types and auth_seen_at is None:
+        has_auth_event = any(
+            e.get("type") == "onboarding_state" and e.get("state") == "auth_required"
+            for e in collected_events
+        )
+        if has_auth_event and auth_seen_at is None:
             auth_seen_at = asyncio.get_running_loop().time()
         if auth_seen_at and (asyncio.get_running_loop().time() - auth_seen_at) > 3:
             break
@@ -273,10 +295,13 @@ async def test_auth_required_sse_without_duplicate_response(auth_sse_server):
     except asyncio.CancelledError:
         pass
 
-    # Assert auth_required event was emitted
-    event_types = [e.get("type") for e in collected_events]
-    assert "auth_required" in event_types, (
-        f"Expected auth_required in SSE events, got: {event_types}"
+    # Assert onboarding_state/auth_required event was emitted
+    has_auth_event = any(
+        e.get("type") == "onboarding_state" and e.get("state") == "auth_required"
+        for e in collected_events
+    )
+    assert has_auth_event, (
+        f"Expected onboarding_state/auth_required in SSE events, got: {collected_events}"
     )
 
     # Assert NO response event contains auth instruction text.
@@ -293,6 +318,6 @@ async def test_auth_required_sse_without_duplicate_response(auth_sse_server):
             assert indicator not in content, (
                 f"Bug regression: response SSE event contains auth instructions "
                 f"('{indicator}' found in: {content[:200]}). "
-                f"Auth instructions should only appear in the auth_required event, "
+                f"Auth instructions should only appear in the onboarding_state event, "
                 f"not as a duplicate text response."
             )

@@ -56,7 +56,7 @@ fn default_base_dir() -> PathBuf {
 /// Get the T3Claw base directory.
 ///
 /// Override with `T3CLAW_BASE_DIR` environment variable.
-/// Defaults to `~/.t3claw` (or `./.t3claw` if home directory cannot be determined).
+/// Defaults to `~/.t3claw` (or `./.ironclaw` if home directory cannot be determined).
 ///
 /// Thread-safe: the value is computed once and cached in a `LazyLock`.
 ///
@@ -252,6 +252,41 @@ pub fn upsert_bootstrap_vars_to(
     for (key, value) in vars {
         let escaped = value.replace('\\', "\\\\").replace('"', "\\\"");
         result.push_str(&format!("{}=\"{}\"\n", key, escaped));
+    }
+
+    std::fs::write(path, &result)?;
+    restrict_file_permissions(path)?;
+    Ok(())
+}
+
+/// Remove a single variable from `~/.t3claw/.env`, preserving other lines.
+///
+/// Used by the secrets safety-gate rollback in `AppBuilder::init_secrets`:
+/// when a freshly-generated `SECRETS_MASTER_KEY` turns out to conflict with
+/// an already-populated secrets store, we strip our write so the next
+/// startup re-triggers the safety gate instead of silently accepting the
+/// stray key.
+pub fn remove_bootstrap_var_to(path: &std::path::Path, key: &str) -> std::io::Result<()> {
+    let existing = match std::fs::read_to_string(path) {
+        Ok(contents) => contents,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(e),
+    };
+
+    let prefix = format!("{}=", key);
+    let mut result = String::new();
+    let mut removed = false;
+    for line in existing.lines() {
+        if line.starts_with(&prefix) {
+            removed = true;
+            continue;
+        }
+        result.push_str(line);
+        result.push('\n');
+    }
+
+    if !removed {
+        return Ok(());
     }
 
     std::fs::write(path, &result)?;
@@ -1238,11 +1273,7 @@ INJECTED="pwned"#;
     #[test]
     fn test_pid_lock_creates_parent_dirs() {
         let dir = tempdir().unwrap();
-        let pid_path = dir
-            .path()
-            .join("nested")
-            .join("deep")
-            .join("t3claw.pid");
+        let pid_path = dir.path().join("nested").join("deep").join("t3claw.pid");
 
         let lock = PidLock::acquire_at(pid_path.clone()).unwrap();
         assert!(pid_path.exists());
