@@ -38,7 +38,7 @@ RUN ln -s /app/shared /shared
 
 # Bake package versions into image labels so `docker inspect` and logs show exactly
 # what was installed — catches SDK/package mismatches without shelling into containers.
-RUN T3N_MCP_VER=$(node -e "process.stdout.write(require('/app/node_modules/@terminal-3/t3n-mcp/package.json').version)") && \
+RUN T3N_MCP_VER=$(node -e "process.stdout.write(require('/app/package.json').version)") && \
     T3N_SDK_VER=$(node -e "process.stdout.write(require('/app/node_modules/@terminal3/t3n-sdk/package.json').version)") && \
     echo "VERSIONS t3n-mcp=${T3N_MCP_VER} t3n-sdk=${T3N_SDK_VER}" && \
     printf 'T3N_MCP_VERSION=%s\nT3N_SDK_VERSION=%s\n' "${T3N_MCP_VER}" "${T3N_SDK_VER}" > /app/.versions
