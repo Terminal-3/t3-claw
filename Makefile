@@ -1,16 +1,19 @@
 # T3Claw – convenience wrapper around docker compose.
 #
 # Usage:
-#   make up        – start the full stack (detached)
-#   make build     – build / rebuild images without starting
-#   make rebuild   – build then restart (use after code changes)
-#   make down      – stop containers, keep volumes
-#   make wipe      – stop containers AND delete all volumes (full reset)
-#   make restart   – restart only the t3claw service
-#   make logs      – follow t3claw logs
-#   make shell     – open a shell inside the running container
-#   make status    – show running container state
-#   make help      – print this list
+#   make up              – start the full stack including t3n-mcp sidecar (detached)
+#   make build           – build / rebuild all images including t3n-mcp sidecar
+#   make rebuild         – build then restart (use after code changes)
+#   make up-no-t3n       – start stack without the t3n-mcp sidecar (no trinity needed)
+#   make build-no-t3n    – build without the t3n-mcp sidecar
+#   make rebuild-no-t3n  – build without sidecar then restart
+#   make down            – stop containers, keep volumes
+#   make wipe            – stop containers AND delete all volumes (full reset)
+#   make restart         – restart only the t3claw service
+#   make logs            – follow t3claw logs
+#   make shell           – open a shell inside the running container
+#   make status          – show running container state
+#   make help            – print this list
 
 # ── Docker socket GID detection ───────────────────────────────────────────────
 # The t3claw container needs to join the group that owns the Docker socket
@@ -28,10 +31,11 @@ DOCKER_GID := $(shell stat -c %g /var/run/docker.sock 2>/dev/null \
                     || echo 0)
 export DOCKER_GID
 
-COMPOSE := docker compose --profile app
+COMPOSE     := docker compose --profile app --profile mcp
+COMPOSE_CORE := docker compose --profile app
 SERVICE := t3claw
 
-.PHONY: up build rebuild build-sidecar pull-sidecar down wipe restart logs shell status help
+.PHONY: up build rebuild up-no-t3n build-no-t3n rebuild-no-t3n build-sidecar pull-sidecar down wipe restart logs shell status help
 
 ## Start the full stack (detached). Builds images if they don't exist yet.
 up:
@@ -46,6 +50,22 @@ build:
 ## Build images then restart the stack — use this after code changes.
 rebuild: build
 	$(COMPOSE) up -d
+
+# TODO: remove the three -no-t3n targets below once the t3n-mcp sidecar image
+#   is reliably published to GHCR and `make pull-sidecar` is the standard VPS flow.
+## Start the stack without the t3n-mcp sidecar (no trinity repo needed).
+up-no-t3n:
+	@echo "Using DOCKER_GID=$(DOCKER_GID)"
+	$(COMPOSE_CORE) up -d
+
+## Build without the t3n-mcp sidecar (no trinity repo needed).
+build-no-t3n:
+	@echo "Using DOCKER_GID=$(DOCKER_GID)"
+	$(COMPOSE_CORE) build
+
+## Build without sidecar then restart.
+rebuild-no-t3n: build-no-t3n
+	$(COMPOSE_CORE) up -d
 
 ## Build the t3n-mcp-sidecar image locally (requires NPM_GITHUB_TOKEN env var).
 ## Only needed when you want to test sidecar changes before they are published and
