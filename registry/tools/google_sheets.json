@@ -13,7 +13,7 @@
   },
   "artifacts": {
     "wasm32-wasip2": {
-      "url": "https://github.com/terminal-3/bastion-claw/releases/download/bastionclaw-v0.1.0/tool-google_sheets-0.1.0-wasm32-wasip2.tar.gz",
+      "url": "https://github.com/terminal-3/t3-claw/releases/download/t3claw-v0.1.0/tool-google_sheets-0.1.0-wasm32-wasip2.tar.gz",
       "sha256": "3260368409d69fae5b5f4aaa06f4eb5a9d218c3d56ae366e625c348cd5c4d123"
     }
   },

@@ -1,9 +1,9 @@
 ---
 title: Security
-description: BastionClaw's defense-in-depth security architecture
+description: T3Claw's defense-in-depth security architecture
 ---
 
-BastionClaw is built from the ground up with security as a core principle. We use a defense-in-depth architecture with multiple independent layers of protection to keep your data safe while enabling powerful agent capabilities.
+T3Claw is built from the ground up with security as a core principle. We use a defense-in-depth architecture with multiple independent layers of protection to keep your data safe while enabling powerful agent capabilities.
 
 <CardGroup cols={2}>
   <Card title="Encrypted at rest" icon="lock">
@@ -27,7 +27,7 @@ BastionClaw is built from the ground up with security as a core principle. We us
 
 ## Data Flow
 
-The security architecture illustrates BastionClaw's **defense in depth** approach with four independent protection layers that data flows through before reaching the LLM and external services.
+The security architecture illustrates T3Claw's **defense in depth** approach with four independent protection layers that data flows through before reaching the LLM and external services.
 
 
 ![Data Flow Diagram](/images/security/data-flow.png)
@@ -50,7 +50,7 @@ Multiple layers protect against prompt injection:
 
 ## Leak Detector
 
-BastionClaw scans all input going to the LLM - be that user input or the result of running a tool - for potential leaks of sensitive information.
+T3Claw scans all input going to the LLM - be that user input or the result of running a tool - for potential leaks of sensitive information.
 
 The leak detector uses a combination of regex patterns and heuristic checks to identify potential secrets:
 

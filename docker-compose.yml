@@ -16,18 +16,18 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_DB: bastionclaw
-      POSTGRES_USER: bastionclaw
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bastionclaw}  # dev-only; set POSTGRES_PASSWORD in .env for any real deployment
+      POSTGRES_DB: t3claw
+      POSTGRES_USER: t3claw
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-t3claw}  # dev-only; set POSTGRES_PASSWORD in .env for any real deployment
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bastionclaw"]
+      test: ["CMD-SHELL", "pg_isready -U t3claw"]
       interval: 5s
       timeout: 3s
       retries: 5
 
-  bastionclaw:
+  t3claw:
     profiles: ["app"]
     build:
       context: .
@@ -38,7 +38,7 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:3000:3000"
-    # The bastionclaw process (uid 1000) needs read-write access to the Docker
+    # The t3claw process (uid 1000) needs read-write access to the Docker
     # socket.  The socket is owned by the group whose GID matches the host's
     # docker group.  We add that GID to the container's supplementary groups so
     # the process can connect without running as root.
@@ -53,13 +53,13 @@ services:
       - .env
     environment:
       # Overrides: these take precedence over anything in .env
-      DATABASE_URL: postgres://bastionclaw:${POSTGRES_PASSWORD:-bastionclaw}@postgres:5432/bastionclaw
+      DATABASE_URL: postgres://t3claw:${POSTGRES_PASSWORD:-t3claw}@postgres:5432/t3claw
       GATEWAY_ENABLED: "true"
       GATEWAY_HOST: "0.0.0.0"
       GATEWAY_PORT: "3000"
       CLI_ENABLED: "false"
       ONBOARD_COMPLETED: "true"
-      BASTIONCLAW_IN_DOCKER: "true"
+      T3CLAW_IN_DOCKER: "true"
       # Multi-tenancy: set AGENT_MULTI_TENANT=true in .env to enable per-user isolation
       AGENT_MULTI_TENANT: ${AGENT_MULTI_TENANT:-false}
       # Sandbox: containers for full_job routines, Claude Code bridge, ACP agents.
@@ -79,7 +79,7 @@ services:
       #   point DOCKER_HOST here at the proxy socket instead of the raw daemon,
       #   e.g. DOCKER_HOST: "unix:///var/run/docker-proxy.sock"
     volumes:
-      - bastionclaw_data:/home/bastionclaw/.bastionclaw
+      - t3claw_data:/home/t3claw/.t3claw
       - t3n_mcp_socket:/var/run/t3n-mcp
       # Grants the container access to the host Docker daemon so sandbox jobs
       # can spawn ephemeral worker containers (full_job routines, Claude Code
@@ -88,7 +88,7 @@ services:
       #
       # TODO(security): Replace this raw socket mount with a docker-socket-proxy
       #   (e.g. Tecnativa/docker-socket-proxy) that allowlists only the API
-      #   calls BastionClaw actually needs (containers/create, start, stop,
+      #   calls T3Claw actually needs (containers/create, start, stop,
       #   inspect, logs — at minimum).  The raw socket gives any process inside
       #   the container full Docker daemon access, which is a privilege-
       #   escalation path if the container is ever compromised.
@@ -99,7 +99,7 @@ services:
     profiles: ["app"]
     user: "0:0"
     build:
-      # The main context is bastion-claw (for the bridge script). Trinity
+      # The main context is t3-claw (for the bridge script). Trinity
       # sources come in as named additional contexts so we can `COPY
       # --from=<name> ...` in the Dockerfile. Check out ../trinity to
       # whichever commit you want — that's the version that gets built.
@@ -134,6 +134,6 @@ services:
 
 volumes:
   pgdata:
-  bastionclaw_data:
+  t3claw_data:
   t3n_mcp_socket:
 

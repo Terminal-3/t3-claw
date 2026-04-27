@@ -15,7 +15,7 @@ use crate::config::SafetyConfig;
 use crate::db::libsql::LibSqlBackend;
 use crate::tools::ToolRegistry;
 use crate::tools::dispatch::ToolDispatcher;
-use bastionclaw_safety::SafetyLayer;
+use t3claw_safety::SafetyLayer;
 
 fn test_gateway() -> GatewayChannel {
     GatewayChannel::new(

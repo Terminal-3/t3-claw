@@ -10,7 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use async_trait::async_trait;
 use glob::{MatchOptions, glob_with};
 
-use bastionclaw_safety::sensitive_paths::is_sensitive_path;
+use t3claw_safety::sensitive_paths::is_sensitive_path;
 
 use crate::context::JobContext;
 use crate::tools::builtin::path_utils::{DEFAULT_EXCLUDED_DIRS, validate_path};

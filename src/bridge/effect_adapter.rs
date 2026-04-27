@@ -1,6 +1,6 @@
-//! Effect bridge adapter — wraps `ToolRegistry` + `SafetyLayer` as `bastionclaw_engine::EffectExecutor`.
+//! Effect bridge adapter — wraps `ToolRegistry` + `SafetyLayer` as `t3claw_engine::EffectExecutor`.
 //!
-//! This is the security boundary between the engine and existing BastionClaw
+//! This is the security boundary between the engine and existing T3Claw
 //! infrastructure. All v1 security controls are enforced here:
 //! - Tool approval (requires_approval, auto-approve tracking)
 //! - Output sanitization (sanitize_tool_output + wrap_for_llm)
@@ -15,7 +15,7 @@ use std::time::Instant;
 use tokio::sync::RwLock;
 use tracing::debug;
 
-use bastionclaw_engine::{
+use t3claw_engine::{
     ActionDef, ActionResult, CapabilityLease, EffectExecutor, EngineError, ThreadExecutionContext,
 };
 
@@ -27,7 +27,7 @@ use crate::hooks::{HookEvent, HookOutcome, HookRegistry};
 use crate::tools::permissions::{PermissionState, effective_permission};
 use crate::tools::rate_limiter::RateLimiter;
 use crate::tools::{ApprovalRequirement, ToolRegistry};
-use bastionclaw_safety::SafetyLayer;
+use t3claw_safety::SafetyLayer;
 
 /// Wraps the existing tool pipeline to implement the engine's `EffectExecutor`.
 ///
@@ -46,7 +46,7 @@ pub struct EffectBridgeAdapter {
     /// Per-user per-tool sliding window rate limiter.
     rate_limiter: RateLimiter,
     /// Mission manager for handling mission_* function calls.
-    mission_manager: RwLock<Option<Arc<bastionclaw_engine::MissionManager>>>,
+    mission_manager: RwLock<Option<Arc<t3claw_engine::MissionManager>>>,
     /// Centralized auth manager for pre-flight credential checks.
     auth_manager: RwLock<Option<Arc<AuthManager>>>,
     /// Optional HTTP interceptor for trace recording / replay. When set, every
@@ -118,12 +118,12 @@ impl EffectBridgeAdapter {
     }
 
     /// Set the mission manager (called after engine init).
-    pub async fn set_mission_manager(&self, mgr: Arc<bastionclaw_engine::MissionManager>) {
+    pub async fn set_mission_manager(&self, mgr: Arc<t3claw_engine::MissionManager>) {
         *self.mission_manager.write().await = Some(mgr);
     }
 
     /// Get the mission manager if available.
-    pub async fn mission_manager(&self) -> Option<Arc<bastionclaw_engine::MissionManager>> {
+    pub async fn mission_manager(&self) -> Option<Arc<t3claw_engine::MissionManager>> {
         self.mission_manager.read().await.clone()
     }
 
@@ -132,7 +132,7 @@ impl EffectBridgeAdapter {
         action_name: &str,
         call_id: Option<&str>,
         parameters: serde_json::Value,
-        resume_kind: bastionclaw_engine::ResumeKind,
+        resume_kind: t3claw_engine::ResumeKind,
         resume_output: Option<serde_json::Value>,
     ) -> EngineError {
         EngineError::GatePaused {
@@ -160,7 +160,7 @@ impl EffectBridgeAdapter {
                 action_name,
                 context.current_call_id.as_deref(),
                 parameters,
-                bastionclaw_engine::ResumeKind::Authentication {
+                t3claw_engine::ResumeKind::Authentication {
                     credential_name: name.to_string(),
                     instructions: output_value
                         .get("instructions")
@@ -232,7 +232,7 @@ impl EffectBridgeAdapter {
                 let timezone = params
                     .get("timezone")
                     .and_then(|v| v.as_str())
-                    .and_then(bastionclaw_engine::ValidTimezone::parse)
+                    .and_then(t3claw_engine::ValidTimezone::parse)
                     .or(context.user_timezone);
                 // notify_channels: explicit array, or default to current channel
                 let notify_channels =
@@ -334,7 +334,7 @@ impl EffectBridgeAdapter {
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 let id = uuid::Uuid::parse_str(id_str)
-                    .map(bastionclaw_engine::MissionId)
+                    .map(t3claw_engine::MissionId)
                     .map_err(|e| EngineError::Effect {
                         reason: format!("invalid mission id: {e}"),
                     });
@@ -358,7 +358,7 @@ impl EffectBridgeAdapter {
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 let id = uuid::Uuid::parse_str(id_str)
-                    .map(bastionclaw_engine::MissionId)
+                    .map(t3claw_engine::MissionId)
                     .map_err(|e| EngineError::Effect {
                         reason: format!("invalid mission id: {e}"),
                     });
@@ -385,7 +385,7 @@ impl EffectBridgeAdapter {
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 let id = uuid::Uuid::parse_str(id_str)
-                    .map(bastionclaw_engine::MissionId)
+                    .map(t3claw_engine::MissionId)
                     .map_err(|e| EngineError::Effect {
                         reason: format!("invalid mission id: {e}"),
                     });
@@ -404,13 +404,13 @@ impl EffectBridgeAdapter {
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 let id = uuid::Uuid::parse_str(id_str)
-                    .map(bastionclaw_engine::MissionId)
+                    .map(t3claw_engine::MissionId)
                     .map_err(|e| EngineError::Effect {
                         reason: format!("invalid mission id: {e}"),
                     });
                 match id {
                     Ok(id) => {
-                        let mut updates = bastionclaw_engine::MissionUpdate::default();
+                        let mut updates = t3claw_engine::MissionUpdate::default();
                         if let Some(name) = params.get("name").and_then(|v| v.as_str()) {
                             updates.name = Some(name.to_string());
                         }
@@ -421,7 +421,7 @@ impl EffectBridgeAdapter {
                             let tz = params
                                 .get("timezone")
                                 .and_then(|v| v.as_str())
-                                .and_then(bastionclaw_engine::ValidTimezone::parse)
+                                .and_then(t3claw_engine::ValidTimezone::parse)
                                 .or(context.user_timezone);
                             updates.cadence = Some(parse_cadence(cadence, tz));
                         }
@@ -604,7 +604,7 @@ impl EffectBridgeAdapter {
                         action_name,
                         context.current_call_id.as_deref(),
                         parameters,
-                        bastionclaw_engine::ResumeKind::Authentication {
+                        t3claw_engine::ResumeKind::Authentication {
                             credential_name,
                             instructions,
                             auth_url: sanitize_auth_url(auth_url.as_deref()),
@@ -674,7 +674,7 @@ impl EffectBridgeAdapter {
                         action_name,
                         context.current_call_id.as_deref(),
                         parameters,
-                        bastionclaw_engine::ResumeKind::Authentication {
+                        t3claw_engine::ResumeKind::Authentication {
                             credential_name: cred.credential_name.clone(),
                             instructions: cred.setup_instructions.clone().unwrap_or_else(|| {
                                 format!("Provide your {} token", cred.credential_name)
@@ -715,7 +715,7 @@ impl EffectBridgeAdapter {
                         action_name,
                         context.current_call_id.as_deref(),
                         parameters,
-                        bastionclaw_engine::ResumeKind::Authentication {
+                        t3claw_engine::ResumeKind::Authentication {
                             credential_name,
                             instructions: instructions.unwrap_or_else(|| {
                                 format!("Authenticate '{}' to continue.", provider_extension)
@@ -788,7 +788,7 @@ impl EffectBridgeAdapter {
                             action_name,
                             context.current_call_id.as_deref(),
                             parameters,
-                            bastionclaw_engine::ResumeKind::Approval { allow_always: true },
+                            t3claw_engine::ResumeKind::Approval { allow_always: true },
                             None,
                         ));
                     }
@@ -892,7 +892,7 @@ impl EffectBridgeAdapter {
                                 action_name,
                                 context.current_call_id.as_deref(),
                                 parameters,
-                                bastionclaw_engine::ResumeKind::Authentication {
+                                t3claw_engine::ResumeKind::Authentication {
                                     credential_name: credential_name.clone(),
                                     instructions: instructions.unwrap_or_else(|| {
                                         auth_mgr.get_setup_instructions_or_default(&credential_name)
@@ -966,7 +966,7 @@ impl EffectBridgeAdapter {
                         action_name,
                         context.current_call_id.as_deref(),
                         parameters,
-                        bastionclaw_engine::ResumeKind::Authentication {
+                        t3claw_engine::ResumeKind::Authentication {
                             credential_name: cred_name.clone(),
                             instructions: format!("Provide your {} token", cred_name),
                             auth_url: None,
@@ -1089,9 +1089,9 @@ impl EffectExecutor for EffectBridgeAdapter {
 /// from `ThreadExecutionContext::user_timezone`.
 fn parse_cadence(
     s: &str,
-    timezone: Option<bastionclaw_engine::ValidTimezone>,
-) -> bastionclaw_engine::types::mission::MissionCadence {
-    use bastionclaw_engine::types::mission::MissionCadence;
+    timezone: Option<t3claw_engine::ValidTimezone>,
+) -> t3claw_engine::types::mission::MissionCadence {
+    use t3claw_engine::types::mission::MissionCadence;
     let trimmed = s.trim().to_lowercase();
     // Check explicit prefixes BEFORE the cron heuristic. Otherwise an input
     // like `event: a b c d e` matches `split_whitespace().count() >= 5` and
@@ -1143,7 +1143,7 @@ fn parse_cadence(
 struct RoutineMissionAlias {
     mission_action: &'static str,
     mission_params: serde_json::Value,
-    post_create_update: Option<bastionclaw_engine::MissionUpdate>,
+    post_create_update: Option<t3claw_engine::MissionUpdate>,
 }
 
 /// Translate a `routine_*` action call into mission_* parameters. Returns
@@ -1181,7 +1181,7 @@ fn routine_to_mission_alias(
             let cadence = parse_routine_request(params);
             // We carry cadence + the new fields via the update path so we
             // don't need to change mission_create's flat-args contract.
-            let mut updates = bastionclaw_engine::MissionUpdate {
+            let mut updates = t3claw_engine::MissionUpdate {
                 description: description.clone(),
                 ..Default::default()
             };
@@ -1393,8 +1393,8 @@ fn routine_to_mission_alias(
 /// Falls back to `Manual` when the kind is missing or unrecognized.
 fn parse_routine_request(
     params: &serde_json::Value,
-) -> bastionclaw_engine::types::mission::MissionCadence {
-    use bastionclaw_engine::types::mission::MissionCadence;
+) -> t3claw_engine::types::mission::MissionCadence {
+    use t3claw_engine::types::mission::MissionCadence;
 
     let request = params.get("request");
     let kind = request
@@ -1417,7 +1417,7 @@ fn parse_routine_request(
             timezone: request
                 .and_then(|r| r.get("timezone"))
                 .and_then(|v| v.as_str())
-                .and_then(bastionclaw_common::ValidTimezone::parse),
+                .and_then(t3claw_common::ValidTimezone::parse),
         },
         "message_event" => MissionCadence::OnEvent {
             event_pattern: request
@@ -1474,9 +1474,9 @@ fn parse_routine_request(
 /// are lossy through this path; callers that need full fidelity should use
 /// `update_mission` with a typed `MissionUpdate` instead.
 fn cadence_to_round_trip_string(
-    cadence: &bastionclaw_engine::types::mission::MissionCadence,
+    cadence: &t3claw_engine::types::mission::MissionCadence,
 ) -> String {
-    use bastionclaw_engine::types::mission::MissionCadence;
+    use t3claw_engine::types::mission::MissionCadence;
     match cadence {
         MissionCadence::Cron { expression, .. } => expression.clone(),
         MissionCadence::OnEvent { event_pattern, .. } => format!("event:{event_pattern}"),
@@ -1541,7 +1541,7 @@ mod tests {
     use async_trait::async_trait;
 
     fn make_adapter() -> EffectBridgeAdapter {
-        use bastionclaw_safety::SafetyConfig;
+        use t3claw_safety::SafetyConfig;
         let config = SafetyConfig {
             max_output_length: 10_000,
             injection_check_enabled: false,
@@ -1594,7 +1594,7 @@ mod tests {
 
     #[tokio::test]
     async fn global_auto_approve_skips_unless_auto_approved_gates() {
-        use bastionclaw_safety::SafetyConfig;
+        use t3claw_safety::SafetyConfig;
 
         let tools = Arc::new(ToolRegistry::new());
         tools.register(Arc::new(ApprovalTestTool)).await;
@@ -1615,7 +1615,7 @@ mod tests {
                 serde_json::json!({"value": "x"}),
                 &lease(),
                 &exec_ctx(
-                    bastionclaw_engine::ThreadId::new(),
+                    t3claw_engine::ThreadId::new(),
                     Some("call_global_auto_approve"),
                 ),
             )
@@ -1627,7 +1627,7 @@ mod tests {
 
     #[tokio::test]
     async fn global_auto_approve_does_not_bypass_always_gates() {
-        use bastionclaw_safety::SafetyConfig;
+        use t3claw_safety::SafetyConfig;
 
         let tools = Arc::new(ToolRegistry::new());
         tools.register(Arc::new(AlwaysApprovalTestTool)).await;
@@ -1648,7 +1648,7 @@ mod tests {
                 serde_json::json!({"value": "x"}),
                 &lease(),
                 &exec_ctx(
-                    bastionclaw_engine::ThreadId::new(),
+                    t3claw_engine::ThreadId::new(),
                     Some("call_global_auto_approve_always"),
                 ),
             )
@@ -1731,12 +1731,12 @@ mod tests {
         }
     }
 
-    fn lease() -> bastionclaw_engine::CapabilityLease {
-        bastionclaw_engine::CapabilityLease {
-            id: bastionclaw_engine::types::capability::LeaseId::new(),
-            thread_id: bastionclaw_engine::ThreadId::new(),
+    fn lease() -> t3claw_engine::CapabilityLease {
+        t3claw_engine::CapabilityLease {
+            id: t3claw_engine::types::capability::LeaseId::new(),
+            thread_id: t3claw_engine::ThreadId::new(),
             capability_name: "tools".into(),
-            granted_actions: bastionclaw_engine::GrantedActions::All,
+            granted_actions: t3claw_engine::GrantedActions::All,
             granted_at: chrono::Utc::now(),
             expires_at: None,
             max_uses: None,
@@ -1747,15 +1747,15 @@ mod tests {
     }
 
     fn exec_ctx(
-        thread_id: bastionclaw_engine::ThreadId,
+        thread_id: t3claw_engine::ThreadId,
         call_id: Option<&str>,
-    ) -> bastionclaw_engine::ThreadExecutionContext {
-        bastionclaw_engine::ThreadExecutionContext {
+    ) -> t3claw_engine::ThreadExecutionContext {
+        t3claw_engine::ThreadExecutionContext {
             thread_id,
-            thread_type: bastionclaw_engine::types::thread::ThreadType::Foreground,
-            project_id: bastionclaw_engine::ProjectId::new(),
+            thread_type: t3claw_engine::types::thread::ThreadType::Foreground,
+            project_id: t3claw_engine::ProjectId::new(),
             user_id: "test_user".to_string(),
-            step_id: bastionclaw_engine::StepId::new(),
+            step_id: t3claw_engine::StepId::new(),
             current_call_id: call_id.map(str::to_string),
             source_channel: None,
             user_timezone: None,
@@ -1764,7 +1764,7 @@ mod tests {
 
     #[tokio::test]
     async fn need_approval_preserves_current_call_id() {
-        use bastionclaw_safety::SafetyConfig;
+        use t3claw_safety::SafetyConfig;
 
         let tools = Arc::new(ToolRegistry::new());
         tools.register(Arc::new(ApprovalTestTool)).await;
@@ -1778,7 +1778,7 @@ mod tests {
             Arc::new(HookRegistry::default()),
         );
 
-        let thread_id = bastionclaw_engine::ThreadId::new();
+        let thread_id = t3claw_engine::ThreadId::new();
         let result = adapter
             .execute_action(
                 "approval_test",
@@ -1801,7 +1801,7 @@ mod tests {
 
     #[tokio::test]
     async fn resolved_pending_action_bypasses_approval_once() {
-        use bastionclaw_safety::SafetyConfig;
+        use t3claw_safety::SafetyConfig;
 
         let tools = Arc::new(ToolRegistry::new());
         tools.register(Arc::new(ApprovalTestTool)).await;
@@ -1815,7 +1815,7 @@ mod tests {
             Arc::new(HookRegistry::default()),
         );
 
-        let thread_id = bastionclaw_engine::ThreadId::new();
+        let thread_id = t3claw_engine::ThreadId::new();
         let first = adapter
             .execute_action(
                 "approval_test",
@@ -1849,7 +1849,7 @@ mod tests {
         assert!(matches!(third, Err(EngineError::GatePaused { .. })));
     }
 
-    /// Regression for nearai/bastionclaw#2206: a `tool_activate`/`tool_auth`
+    /// Regression for nearai/t3claw#2206: a `tool_activate`/`tool_auth`
     /// extension result containing a non-https `auth_url` (e.g.
     /// `javascript:alert(1)`) must be sanitized to `None` before it reaches
     /// `ResumeKind::Authentication` and is forwarded onto the gate stream.
@@ -1860,7 +1860,7 @@ mod tests {
     /// rule in `.claude/rules/testing.md`.
     #[tokio::test]
     async fn auth_gate_strips_non_https_auth_url_from_tool_activate_output() {
-        use bastionclaw_safety::SafetyConfig;
+        use t3claw_safety::SafetyConfig;
 
         struct OAuthPromptTool;
 
@@ -1917,7 +1917,7 @@ mod tests {
                 serde_json::json!({}),
                 &lease(),
                 &exec_ctx(
-                    bastionclaw_engine::ThreadId::new(),
+                    t3claw_engine::ThreadId::new(),
                     Some("call_auth_url_sanitize"),
                 ),
             )
@@ -1931,7 +1931,7 @@ mod tests {
             }) => {
                 assert_eq!(gate_name, "authentication");
                 match *resume_kind {
-                    bastionclaw_engine::ResumeKind::Authentication { auth_url, .. } => {
+                    t3claw_engine::ResumeKind::Authentication { auth_url, .. } => {
                         assert!(
                             auth_url.is_none(),
                             "javascript: auth_url must be stripped before reaching ResumeKind, got {auth_url:?}"
@@ -1950,7 +1950,7 @@ mod tests {
     /// flow through unmodified. Guards against an over-eager sanitizer.
     #[tokio::test]
     async fn auth_gate_preserves_https_auth_url_from_tool_activate_output() {
-        use bastionclaw_safety::SafetyConfig;
+        use t3claw_safety::SafetyConfig;
 
         struct OAuthPromptTool;
 
@@ -2007,7 +2007,7 @@ mod tests {
                 serde_json::json!({}),
                 &lease(),
                 &exec_ctx(
-                    bastionclaw_engine::ThreadId::new(),
+                    t3claw_engine::ThreadId::new(),
                     Some("call_auth_url_passthrough"),
                 ),
             )
@@ -2015,7 +2015,7 @@ mod tests {
 
         match result {
             Err(EngineError::GatePaused { resume_kind, .. }) => match *resume_kind {
-                bastionclaw_engine::ResumeKind::Authentication { auth_url, .. } => {
+                t3claw_engine::ResumeKind::Authentication { auth_url, .. } => {
                     assert_eq!(
                         auth_url.as_deref(),
                         Some("https://accounts.google.com/o/oauth2/auth"),
@@ -2099,7 +2099,7 @@ mod tests {
         assert_eq!(updates.max_concurrent, Some(1));
         assert_eq!(updates.dedup_window_secs, Some(60));
         match updates.cadence.as_ref().expect("cadence in updates") {
-            bastionclaw_engine::types::mission::MissionCadence::Cron {
+            t3claw_engine::types::mission::MissionCadence::Cron {
                 expression,
                 timezone,
             } => {
@@ -2128,7 +2128,7 @@ mod tests {
             routine_to_mission_alias("routine_create", &params).expect("alias for message_event");
         let updates = alias.post_create_update.expect("updates");
         match updates.cadence.as_ref().expect("cadence") {
-            bastionclaw_engine::types::mission::MissionCadence::OnEvent {
+            t3claw_engine::types::mission::MissionCadence::OnEvent {
                 event_pattern,
                 channel,
             } => {
@@ -2149,7 +2149,7 @@ mod tests {
                 "source": "github",
                 "event_type": "issue.opened",
                 "filters": {
-                    "repository_name": "nearai/bastionclaw",
+                    "repository_name": "nearai/t3claw",
                     "sender_login": "ilblackdragon",
                 },
             },
@@ -2157,7 +2157,7 @@ mod tests {
         let alias = routine_to_mission_alias("routine_create", &params).expect("alias");
         let updates = alias.post_create_update.expect("updates");
         match updates.cadence.as_ref().expect("cadence") {
-            bastionclaw_engine::types::mission::MissionCadence::OnSystemEvent {
+            t3claw_engine::types::mission::MissionCadence::OnSystemEvent {
                 source,
                 event_type,
                 filters,
@@ -2167,7 +2167,7 @@ mod tests {
                 assert_eq!(filters.len(), 2);
                 assert_eq!(
                     filters.get("repository_name").and_then(|v| v.as_str()),
-                    Some("nearai/bastionclaw")
+                    Some("nearai/t3claw")
                 );
                 assert_eq!(
                     filters.get("sender_login").and_then(|v| v.as_str()),
@@ -2192,7 +2192,7 @@ mod tests {
         let alias = routine_to_mission_alias("routine_create", &params).expect("alias");
         let updates = alias.post_create_update.expect("updates");
         match updates.cadence.as_ref().expect("cadence") {
-            bastionclaw_engine::types::mission::MissionCadence::Webhook { path, secret } => {
+            t3claw_engine::types::mission::MissionCadence::Webhook { path, secret } => {
                 assert_eq!(path, "github");
                 assert_eq!(secret.as_deref(), Some("shh"));
             }
@@ -2208,7 +2208,7 @@ mod tests {
         // misclassified as a Cron cadence with a parse error downstream.
         let cadence = parse_cadence("event: a b c d e", None);
         match cadence {
-            bastionclaw_engine::types::mission::MissionCadence::OnEvent {
+            t3claw_engine::types::mission::MissionCadence::OnEvent {
                 event_pattern, ..
             } => {
                 assert_eq!(event_pattern, "a b c d e");
@@ -2220,14 +2220,14 @@ mod tests {
         let cadence = parse_cadence("webhook: a b c d e", None);
         assert!(matches!(
             cadence,
-            bastionclaw_engine::types::mission::MissionCadence::Webhook { .. }
+            t3claw_engine::types::mission::MissionCadence::Webhook { .. }
         ));
 
         // Sanity: a real cron expression still parses as cron.
         let cadence = parse_cadence("0 9 * * *", None);
         assert!(matches!(
             cadence,
-            bastionclaw_engine::types::mission::MissionCadence::Cron { .. }
+            t3claw_engine::types::mission::MissionCadence::Cron { .. }
         ));
     }
 
@@ -2240,7 +2240,7 @@ mod tests {
         let alias = routine_to_mission_alias("routine_create", &params).expect("alias");
         let updates = alias.post_create_update.expect("updates");
         match updates.cadence.as_ref().expect("cadence") {
-            bastionclaw_engine::types::mission::MissionCadence::Manual => {}
+            t3claw_engine::types::mission::MissionCadence::Manual => {}
             other => panic!("expected Manual cadence, got {:?}", other),
         }
     }
@@ -2427,7 +2427,7 @@ mod tests {
             Arc::new(ToolRegistry::new().with_credentials(Arc::clone(&cred_reg), secrets.clone()));
         tools.register_builtin_tools();
 
-        use bastionclaw_safety::SafetyConfig;
+        use t3claw_safety::SafetyConfig;
         let adapter = EffectBridgeAdapter::new(
             Arc::clone(&tools),
             Arc::new(SafetyLayer::new(&SafetyConfig {
@@ -2458,14 +2458,14 @@ mod tests {
 
         // Call execute_action with http tool params pointing to api.github.com
         let params = serde_json::json!({
-            "url": "https://api.github.com/repos/nearai/bastionclaw/issues",
+            "url": "https://api.github.com/repos/nearai/t3claw/issues",
             "method": "GET"
         });
-        let lease = bastionclaw_engine::CapabilityLease {
-            id: bastionclaw_engine::types::capability::LeaseId::new(),
-            thread_id: bastionclaw_engine::ThreadId::new(),
+        let lease = t3claw_engine::CapabilityLease {
+            id: t3claw_engine::types::capability::LeaseId::new(),
+            thread_id: t3claw_engine::ThreadId::new(),
             capability_name: "tools".into(),
-            granted_actions: bastionclaw_engine::GrantedActions::All,
+            granted_actions: t3claw_engine::GrantedActions::All,
             granted_at: chrono::Utc::now(),
             expires_at: None,
             max_uses: None,
@@ -2473,12 +2473,12 @@ mod tests {
             revoked: false,
             revoked_reason: None,
         };
-        let ctx = bastionclaw_engine::ThreadExecutionContext {
-            thread_id: bastionclaw_engine::ThreadId::new(),
-            thread_type: bastionclaw_engine::types::thread::ThreadType::Foreground,
-            project_id: bastionclaw_engine::ProjectId::new(),
+        let ctx = t3claw_engine::ThreadExecutionContext {
+            thread_id: t3claw_engine::ThreadId::new(),
+            thread_type: t3claw_engine::types::thread::ThreadType::Foreground,
+            project_id: t3claw_engine::ProjectId::new(),
             user_id: "test_user".to_string(),
-            step_id: bastionclaw_engine::StepId::new(),
+            step_id: t3claw_engine::StepId::new(),
             current_call_id: None,
             source_channel: None,
             user_timezone: None,
@@ -2492,7 +2492,7 @@ mod tests {
         // HTTP call surfaces an Authentication gate before any approval gate.
         match result {
             Err(EngineError::GatePaused { resume_kind, .. }) => match *resume_kind {
-                bastionclaw_engine::ResumeKind::Authentication {
+                t3claw_engine::ResumeKind::Authentication {
                     credential_name, ..
                 } => {
                     assert_eq!(credential_name, "github_token");
@@ -2549,18 +2549,18 @@ mod tests {
 
         let adapter = EffectBridgeAdapter::new(
             tools,
-            Arc::new(SafetyLayer::new(&bastionclaw_safety::SafetyConfig {
+            Arc::new(SafetyLayer::new(&t3claw_safety::SafetyConfig {
                 max_output_length: 10_000,
                 injection_check_enabled: false,
             })),
             Arc::new(HookRegistry::default()),
         );
 
-        let lease = bastionclaw_engine::CapabilityLease {
-            id: bastionclaw_engine::types::capability::LeaseId::new(),
-            thread_id: bastionclaw_engine::ThreadId::new(),
+        let lease = t3claw_engine::CapabilityLease {
+            id: t3claw_engine::types::capability::LeaseId::new(),
+            thread_id: t3claw_engine::ThreadId::new(),
             capability_name: "tools".into(),
-            granted_actions: bastionclaw_engine::GrantedActions::All,
+            granted_actions: t3claw_engine::GrantedActions::All,
             granted_at: chrono::Utc::now(),
             expires_at: None,
             max_uses: None,
@@ -2568,12 +2568,12 @@ mod tests {
             revoked: false,
             revoked_reason: None,
         };
-        let ctx = bastionclaw_engine::ThreadExecutionContext {
-            thread_id: bastionclaw_engine::ThreadId::new(),
-            thread_type: bastionclaw_engine::types::thread::ThreadType::Foreground,
-            project_id: bastionclaw_engine::ProjectId::new(),
+        let ctx = t3claw_engine::ThreadExecutionContext {
+            thread_id: t3claw_engine::ThreadId::new(),
+            thread_type: t3claw_engine::types::thread::ThreadType::Foreground,
+            project_id: t3claw_engine::ProjectId::new(),
             user_id: "test_user".to_string(),
-            step_id: bastionclaw_engine::StepId::new(),
+            step_id: t3claw_engine::StepId::new(),
             current_call_id: Some("call_123".to_string()),
             source_channel: None,
             user_timezone: None,
@@ -2598,7 +2598,7 @@ mod tests {
                 assert_eq!(gate_name, "authentication");
                 assert_eq!(action_name, "tool_activate");
                 match *resume_kind {
-                    bastionclaw_engine::ResumeKind::Authentication {
+                    t3claw_engine::ResumeKind::Authentication {
                         credential_name,
                         auth_url,
                         ..
@@ -2658,7 +2658,7 @@ mod tests {
 
         let adapter = EffectBridgeAdapter::new(
             Arc::clone(&tools),
-            Arc::new(SafetyLayer::new(&bastionclaw_safety::SafetyConfig {
+            Arc::new(SafetyLayer::new(&t3claw_safety::SafetyConfig {
                 max_output_length: 10_000,
                 injection_check_enabled: false,
             })),

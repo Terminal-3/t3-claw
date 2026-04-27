@@ -20,18 +20,18 @@ pub struct OAuthCredentials {
 /// CI / hosted builds that want to use a different OAuth client (e.g. a
 /// platform client owned by a vendor that DOES have a confidential secret
 /// behind a proxy) can override both values at *build time* via the
-/// `BASTIONCLAW_GOOGLE_CLIENT_ID` and `BASTIONCLAW_GOOGLE_CLIENT_SECRET` env
+/// `T3CLAW_GOOGLE_CLIENT_ID` and `T3CLAW_GOOGLE_CLIENT_SECRET` env
 /// vars consumed by `option_env!`. When that override is present and the
 /// hosted-OAuth proxy is configured, `hosted_proxy_client_secret` below
 /// strips the baked-in secret so the proxy injects the real one.
 ///
 /// Tracking "move defaults to runtime-only injection without source
 /// fallback" as a separate hardening item — out of scope for this PR.
-const GOOGLE_CLIENT_ID: &str = match option_env!("BASTIONCLAW_GOOGLE_CLIENT_ID") {
+const GOOGLE_CLIENT_ID: &str = match option_env!("T3CLAW_GOOGLE_CLIENT_ID") {
     Some(v) => v,
     None => "564604149681-efo25d43rs85v0tibdepsmdv5dsrhhr0.apps.googleusercontent.com",
 };
-const GOOGLE_CLIENT_SECRET: &str = match option_env!("BASTIONCLAW_GOOGLE_CLIENT_SECRET") {
+const GOOGLE_CLIENT_SECRET: &str = match option_env!("T3CLAW_GOOGLE_CLIENT_SECRET") {
     Some(v) => v,
     None => "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",
 };
@@ -53,14 +53,14 @@ pub fn builtin_credentials(secret_name: &str) -> Option<OAuthCredentials> {
 /// Returns the compile-time override env var name, if this provider supports one.
 pub fn builtin_client_id_override_env(secret_name: &str) -> Option<&'static str> {
     match secret_name {
-        "google_oauth_token" => Some("BASTIONCLAW_GOOGLE_CLIENT_ID"),
+        "google_oauth_token" => Some("T3CLAW_GOOGLE_CLIENT_ID"),
         _ => None,
     }
 }
 
 /// Suppress the baked-in desktop OAuth client secret when a hosted proxy is configured.
 ///
-/// In hosted deployments, BastionClaw may resolve the platform Google client ID from
+/// In hosted deployments, T3Claw may resolve the platform Google client ID from
 /// environment variables while still falling back to the baked-in desktop secret.
 /// That client_id/client_secret mismatch breaks Google token exchange and refresh.
 ///

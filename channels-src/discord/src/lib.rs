@@ -1,4 +1,4 @@
-//! Discord Gateway/Webhook channel for BastionClaw.
+//! Discord Gateway/Webhook channel for T3Claw.
 //!
 //! This WASM component implements the channel interface for handling Discord
 //! interactions via webhooks and sending messages back to Discord.
@@ -180,7 +180,7 @@ fn typing_request_url_for_update(update: &StatusUpdate) -> Option<String> {
 }
 
 const DISCORD_MESSAGE_CHAR_LIMIT: usize = 2000;
-const DISCORD_MULTIPART_BOUNDARY: &str = "bastionclaw-discord-response-boundary";
+const DISCORD_MULTIPART_BOUNDARY: &str = "t3claw-discord-response-boundary";
 const DISCORD_ATTACHMENT_FILENAME: &str = "response.md";
 const DISCORD_ATTACHMENT_NOTICE: &str = "Response too long for Discord; attached as response.md.";
 static MULTIPART_BOUNDARY_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -1150,7 +1150,7 @@ fn send_pairing_reply(ctx: &PairingReplyCtx, code: &str) -> Result<(), String> {
 
     let mut payload = serde_json::json!({
         "content": format!(
-            "Enter this code in BastionClaw to pair your discord account: `{}`. CLI fallback: `bastionclaw pairing approve discord {}`",
+            "Enter this code in T3Claw to pair your discord account: `{}`. CLI fallback: `t3claw pairing approve discord {}`",
             code, code
         )
     });
@@ -1976,8 +1976,8 @@ mod tests {
                 "d": {
                     "user": {
                         "id": "bot-1",
-                        "username": "bastionclaw",
-                        "global_name": "BastionClaw",
+                        "username": "t3claw",
+                        "global_name": "T3Claw",
                         "bot": true
                     }
                 }
@@ -2044,8 +2044,8 @@ mod tests {
                     "content": "bot echo",
                     "author": {
                         "id": "bot-1",
-                        "username": "bastionclaw",
-                        "global_name": "BastionClaw",
+                        "username": "t3claw",
+                        "global_name": "T3Claw",
                         "bot": true
                     }
                 }
@@ -2180,7 +2180,7 @@ mod tests {
             },
             mentions: vec![DiscordUser {
                 id: "bot-1".to_string(),
-                username: "bastionclaw".to_string(),
+                username: "t3claw".to_string(),
                 global_name: None,
             }],
             webhook_id: None,

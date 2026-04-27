@@ -1,4 +1,4 @@
-//! Google Slides WASM Tool for BastionClaw.
+//! Google Slides WASM Tool for T3Claw.
 //!
 //! Provides Google Slides integration for creating, reading, editing,
 //! and formatting presentations. Use Google Drive tool to search for
@@ -100,7 +100,7 @@ impl exports::near::agent::tool::Guest for GoogleSlidesTool {
 fn execute_inner(params: &str) -> Result<String, String> {
     if !crate::near::agent::host::secret_exists("google_oauth_token") {
         return Err(
-            "Google OAuth token not configured. Run `bastionclaw tool auth google-slides` to set up \
+            "Google OAuth token not configured. Run `t3claw tool auth google-slides` to set up \
              OAuth, or set the GOOGLE_OAUTH_TOKEN environment variable."
                 .to_string(),
         );

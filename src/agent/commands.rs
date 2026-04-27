@@ -753,11 +753,11 @@ impl Agent {
                     ));
                 }
                 // Environment check: restart is only available in Docker containers
-                let in_docker = std::env::var("BASTIONCLAW_IN_DOCKER")
+                let in_docker = std::env::var("T3CLAW_IN_DOCKER")
                     .map(|v| v.to_lowercase() == "true")
                     .unwrap_or(false);
 
-                tracing::debug!("[commands::restart] BASTIONCLAW_IN_DOCKER={}", in_docker);
+                tracing::debug!("[commands::restart] T3CLAW_IN_DOCKER={}", in_docker);
 
                 if !in_docker {
                     tracing::warn!(
@@ -765,7 +765,7 @@ impl Agent {
                     );
                     return Ok(SubmissionResult::error(
                         "Restart is not available in this environment. \
-                         The BASTIONCLAW_IN_DOCKER environment variable must be set to 'true' for Docker deployments."
+                         The T3CLAW_IN_DOCKER environment variable must be set to 'true' for Docker deployments."
                             .to_string(),
                     ));
                 }
@@ -1112,13 +1112,13 @@ impl Agent {
         let model_owned = model.to_string();
         let backend = self.deps.llm_backend.clone();
         if let Err(e) = tokio::task::spawn_blocking(move || {
-            // 3a. Update the backend-specific model env var in ~/.bastionclaw/.env
+            // 3a. Update the backend-specific model env var in ~/.t3claw/.env
             //     only if the var already exists (don't inject new vars).
             let registry = crate::llm::ProviderRegistry::load();
             let model_env = registry.model_env_var(&backend);
             let env_var_prefix = format!("{}=", model_env);
 
-            let env_path = crate::bootstrap::bastionclaw_env_path();
+            let env_path = crate::bootstrap::t3claw_env_path();
             let env_has_var = std::fs::read_to_string(&env_path)
                 .ok()
                 .is_some_and(|content| {

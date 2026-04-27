@@ -4,8 +4,8 @@
 
 #[cfg(feature = "import")]
 mod import_tests {
-    use bastionclaw::import::openclaw::reader::{OpenClawConfig, OpenClawMemoryChunk};
-    use bastionclaw::import::{ImportError, ImportStats};
+    use t3claw::import::openclaw::reader::{OpenClawConfig, OpenClawMemoryChunk};
+    use t3claw::import::{ImportError, ImportStats};
 
     #[test]
     fn test_import_stats_is_empty() {

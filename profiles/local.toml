@@ -1,12 +1,12 @@
-# BastionClaw Profile: local
+# T3Claw Profile: local
 #
 # Stripped-down configuration for solo developers working locally.
 # Disables server-oriented features (gateway, heartbeat, routines, sandbox)
 # and enables the rich TUI for an interactive terminal experience.
 #
-# Usage: set BASTIONCLAW_PROFILE=local in your environment or .env file.
+# Usage: set T3CLAW_PROFILE=local in your environment or .env file.
 #
-# You can override any setting here via ~/.bastionclaw/config.toml or
+# You can override any setting here via ~/.t3claw/config.toml or
 # environment variables.
 
 database_backend = "libsql"

@@ -9,18 +9,18 @@ to a paid LLM.
 ## Modes
 
 `LiveTestHarnessBuilder::build()` picks one of two modes based on the
-`BASTIONCLAW_LIVE_TEST` environment variable.
+`T3CLAW_LIVE_TEST` environment variable.
 
 | Mode | When | Behavior |
 |------|------|----------|
-| **Live** | `BASTIONCLAW_LIVE_TEST=1` | Resolves the real config from `~/.bastionclaw/.env`, builds the real LLM provider chain, runs the scenario, writes a fresh trace fixture to `tests/fixtures/llm_traces/live/<test_name>.json`. |
+| **Live** | `T3CLAW_LIVE_TEST=1` | Resolves the real config from `~/.t3claw/.env`, builds the real LLM provider chain, runs the scenario, writes a fresh trace fixture to `tests/fixtures/llm_traces/live/<test_name>.json`. |
 | **Replay** (default) | unset / `0` / empty | Loads the existing trace fixture and replays it through `TraceLlm`. No network calls. Used in CI. |
 
 Run a single live test:
 
 ```bash
 # Live recording (writes a new trace + .log)
-BASTIONCLAW_LIVE_TEST=1 cargo test --test e2e_live -- zizmor_scan --ignored --nocapture
+T3CLAW_LIVE_TEST=1 cargo test --test e2e_live -- zizmor_scan --ignored --nocapture
 
 # Replay only (deterministic)
 cargo test --test e2e_live -- zizmor_scan --ignored
@@ -29,7 +29,7 @@ cargo test --test e2e_live -- zizmor_scan --ignored
 ## Database Contract — Read This Before Adding a Live Test
 
 The test rig **always starts with a fresh, empty libSQL database**. It
-does not clone the developer's `~/.bastionclaw/bastionclaw.db`. This is
+does not clone the developer's `~/.t3claw/t3claw.db`. This is
 deliberate:
 
 - **No accidental PII**: workspace memory, conversation history, and
@@ -50,7 +50,7 @@ let harness = LiveTestHarnessBuilder::new("gmail_send_test")
     .await;
 ```
 
-`with_secrets` opens `~/.bastionclaw/bastionclaw.db` read-only, copies the
+`with_secrets` opens `~/.t3claw/t3claw.db` read-only, copies the
 listed rows from the `secrets` table under your `owner_user_id`, and
 re-inserts them into the temp DB under the same owner. Any name not
 present in the source is logged as a warning and the test will fail
@@ -119,7 +119,7 @@ revocation incident.
 2. Build the harness with `LiveTestHarnessBuilder::new("<unique_name>")`.
 3. If you need credentials, list them via `.with_secrets([...])`.
 4. Drive the rig (`rig.send_message`, `rig.wait_for_responses`, …).
-5. Record the trace once with `BASTIONCLAW_LIVE_TEST=1`.
+5. Record the trace once with `T3CLAW_LIVE_TEST=1`.
 6. Run the PII scrub checklist above.
 7. Commit the test code AND the scrubbed trace.
 

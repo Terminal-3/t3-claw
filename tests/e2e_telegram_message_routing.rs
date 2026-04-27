@@ -9,16 +9,16 @@ mod tests {
     use std::time::Duration;
 
     use async_trait::async_trait;
-    use bastionclaw::agent::{Agent, AgentDeps};
-    use bastionclaw::app::{AppBuilder, AppBuilderFlags};
-    use bastionclaw::channels::web::log_layer::LogBroadcaster;
-    use bastionclaw::channels::{
+    use t3claw::agent::{Agent, AgentDeps};
+    use t3claw::app::{AppBuilder, AppBuilderFlags};
+    use t3claw::channels::web::log_layer::LogBroadcaster;
+    use t3claw::channels::{
         Channel, ChannelManager, IncomingMessage, MessageStream, OutgoingResponse, StatusUpdate,
     };
-    use bastionclaw::config::Config;
-    use bastionclaw::db::{Database, libsql::LibSqlBackend};
-    use bastionclaw::error::ChannelError;
-    use bastionclaw::llm::{LlmProvider, SessionConfig, SessionManager};
+    use t3claw::config::Config;
+    use t3claw::db::{Database, libsql::LibSqlBackend};
+    use t3claw::error::ChannelError;
+    use t3claw::llm::{LlmProvider, SessionConfig, SessionManager};
     use futures::StreamExt;
     use tokio::sync::{Mutex, mpsc};
     use tokio_stream::wrappers::ReceiverStream;
@@ -200,10 +200,10 @@ mod tests {
             transcription: None,
             document_extraction: None,
             sandbox_readiness:
-                bastionclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
+                t3claw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
             builder: None,
             llm_backend: "nearai".to_string(),
-            tenant_rates: std::sync::Arc::new(bastionclaw::tenant::TenantRateRegistry::new(4, 3)),
+            tenant_rates: std::sync::Arc::new(t3claw::tenant::TenantRateRegistry::new(4, 3)),
         };
 
         let gateway = Arc::new(TestChannel::new());

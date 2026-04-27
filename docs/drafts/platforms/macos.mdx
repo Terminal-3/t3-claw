@@ -1,10 +1,10 @@
 ---
 title: macOS
 sidebarTitle: macOS
-description: Running BastionClaw on macOS with Homebrew, Keychain, and launchd
+description: Running T3Claw on macOS with Homebrew, Keychain, and launchd
 ---
 
-BastionClaw supports macOS natively with Homebrew installation, macOS Keychain for secure key storage, and launchd for background service management.
+T3Claw supports macOS natively with Homebrew installation, macOS Keychain for secure key storage, and launchd for background service management.
 
 ---
 
@@ -13,20 +13,20 @@ BastionClaw supports macOS natively with Homebrew installation, macOS Keychain f
 ### Homebrew (Recommended)
 
 ```bash
-# Add the BastionClaw tap
-brew tap bastionclaw-ai/tap
+# Add the T3Claw tap
+brew tap t3claw-ai/tap
 
-# Install BastionClaw
-brew install bastionclaw
+# Install T3Claw
+brew install t3claw
 ```
 
 ### Shell Script
 
 ```bash
-curl -fsSL https://install.bastionclaw.ai | bash
+curl -fsSL https://install.t3claw.ai | bash
 ```
 
-Installs to `~/.local/bin/bastionclaw`. Add to PATH:
+Installs to `~/.local/bin/t3claw`. Add to PATH:
 
 ```bash
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
@@ -40,14 +40,14 @@ source ~/.zshrc
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Build and install
-cargo install bastionclaw
+cargo install t3claw
 ```
 
 ### Verify Installation
 
 ```bash
-bastionclaw --version
-bastionclaw doctor
+t3claw --version
+t3claw doctor
 ```
 
 ---
@@ -58,31 +58,31 @@ macOS Gatekeeper may block the binary on first launch if it was downloaded direc
 
 **To allow it:**
 
-1. Right-click `bastionclaw` in Finder and choose **Open**
+1. Right-click `t3claw` in Finder and choose **Open**
 2. Click **Open** in the security dialog
 
 Or via the terminal:
 
 ```bash
-xattr -d com.apple.quarantine ~/.local/bin/bastionclaw
+xattr -d com.apple.quarantine ~/.local/bin/t3claw
 ```
 
 <Note>
-Binaries installed via `brew install bastionclaw` are automatically notarized and will not trigger the Gatekeeper warning.
+Binaries installed via `brew install t3claw` are automatically notarized and will not trigger the Gatekeeper warning.
 </Note>
 
 ---
 
 ## macOS Keychain Integration
 
-BastionClaw stores its encryption master key in the macOS Keychain. This keeps the key off disk and protected by your login password and Touch ID.
+T3Claw stores its encryption master key in the macOS Keychain. This keeps the key off disk and protected by your login password and Touch ID.
 
 ### First Run Dialogs
 
 On first run you will see two system dialogs:
 
 1. **"Enter your password to unlock the login keychain"** — Unlock the keychain to read/write items. Enter your macOS login password.
-2. **"bastionclaw wants to use your confidential information stored in 'BastionClaw Master Key' in your keychain"** — Click **Always Allow** to prevent repeated prompts on future launches.
+2. **"t3claw wants to use your confidential information stored in 'T3Claw Master Key' in your keychain"** — Click **Always Allow** to prevent repeated prompts on future launches.
 
 <Warning>
 Clicking **Allow** instead of **Always Allow** causes this dialog to appear on every launch. Choose **Always Allow** the first time to avoid repeated interruptions.
@@ -92,14 +92,14 @@ Clicking **Allow** instead of **Always Allow** causes this dialog to appear on e
 
 View the entry in Keychain Access (open via Spotlight: `keychain access`):
 - Category: **Passwords**
-- Name: `BastionClaw Master Key`
-- Account: `bastionclaw`
+- Name: `T3Claw Master Key`
+- Account: `t3claw`
 
 To delete and regenerate the master key (this invalidates all stored secrets):
 
 ```bash
-security delete-generic-password -a bastionclaw -s "BastionClaw Master Key"
-bastionclaw onboard  # Re-run wizard to generate a new key
+security delete-generic-password -a t3claw -s "T3Claw Master Key"
+t3claw onboard  # Re-run wizard to generate a new key
 ```
 
 ### Headless / CI Environments
@@ -107,18 +107,18 @@ bastionclaw onboard  # Re-run wizard to generate a new key
 For non-interactive macOS environments (CI, build machines), use the environment variable fallback:
 
 ```bash
-export BASTIONCLAW_MASTER_KEY=$(openssl rand -base64 32)
+export T3CLAW_MASTER_KEY=$(openssl rand -base64 32)
 ```
 
 ---
 
 ## launchd Service
 
-launchd is the macOS equivalent of systemd. It manages background services and can restart BastionClaw automatically on failure or system reboot.
+launchd is the macOS equivalent of systemd. It manages background services and can restart T3Claw automatically on failure or system reboot.
 
 ### User-Level Service (Recommended)
 
-Create `~/Library/LaunchAgents/ai.bastionclaw.plist`:
+Create `~/Library/LaunchAgents/ai.t3claw.plist`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -127,11 +127,11 @@ Create `~/Library/LaunchAgents/ai.bastionclaw.plist`:
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>ai.bastionclaw</string>
+  <string>ai.t3claw</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/bastionclaw</string>
+    <string>/usr/local/bin/t3claw</string>
     <string>run</string>
   </array>
 
@@ -148,7 +148,7 @@ Create `~/Library/LaunchAgents/ai.bastionclaw.plist`:
     <key>GATEWAY_PORT</key>
     <string>3000</string>
     <key>RUST_LOG</key>
-    <string>bastionclaw=info</string>
+    <string>t3claw=info</string>
   </dict>
 
   <key>RunAtLoad</key>
@@ -163,10 +163,10 @@ Create `~/Library/LaunchAgents/ai.bastionclaw.plist`:
   </dict>
 
   <key>StandardOutPath</key>
-  <string>/tmp/bastionclaw.stdout.log</string>
+  <string>/tmp/t3claw.stdout.log</string>
 
   <key>StandardErrorPath</key>
-  <string>/tmp/bastionclaw.stderr.log</string>
+  <string>/tmp/t3claw.stderr.log</string>
 
   <key>WorkingDirectory</key>
   <string>/Users/YOUR_USERNAME</string>
@@ -177,28 +177,28 @@ Create `~/Library/LaunchAgents/ai.bastionclaw.plist`:
 Replace `YOUR_USERNAME` with your actual macOS username (`whoami`).
 
 <Note>
-Sensitive values (API keys, auth tokens) should not be placed in the plist directly since it is a plain text file. Store them in the Keychain and have BastionClaw read them at startup, or use `launchctl setenv` to inject them at runtime.
+Sensitive values (API keys, auth tokens) should not be placed in the plist directly since it is a plain text file. Store them in the Keychain and have T3Claw read them at startup, or use `launchctl setenv` to inject them at runtime.
 </Note>
 
 ### Load and Manage the Service
 
 ```bash
 # Load the service (starts immediately due to RunAtLoad)
-launchctl load ~/Library/LaunchAgents/ai.bastionclaw.plist
+launchctl load ~/Library/LaunchAgents/ai.t3claw.plist
 
 # Unload (stop and disable)
-launchctl unload ~/Library/LaunchAgents/ai.bastionclaw.plist
+launchctl unload ~/Library/LaunchAgents/ai.t3claw.plist
 
 # Reload after editing the plist
-launchctl unload ~/Library/LaunchAgents/ai.bastionclaw.plist
-launchctl load ~/Library/LaunchAgents/ai.bastionclaw.plist
+launchctl unload ~/Library/LaunchAgents/ai.t3claw.plist
+launchctl load ~/Library/LaunchAgents/ai.t3claw.plist
 
 # Check status
-launchctl list | grep bastionclaw
+launchctl list | grep t3claw
 
 # Start / stop manually
-launchctl start ai.bastionclaw
-launchctl stop ai.bastionclaw
+launchctl start ai.t3claw
+launchctl stop ai.t3claw
 ```
 
 ### Homebrew Services (Alternative)
@@ -207,16 +207,16 @@ If installed via Homebrew:
 
 ```bash
 # Start now and on login
-brew services start bastionclaw
+brew services start t3claw
 
 # Stop
-brew services stop bastionclaw
+brew services stop t3claw
 
 # Restart
-brew services restart bastionclaw
+brew services restart t3claw
 
 # View status
-brew services list | grep bastionclaw
+brew services list | grep t3claw
 ```
 
 ---
@@ -252,14 +252,14 @@ Docker on macOS has more overhead than native Linux due to the VM layer. Sandbox
 
 ```bash
 # Stream logs in real time (unified log)
-log stream --predicate 'process == "bastionclaw"' --level info
+log stream --predicate 'process == "t3claw"' --level info
 
 # Show recent messages
-log show --predicate 'process == "bastionclaw"' --last 1h
+log show --predicate 'process == "t3claw"' --last 1h
 
 # View launchd stdout/stderr files
-tail -f /tmp/bastionclaw.stdout.log
-tail -f /tmp/bastionclaw.stderr.log
+tail -f /tmp/t3claw.stdout.log
+tail -f /tmp/t3claw.stderr.log
 ```
 
 ---
@@ -268,7 +268,7 @@ tail -f /tmp/bastionclaw.stderr.log
 
 <CardGroup cols={3}>
   <Card title="VPS Hardening" icon="shield" href="/platforms/vps">
-    Securing BastionClaw on a public-facing server
+    Securing T3Claw on a public-facing server
   </Card>
   <Card title="Docker Compose" icon="layers" href="/platforms/docker-compose">
     Production Docker Compose with PostgreSQL

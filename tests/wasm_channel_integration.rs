@@ -9,12 +9,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use bastionclaw::channels::Channel;
-use bastionclaw::channels::wasm::{
+use t3claw::channels::Channel;
+use t3claw::channels::wasm::{
     ChannelCapabilities, EmitRateLimitConfig, PreparedChannelModule, RegisteredEndpoint,
     WasmChannel, WasmChannelRouter, WasmChannelRuntime, WasmChannelRuntimeConfig,
 };
-use bastionclaw::pairing::PairingStore;
+use t3claw::pairing::PairingStore;
 use tempfile::TempDir;
 
 /// Create a test runtime for WASM channel operations.
@@ -247,7 +247,7 @@ mod loader_tests {
     async fn test_discover_channels_empty_dir() {
         let dir = TempDir::new().expect("Failed to create temp dir");
 
-        let channels = bastionclaw::channels::wasm::discover_channels(dir.path())
+        let channels = t3claw::channels::wasm::discover_channels(dir.path())
             .await
             .expect("Discovery failed");
 
@@ -262,7 +262,7 @@ mod loader_tests {
         std::fs::File::create(dir.path().join("slack.wasm")).expect("Failed to create file");
         std::fs::File::create(dir.path().join("telegram.wasm")).expect("Failed to create file");
 
-        let channels = bastionclaw::channels::wasm::discover_channels(dir.path())
+        let channels = t3claw::channels::wasm::discover_channels(dir.path())
             .await
             .expect("Discovery failed");
 
@@ -293,7 +293,7 @@ mod loader_tests {
             )
             .expect("Failed to write capabilities");
 
-        let channels = bastionclaw::channels::wasm::discover_channels(dir.path())
+        let channels = t3claw::channels::wasm::discover_channels(dir.path())
             .await
             .expect("Discovery failed");
 
@@ -310,7 +310,7 @@ mod loader_tests {
         std::fs::File::create(dir.path().join("config.json")).expect("Failed to create file");
         std::fs::File::create(dir.path().join("channel.wasm")).expect("Failed to create file");
 
-        let channels = bastionclaw::channels::wasm::discover_channels(dir.path())
+        let channels = t3claw::channels::wasm::discover_channels(dir.path())
             .await
             .expect("Discovery failed");
 
@@ -397,7 +397,7 @@ mod capabilities_tests {
 
 mod message_emission_tests {
     use super::*;
-    use bastionclaw::channels::wasm::{ChannelHostState, EmittedMessage};
+    use t3claw::channels::wasm::{ChannelHostState, EmittedMessage};
 
     #[test]
     fn test_emit_message_basic() {

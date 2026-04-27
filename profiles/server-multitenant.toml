@@ -1,4 +1,4 @@
-# BastionClaw Profile: server-multitenant
+# T3Claw Profile: server-multitenant
 #
 # Multi-user SaaS deployment. Builds on the 'server' profile with higher
 # concurrency limits.
@@ -11,7 +11,7 @@
 #   MAX_COST_PER_USER_PER_DAY_CENTS=1000   (env-only cost controls)
 #   GATEWAY_AUTH_TOKEN=<secret>             (env-only auth)
 #
-# Usage: set BASTIONCLAW_PROFILE=server-multitenant in your environment or .env file.
+# Usage: set T3CLAW_PROFILE=server-multitenant in your environment or .env file.
 
 database_backend = "postgres"
 

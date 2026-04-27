@@ -509,11 +509,11 @@ mod tests {
     #[test]
     fn test_render_variable_not_found() {
         let mut engine = TemplateEngine::new();
-        engine.set("name", "bastionclaw");
+        engine.set("name", "t3claw");
         let input = "Name: {{name}}, Missing: {{missing}}";
         assert_eq!(
             engine.render(input),
-            "Name: bastionclaw, Missing: {{missing}}"
+            "Name: t3claw, Missing: {{missing}}"
         );
     }
 

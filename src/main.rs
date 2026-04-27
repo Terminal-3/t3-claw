@@ -1,11 +1,11 @@
-//! BastionClaw - Main entry point.
+//! T3Claw - Main entry point.
 
 use std::sync::Arc;
 use std::time::Duration;
 
 use clap::Parser;
 
-use bastionclaw::{
+use t3claw::{
     agent::{Agent, AgentDeps},
     app::{AppBuilder, AppBuilderFlags},
     channels::{
@@ -28,15 +28,15 @@ use bastionclaw::{
 };
 
 #[cfg(unix)]
-use bastionclaw::channels::ChannelSecretUpdater;
+use t3claw::channels::ChannelSecretUpdater;
 #[cfg(any(feature = "postgres", feature = "libsql"))]
-use bastionclaw::setup::{SetupConfig, SetupWizard};
+use t3claw::setup::{SetupConfig, SetupWizard};
 
 /// Synchronous entry point. Loads `.env` files before the Tokio runtime
 /// starts so that `std::env::set_var` is safe (no worker threads yet).
 fn main() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
-    bastionclaw::bootstrap::load_bastionclaw_env();
+    t3claw::bootstrap::load_t3claw_env();
 
     let result = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
 
 /// Format a top-level error with color and recovery hints.
 fn format_top_level_error(err: &anyhow::Error) {
-    use bastionclaw::cli::fmt;
+    use t3claw::cli::fmt;
     let msg = format!("{err:#}");
 
     eprintln!();
@@ -62,17 +62,17 @@ fn format_top_level_error(err: &anyhow::Error) {
     let hint = if lower.contains("database_url")
         || lower.contains("database") && lower.contains("not set")
     {
-        Some("run `bastionclaw onboard` or set DATABASE_URL in .env")
+        Some("run `t3claw onboard` or set DATABASE_URL in .env")
     } else if lower.contains("connection refused") || lower.contains("connect error") {
         Some("check that the database server is running")
     } else if lower.contains("session") && lower.contains("not found") {
-        Some("run `bastionclaw onboard` to set up authentication")
+        Some("run `t3claw onboard` to set up authentication")
     } else if lower.contains("secrets_master_key") {
-        Some("run `bastionclaw onboard` or set SECRETS_MASTER_KEY in .env")
+        Some("run `t3claw onboard` or set SECRETS_MASTER_KEY in .env")
     } else if lower.contains("already running") {
         Some("stop the other instance or remove the stale PID file")
     } else if lower.contains("onboard") {
-        Some("run `bastionclaw onboard` to complete setup")
+        Some("run `t3claw onboard` to complete setup")
     } else {
         None
     };
@@ -94,15 +94,15 @@ async fn async_main() -> anyhow::Result<()> {
         }
         Some(Command::Config(config_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_config_command(config_cmd.clone()).await;
+            return t3claw::cli::run_config_command(config_cmd.clone()).await;
         }
         Some(Command::Registry(registry_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_registry_command(registry_cmd.clone()).await;
+            return t3claw::cli::run_registry_command(registry_cmd.clone()).await;
         }
         Some(Command::Channels(channels_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_channels_command(
+            return t3claw::cli::run_channels_command(
                 channels_cmd.clone(),
                 cli.config.as_deref(),
             )
@@ -110,7 +110,7 @@ async fn async_main() -> anyhow::Result<()> {
         }
         Some(Command::Routines(routines_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_routines_cli(routines_cmd, cli.config.as_deref()).await;
+            return t3claw::cli::run_routines_cli(routines_cmd, cli.config.as_deref()).await;
         }
         Some(Command::Mcp(mcp_cmd)) => {
             init_cli_tracing();
@@ -118,7 +118,7 @@ async fn async_main() -> anyhow::Result<()> {
         }
         Some(Command::Memory(mem_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_memory_command(mem_cmd).await;
+            return t3claw::cli::run_memory_command(mem_cmd).await;
         }
         Some(Command::Pairing(pairing_cmd)) => {
             init_cli_tracing();
@@ -134,27 +134,27 @@ async fn async_main() -> anyhow::Result<()> {
         }
         Some(Command::Skills(skills_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_skills_command(skills_cmd.clone(), cli.config.as_deref())
+            return t3claw::cli::run_skills_command(skills_cmd.clone(), cli.config.as_deref())
                 .await;
         }
         Some(Command::Hooks(hooks_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_hooks_command(hooks_cmd.clone(), cli.config.as_deref())
+            return t3claw::cli::run_hooks_command(hooks_cmd.clone(), cli.config.as_deref())
                 .await;
         }
         Some(Command::Logs(logs_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_logs_command(logs_cmd.clone(), cli.config.as_deref())
+            return t3claw::cli::run_logs_command(logs_cmd.clone(), cli.config.as_deref())
                 .await;
         }
         Some(Command::Models(models_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_models_command(models_cmd.clone(), cli.config.as_deref())
+            return t3claw::cli::run_models_command(models_cmd.clone(), cli.config.as_deref())
                 .await;
         }
         Some(Command::Doctor) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_doctor_command().await;
+            return t3claw::cli::run_doctor_command().await;
         }
         Some(Command::Status) => {
             init_cli_tracing();
@@ -167,12 +167,12 @@ async fn async_main() -> anyhow::Result<()> {
         #[cfg(feature = "import")]
         Some(Command::Import(import_cmd)) => {
             init_cli_tracing();
-            let config = bastionclaw::config::Config::from_env().await?;
-            return bastionclaw::cli::run_import_command(import_cmd, &config).await;
+            let config = t3claw::config::Config::from_env().await?;
+            return t3claw::cli::run_import_command(import_cmd, &config).await;
         }
         Some(Command::Acp(acp_cmd)) => {
             init_cli_tracing();
-            return bastionclaw::cli::run_acp_command(acp_cmd.clone()).await;
+            return t3claw::cli::run_acp_command(acp_cmd.clone()).await;
         }
         Some(Command::Worker {
             job_id,
@@ -180,7 +180,7 @@ async fn async_main() -> anyhow::Result<()> {
             max_iterations,
         }) => {
             init_worker_tracing();
-            return bastionclaw::worker::run_worker(*job_id, orchestrator_url, *max_iterations)
+            return t3claw::worker::run_worker(*job_id, orchestrator_url, *max_iterations)
                 .await;
         }
         Some(Command::ClaudeBridge {
@@ -190,7 +190,7 @@ async fn async_main() -> anyhow::Result<()> {
             model,
         }) => {
             init_worker_tracing();
-            return bastionclaw::worker::run_claude_bridge(
+            return t3claw::worker::run_claude_bridge(
                 *job_id,
                 orchestrator_url,
                 *max_turns,
@@ -203,7 +203,7 @@ async fn async_main() -> anyhow::Result<()> {
             orchestrator_url,
         }) => {
             init_worker_tracing();
-            return bastionclaw::worker::run_acp_bridge(*job_id, orchestrator_url).await;
+            return t3claw::worker::run_acp_bridge(*job_id, orchestrator_url).await;
         }
         Some(Command::Login { openai_codex }) => {
             init_cli_tracing();
@@ -215,7 +215,7 @@ async fn async_main() -> anyhow::Result<()> {
                         .await
                         .map_err(|e| anyhow::anyhow!("{}", e))?;
                     config.llm.openai_codex.unwrap_or_else(|| {
-                        use bastionclaw::llm::OpenAiCodexConfig;
+                        use t3claw::llm::OpenAiCodexConfig;
                         let mut cfg = OpenAiCodexConfig::default();
                         if let Ok(v) = std::env::var("OPENAI_CODEX_AUTH_URL") {
                             cfg.auth_endpoint = v;
@@ -232,7 +232,7 @@ async fn async_main() -> anyhow::Result<()> {
                         cfg
                     })
                 };
-                let mgr = bastionclaw::llm::OpenAiCodexSessionManager::new(codex_config)
+                let mgr = t3claw::llm::OpenAiCodexSessionManager::new(codex_config)
                     .map_err(|e| anyhow::anyhow!("{}", e))?;
                 mgr.device_code_login()
                     .await
@@ -242,7 +242,7 @@ async fn async_main() -> anyhow::Result<()> {
                 );
             } else {
                 println!("Specify a provider to authenticate with:");
-                println!("  bastionclaw login --openai-codex   (ChatGPT subscription)");
+                println!("  t3claw login --openai-codex   (ChatGPT subscription)");
             }
             return Ok(());
         }
@@ -279,14 +279,14 @@ async fn async_main() -> anyhow::Result<()> {
     }
 
     // ── PID lock (prevent multiple instances) ────────────────────────
-    let _pid_lock = match bastionclaw::bootstrap::PidLock::acquire() {
+    let _pid_lock = match t3claw::bootstrap::PidLock::acquire() {
         Ok(lock) => Some(lock),
-        Err(bastionclaw::bootstrap::PidLockError::AlreadyRunning { pid }) => {
+        Err(t3claw::bootstrap::PidLockError::AlreadyRunning { pid }) => {
             anyhow::bail!(
-                "Another BastionClaw instance is already running (PID {}). \
+                "Another T3Claw instance is already running (PID {}). \
                  If this is incorrect, remove the stale PID file: {}",
                 pid,
-                bastionclaw::bootstrap::pid_lock_path().display()
+                t3claw::bootstrap::pid_lock_path().display()
             );
         }
         Err(e) => {
@@ -303,7 +303,7 @@ async fn async_main() -> anyhow::Result<()> {
     // Enhanced first-run detection
     #[cfg(any(feature = "postgres", feature = "libsql"))]
     if !cli.no_onboard
-        && let Some(reason) = bastionclaw::setup::check_onboard_needed()
+        && let Some(reason) = t3claw::setup::check_onboard_needed()
     {
         println!("Onboarding needed: {}", reason);
         println!();
@@ -319,7 +319,7 @@ async fn async_main() -> anyhow::Result<()> {
 
     // CLI flag overrides for config
     if cli.auto_approve {
-        bastionclaw::config::set_runtime_env("AGENT_AUTO_APPROVE_TOOLS", "true");
+        t3claw::config::set_runtime_env("AGENT_AUTO_APPROVE_TOOLS", "true");
     }
 
     // Load initial config from env + disk + optional TOML (before DB is available).
@@ -329,10 +329,10 @@ async fn async_main() -> anyhow::Result<()> {
     let toml_path = cli.config.as_deref();
     let config = match Config::from_env_with_toml(toml_path).await {
         Ok(c) => c,
-        Err(bastionclaw::error::ConfigError::MissingRequired { key, hint }) => {
+        Err(t3claw::error::ConfigError::MissingRequired { key, hint }) => {
             anyhow::bail!(
                 "Configuration error: Missing required setting '{}'. {}. \
-                 Run 'bastionclaw onboard' to configure, or set the required environment variables.",
+                 Run 't3claw onboard' to configure, or set the required environment variables.",
                 key,
                 hint
             );
@@ -350,12 +350,12 @@ async fn async_main() -> anyhow::Result<()> {
     // log levels at runtime without restarting.
     let suppress_stderr =
         config.channels.tui.is_some() && cli.message.is_none() && cfg!(feature = "tui");
-    let log_level_handle = bastionclaw::channels::web::log_layer::init_tracing(
+    let log_level_handle = t3claw::channels::web::log_layer::init_tracing(
         Arc::clone(&log_broadcaster),
         suppress_stderr,
     );
 
-    tracing::debug!("Starting BastionClaw...");
+    tracing::debug!("Starting T3Claw...");
     tracing::debug!("Loaded configuration for agent: {}", config.agent.name);
     tracing::debug!("LLM backend: {}", config.llm.backend);
 
@@ -376,11 +376,11 @@ async fn async_main() -> anyhow::Result<()> {
 
     // ── Tunnel setup ───────────────────────────────────────────────────
 
-    let (config, active_tunnel) = bastionclaw::tunnel::start_managed_tunnel(config).await;
+    let (config, active_tunnel) = t3claw::tunnel::start_managed_tunnel(config).await;
 
     // ── Orchestrator / container job manager ────────────────────────────
 
-    let orch = bastionclaw::orchestrator::setup_orchestrator(
+    let orch = t3claw::orchestrator::setup_orchestrator(
         &config,
         &components.llm,
         components.db.as_ref(),
@@ -394,12 +394,12 @@ async fn async_main() -> anyhow::Result<()> {
 
     // Derive user-facing warning from docker_status for channel notification
     let docker_user_warning: Option<String> = match docker_status {
-        bastionclaw::sandbox::DockerStatus::NotInstalled => Some(
+        t3claw::sandbox::DockerStatus::NotInstalled => Some(
             "Sandbox is enabled but Docker is not installed -- \
              full_job routines will fail until Docker is available."
                 .to_string(),
         ),
-        bastionclaw::sandbox::DockerStatus::NotRunning => Some(
+        t3claw::sandbox::DockerStatus::NotRunning => Some(
             "Sandbox is enabled but Docker is not running -- \
              full_job routines will fail until Docker is started."
                 .to_string(),
@@ -425,7 +425,7 @@ async fn async_main() -> anyhow::Result<()> {
     #[cfg(feature = "tui")]
     if tui_mode && cli.message.is_none() {
         let tool_names = components.tools.list().await;
-        let tool_categories = bastionclaw::channels::tui::group_tools_by_prefix(tool_names);
+        let tool_categories = t3claw::channels::tui::group_tools_by_prefix(tool_names);
 
         let skill_categories = if let Some(ref registry) = components.skill_registry {
             let registry = registry.read().unwrap_or_else(|e| e.into_inner());
@@ -434,7 +434,7 @@ async fn async_main() -> anyhow::Result<()> {
                 .iter()
                 .map(|s| (s.manifest.name.clone(), s.manifest.activation.tags.clone()))
                 .collect();
-            bastionclaw::channels::tui::group_skills_by_tag(&skill_data)
+            t3claw::channels::tui::group_skills_by_tag(&skill_data)
         } else {
             Vec::new()
         };
@@ -442,9 +442,9 @@ async fn async_main() -> anyhow::Result<()> {
         let workspace_root = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::new());
         let workspace_path = workspace_root.display().to_string();
         let layout = if let Some(ref tui_config) = config.channels.tui {
-            bastionclaw::channels::tui::resolve_tui_layout(tui_config, &workspace_root)
+            t3claw::channels::tui::resolve_tui_layout(tui_config, &workspace_root)
         } else {
-            bastionclaw_tui::TuiLayout::default()
+            t3claw_tui::TuiLayout::default()
         };
 
         let (memory_count, identity_files) = if let Some(ref ws) = components.workspace {
@@ -507,7 +507,7 @@ async fn async_main() -> anyhow::Result<()> {
             }
         };
 
-        let tui_channel = bastionclaw::channels::TuiChannel::new(
+        let tui_channel = t3claw::channels::TuiChannel::new(
             config.owner_id.clone(),
             env!("CARGO_PKG_VERSION"),
             current_model,
@@ -559,7 +559,7 @@ async fn async_main() -> anyhow::Result<()> {
     }
 
     // Shared routine engine slot for gateway + generic webhook ingress.
-    let shared_routine_engine_slot: bastionclaw::channels::web::server::RoutineEngineSlot =
+    let shared_routine_engine_slot: t3claw::channels::web::server::RoutineEngineSlot =
         Arc::new(tokio::sync::RwLock::new(None));
 
     // Collect webhook route fragments; a single WebhookServer hosts them all.
@@ -585,7 +585,7 @@ async fn async_main() -> anyhow::Result<()> {
         );
     }
     if config.channels.wasm_channels_enabled && config.channels.wasm_channels_dir.exists() {
-        let wasm_result = bastionclaw::channels::wasm::setup_wasm_channels(
+        let wasm_result = t3claw::channels::wasm::setup_wasm_channels(
             &config,
             &components.secrets_store,
             components.extension_manager.as_ref(),
@@ -638,7 +638,7 @@ async fn async_main() -> anyhow::Result<()> {
     // Add HTTP channel if configured and not CLI-only mode.
     let mut webhook_server_addr: Option<std::net::SocketAddr> = None;
     #[cfg(unix)]
-    let mut http_channel_state: Option<Arc<bastionclaw::channels::HttpChannelState>> = None;
+    let mut http_channel_state: Option<Arc<t3claw::channels::HttpChannelState>> = None;
     if !cli.cli_only
         && let Some(ref http_config) = config.channels.http
     {
@@ -714,7 +714,7 @@ async fn async_main() -> anyhow::Result<()> {
     // Lazy scheduler slot — filled after Agent::new creates the Scheduler.
     // Allows CreateJobTool to dispatch local jobs via the Scheduler even though
     // the Scheduler is created after tools are registered (chicken-and-egg).
-    let scheduler_slot: bastionclaw::tools::builtin::SchedulerSlot =
+    let scheduler_slot: t3claw::tools::builtin::SchedulerSlot =
         Arc::new(tokio::sync::RwLock::new(None));
 
     // Register job tools (sandbox deps auto-injected when container_job_manager is available)
@@ -736,7 +736,7 @@ async fn async_main() -> anyhow::Result<()> {
     // ── Gateway channel ────────────────────────────────────────────────
 
     let mut gateway_url: Option<String> = None;
-    let mut sse_manager: Option<std::sync::Arc<bastionclaw::channels::web::sse::SseManager>> = None;
+    let mut sse_manager: Option<std::sync::Arc<t3claw::channels::web::sse::SseManager>> = None;
     if let Some(ref gw_config) = config.channels.gateway {
         let mut gw = GatewayChannel::new(gw_config.clone(), config.owner_id.clone());
         gw = gw.with_llm_provider(Arc::clone(&components.llm));
@@ -745,10 +745,10 @@ async fn async_main() -> anyhow::Result<()> {
         }
         // Create per-user workspace pool for multi-user mode.
         if let Some(ref db) = components.db {
-            let emb_cache_config = bastionclaw::workspace::EmbeddingCacheConfig {
+            let emb_cache_config = t3claw::workspace::EmbeddingCacheConfig {
                 max_entries: config.embeddings.cache_size,
             };
-            let pool = Arc::new(bastionclaw::channels::web::server::WorkspacePool::new(
+            let pool = Arc::new(t3claw::channels::web::server::WorkspacePool::new(
                 Arc::clone(db),
                 components.embeddings.clone(),
                 emb_cache_config,
@@ -762,7 +762,7 @@ async fn async_main() -> anyhow::Result<()> {
         gw = gw.with_log_level_handle(Arc::clone(&log_level_handle));
         gw = gw.with_tool_registry(Arc::clone(&components.tools));
         if let Some(ref db) = components.db {
-            let dispatcher = Arc::new(bastionclaw::tools::dispatch::ToolDispatcher::new(
+            let dispatcher = Arc::new(t3claw::tools::dispatch::ToolDispatcher::new(
                 Arc::clone(&components.tools),
                 Arc::clone(&components.safety),
                 Arc::clone(db),
@@ -786,7 +786,7 @@ async fn async_main() -> anyhow::Result<()> {
         if let Some(ref d) = components.db {
             gw = gw.with_store(Arc::clone(d));
             gw = gw.with_db_auth(Arc::clone(d));
-            let pairing_store = Arc::new(bastionclaw::pairing::PairingStore::new(
+            let pairing_store = Arc::new(t3claw::pairing::PairingStore::new(
                 Arc::clone(d),
                 Arc::clone(&components.ownership_cache),
             ));
@@ -799,7 +799,7 @@ async fn async_main() -> anyhow::Result<()> {
             // so the owner appears in the Users admin panel immediately.
             if let Ok(false) = d.has_any_users().await {
                 let now = chrono::Utc::now();
-                let user = bastionclaw::db::UserRecord {
+                let user = t3claw::db::UserRecord {
                     id: config.owner_id.clone(),
                     email: None,
                     display_name: config.owner_id.clone(),
@@ -818,7 +818,7 @@ async fn async_main() -> anyhow::Result<()> {
                         tracing::warn!("Failed to bootstrap admin user: {}", e);
                     }
                 } else {
-                    use bastionclaw::channels::web::auth::hash_token;
+                    use t3claw::channels::web::auth::hash_token;
                     let hash = hash_token(auth_token);
                     let prefix = if auth_token.len() >= 8 {
                         &auth_token[..8]
@@ -859,7 +859,7 @@ async fn async_main() -> anyhow::Result<()> {
             let active_model = components.llm.model_name().to_string();
             let mut enabled = channel_names.clone();
             enabled.push("gateway".into());
-            gw = gw.with_active_config(bastionclaw::channels::web::server::ActiveConfigSnapshot {
+            gw = gw.with_active_config(t3claw::channels::web::server::ActiveConfigSnapshot {
                 llm_backend: config.llm.backend.to_string(),
                 llm_model: active_model,
                 enabled_channels: enabled,
@@ -889,7 +889,7 @@ async fn async_main() -> anyhow::Result<()> {
         if gw_config.auth_token.is_none() {
             let token_to_persist = gw.auth_token().to_string();
             tokio::spawn(async move {
-                if let Err(e) = bastionclaw::bootstrap::upsert_bootstrap_var(
+                if let Err(e) = t3claw::bootstrap::upsert_bootstrap_var(
                     "GATEWAY_AUTH_TOKEN",
                     &token_to_persist,
                 ) {
@@ -947,7 +947,7 @@ async fn async_main() -> anyhow::Result<()> {
         .map(|c| c.model_name().to_string());
 
     if config.channels.cli.enabled && cli.message.is_none() {
-        let boot_info = bastionclaw::boot_screen::BootInfo {
+        let boot_info = t3claw::boot_screen::BootInfo {
             version: env!("CARGO_PKG_VERSION").to_string(),
             agent_name: config.agent.name.clone(),
             llm_backend: config.llm.backend.to_string(),
@@ -983,7 +983,7 @@ async fn async_main() -> anyhow::Result<()> {
             tunnel_provider: active_tunnel.as_ref().map(|t| t.name().to_string()),
             startup_elapsed: Some(startup_start.elapsed()),
         };
-        bastionclaw::boot_screen::print_boot_screen(&boot_info);
+        t3claw::boot_screen::print_boot_screen(&boot_info);
     }
 
     // ── Run the agent ──────────────────────────────────────────────────
@@ -1030,11 +1030,11 @@ async fn async_main() -> anyhow::Result<()> {
                 .ensure_extension_ready(
                     name,
                     &ext_user_id,
-                    bastionclaw::extensions::EnsureReadyIntent::ExplicitActivate,
+                    t3claw::extensions::EnsureReadyIntent::ExplicitActivate,
                 )
                 .await
             {
-                Ok(bastionclaw::extensions::EnsureReadyOutcome::Ready { activation, .. }) => {
+                Ok(t3claw::extensions::EnsureReadyOutcome::Ready { activation, .. }) => {
                     let message = activation
                         .map(|result| result.message)
                         .unwrap_or_else(|| format!("Channel '{}' already ready", name));
@@ -1044,14 +1044,14 @@ async fn async_main() -> anyhow::Result<()> {
                         "Auto-activated persisted WASM channel"
                     );
                 }
-                Ok(bastionclaw::extensions::EnsureReadyOutcome::NeedsAuth { auth, .. }) => {
+                Ok(t3claw::extensions::EnsureReadyOutcome::NeedsAuth { auth, .. }) => {
                     tracing::warn!(
                         channel = %name,
                         instructions = ?auth.instructions(),
                         "Persisted WASM channel still needs authentication"
                     );
                 }
-                Ok(bastionclaw::extensions::EnsureReadyOutcome::NeedsSetup {
+                Ok(t3claw::extensions::EnsureReadyOutcome::NeedsSetup {
                     instructions,
                     ..
                 }) => {
@@ -1100,7 +1100,7 @@ async fn async_main() -> anyhow::Result<()> {
         recorder.snapshot_memory(ws).await;
     }
 
-    let http_interceptor = bastionclaw::http_intercept::chain(
+    let http_interceptor = t3claw::http_intercept::chain(
         [
             components.http_interceptor.clone(),
             components
@@ -1119,19 +1119,19 @@ async fn async_main() -> anyhow::Result<()> {
     // up settings written through the workspace) and fall back to the raw db
     // when no workspace is configured.
     #[cfg(unix)]
-    let sighup_settings_store: Option<Arc<dyn bastionclaw::db::SettingsStore>> = components
+    let sighup_settings_store: Option<Arc<dyn t3claw::db::SettingsStore>> = components
         .settings_store
         .as_ref()
-        .map(|s| Arc::clone(s) as Arc<dyn bastionclaw::db::SettingsStore>)
+        .map(|s| Arc::clone(s) as Arc<dyn t3claw::db::SettingsStore>)
         .or_else(|| {
             components
                 .db
                 .as_ref()
-                .map(|db| Arc::clone(db) as Arc<dyn bastionclaw::db::SettingsStore>)
+                .map(|db| Arc::clone(db) as Arc<dyn t3claw::db::SettingsStore>)
         });
 
     let auth_manager = components.tools.secrets_store().cloned().map(|secrets| {
-        Arc::new(bastionclaw::bridge::auth_manager::AuthManager::new(
+        Arc::new(t3claw::bridge::auth_manager::AuthManager::new(
             secrets,
             components.skill_registry.clone(),
             components.extension_manager.clone(),
@@ -1159,20 +1159,20 @@ async fn async_main() -> anyhow::Result<()> {
         transcription: config
             .transcription
             .create_provider()
-            .map(|p| Arc::new(bastionclaw::llm::transcription::TranscriptionMiddleware::new(p))),
+            .map(|p| Arc::new(t3claw::llm::transcription::TranscriptionMiddleware::new(p))),
         document_extraction: Some(Arc::new(
-            bastionclaw::document_extraction::DocumentExtractionMiddleware::new(),
+            t3claw::document_extraction::DocumentExtractionMiddleware::new(),
         )),
         sandbox_readiness: if !config.sandbox.enabled {
-            bastionclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig
+            t3claw::agent::routine_engine::SandboxReadiness::DisabledByConfig
         } else if docker_status.is_ok() {
-            bastionclaw::agent::routine_engine::SandboxReadiness::Available
+            t3claw::agent::routine_engine::SandboxReadiness::Available
         } else {
-            bastionclaw::agent::routine_engine::SandboxReadiness::DockerUnavailable
+            t3claw::agent::routine_engine::SandboxReadiness::DockerUnavailable
         },
         builder: components.builder,
         llm_backend: config.llm.backend.clone(),
-        tenant_rates: Arc::new(bastionclaw::tenant::TenantRateRegistry::new(
+        tenant_rates: Arc::new(t3claw::tenant::TenantRateRegistry::new(
             config.agent.max_llm_concurrent_per_user.unwrap_or(4),
             config.agent.max_jobs_concurrent_per_user.unwrap_or(3),
         )),
@@ -1264,7 +1264,7 @@ async fn async_main() -> anyhow::Result<()> {
                     {
                         // Thread-safe: Uses INJECTED_VARS mutex instead of unsafe std::env::set_var
                         // Config::from_env() will read from the overlay via optional_env()
-                        bastionclaw::config::inject_single_var(
+                        t3claw::config::inject_single_var(
                             "HTTP_WEBHOOK_SECRET",
                             webhook_secret.expose(),
                         );
@@ -1275,9 +1275,9 @@ async fn async_main() -> anyhow::Result<()> {
                 // Reload config (now with secrets injected into environment)
                 let new_config = match &sighup_settings_store_clone {
                     Some(store) => {
-                        bastionclaw::config::Config::from_db(store.as_ref(), &sighup_owner_id).await
+                        t3claw::config::Config::from_db(store.as_ref(), &sighup_owner_id).await
                     }
-                    None => bastionclaw::config::Config::from_env().await,
+                    None => t3claw::config::Config::from_env().await,
                 };
 
                 let new_config = match new_config {
@@ -1393,7 +1393,7 @@ async fn async_main() -> anyhow::Result<()> {
             // 5s is generous but avoids the message being lost on slow startups.
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
             tracing::debug!("Sending sandbox-unavailable warning to connected channels");
-            let response = bastionclaw::channels::OutgoingResponse {
+            let response = t3claw::channels::OutgoingResponse {
                 content: format!("Warning: {warning}"),
                 thread_id: None,
                 attachments: Vec::new(),

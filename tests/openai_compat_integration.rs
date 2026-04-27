@@ -9,11 +9,11 @@ use std::time::Duration;
 use async_trait::async_trait;
 use rust_decimal::Decimal;
 
-use bastionclaw::channels::web::server::{GatewayState, start_server};
-use bastionclaw::channels::web::sse::SseManager;
-use bastionclaw::channels::web::ws::WsConnectionTracker;
-use bastionclaw::error::LlmError;
-use bastionclaw::llm::{
+use t3claw::channels::web::server::{GatewayState, start_server};
+use t3claw::channels::web::sse::SseManager;
+use t3claw::channels::web::ws::WsConnectionTracker;
+use t3claw::error::LlmError;
+use t3claw::llm::{
     CompletionRequest, CompletionResponse, FinishReason, LlmProvider, ToolCompletionRequest,
     ToolCompletionResponse,
 };
@@ -62,7 +62,7 @@ impl LlmProvider for MockLlmProvider {
             .messages
             .iter()
             .rev()
-            .find(|m| m.role == bastionclaw::llm::Role::User)
+            .find(|m| m.role == t3claw::llm::Role::User)
             .map(|m| m.content.clone())
             .unwrap_or_else(|| "no user message".to_string());
 
@@ -90,7 +90,7 @@ impl LlmProvider for MockLlmProvider {
         if let Some(tool) = req.tools.first() {
             Ok(ToolCompletionResponse {
                 content: None,
-                tool_calls: vec![bastionclaw::llm::ToolCall {
+                tool_calls: vec![t3claw::llm::ToolCall {
                     id: "call_mock_001".to_string(),
                     name: tool.name.clone(),
                     arguments: serde_json::json!({"test": true}),
@@ -211,14 +211,14 @@ async fn start_test_server_with_provider(
         skill_registry: None,
         skill_catalog: None,
         auth_manager: None,
-        chat_rate_limiter: bastionclaw::channels::web::server::PerUserRateLimiter::new(30, 60),
-        oauth_rate_limiter: bastionclaw::channels::web::server::PerUserRateLimiter::new(20, 60),
-        webhook_rate_limiter: bastionclaw::channels::web::server::RateLimiter::new(10, 60),
+        chat_rate_limiter: t3claw::channels::web::server::PerUserRateLimiter::new(30, 60),
+        oauth_rate_limiter: t3claw::channels::web::server::PerUserRateLimiter::new(20, 60),
+        webhook_rate_limiter: t3claw::channels::web::server::RateLimiter::new(10, 60),
         registry_entries: Vec::new(),
         cost_guard: None,
         routine_engine: Arc::new(tokio::sync::RwLock::new(None)),
         startup_time: std::time::Instant::now(),
-        active_config: bastionclaw::channels::web::server::ActiveConfigSnapshot::default(),
+        active_config: t3claw::channels::web::server::ActiveConfigSnapshot::default(),
         secrets_store: None,
         db_auth: None,
         pairing_store: None,
@@ -234,7 +234,7 @@ async fn start_test_server_with_provider(
         tool_dispatcher: None,
     });
 
-    let auth = bastionclaw::channels::web::auth::MultiAuthState::single(
+    let auth = t3claw::channels::web::auth::MultiAuthState::single(
         AUTH_TOKEN.to_string(),
         "test-user".to_string(),
     );
@@ -395,10 +395,10 @@ async fn test_chat_completions_streaming() {
     // Check simulated streaming header
     assert_eq!(
         resp.headers()
-            .get("x-bastionclaw-streaming")
+            .get("x-t3claw-streaming")
             .and_then(|v| v.to_str().ok()),
         Some("simulated"),
-        "Expected x-bastionclaw-streaming: simulated header"
+        "Expected x-t3claw-streaming: simulated header"
     );
 
     let text = resp.text().await.unwrap();
@@ -723,14 +723,14 @@ async fn test_no_llm_provider_returns_503() {
         skill_registry: None,
         skill_catalog: None,
         auth_manager: None,
-        chat_rate_limiter: bastionclaw::channels::web::server::PerUserRateLimiter::new(30, 60),
-        oauth_rate_limiter: bastionclaw::channels::web::server::PerUserRateLimiter::new(20, 60),
-        webhook_rate_limiter: bastionclaw::channels::web::server::RateLimiter::new(10, 60),
+        chat_rate_limiter: t3claw::channels::web::server::PerUserRateLimiter::new(30, 60),
+        oauth_rate_limiter: t3claw::channels::web::server::PerUserRateLimiter::new(20, 60),
+        webhook_rate_limiter: t3claw::channels::web::server::RateLimiter::new(10, 60),
         registry_entries: Vec::new(),
         cost_guard: None,
         routine_engine: Arc::new(tokio::sync::RwLock::new(None)),
         startup_time: std::time::Instant::now(),
-        active_config: bastionclaw::channels::web::server::ActiveConfigSnapshot::default(),
+        active_config: t3claw::channels::web::server::ActiveConfigSnapshot::default(),
         secrets_store: None,
         db_auth: None,
         pairing_store: None,
@@ -746,7 +746,7 @@ async fn test_no_llm_provider_returns_503() {
         tool_dispatcher: None,
     });
 
-    let auth = bastionclaw::channels::web::auth::MultiAuthState::single(
+    let auth = t3claw::channels::web::auth::MultiAuthState::single(
         AUTH_TOKEN.to_string(),
         "test-user".to_string(),
     );
@@ -775,10 +775,10 @@ async fn test_chat_completions_body_too_large() {
 
     let mock_state = Arc::new(MockLlmState::default());
     let llm_provider: Arc<dyn LlmProvider> = Arc::new(MockLlmProvider::new(mock_state));
-    let state = bastionclaw::channels::web::test_helpers::TestGatewayBuilder::new()
+    let state = t3claw::channels::web::test_helpers::TestGatewayBuilder::new()
         .llm_provider(llm_provider)
         .build();
-    let auth_state = bastionclaw::channels::web::auth::MultiAuthState::single(
+    let auth_state = t3claw::channels::web::auth::MultiAuthState::single(
         AUTH_TOKEN.to_string(),
         "test-user".to_string(),
     );
@@ -786,11 +786,11 @@ async fn test_chat_completions_body_too_large() {
     let app = Router::new()
         .route(
             "/v1/chat/completions",
-            post(bastionclaw::channels::web::openai_compat::chat_completions_handler),
+            post(t3claw::channels::web::openai_compat::chat_completions_handler),
         )
         .route_layer(middleware::from_fn_with_state(
-            bastionclaw::channels::web::auth::CombinedAuthState::from(auth_state),
-            bastionclaw::channels::web::auth::auth_middleware,
+            t3claw::channels::web::auth::CombinedAuthState::from(auth_state),
+            t3claw::channels::web::auth::auth_middleware,
         ))
         .layer(DefaultBodyLimit::max(10 * 1024 * 1024))
         .with_state(state);

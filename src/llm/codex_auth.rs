@@ -1,8 +1,8 @@
 //! Read Codex CLI credentials for LLM authentication.
 //!
-//! When `LLM_USE_CODEX_AUTH=true`, BastionClaw reads the Codex CLI's
+//! When `LLM_USE_CODEX_AUTH=true`, T3Claw reads the Codex CLI's
 //! `auth.json` file (default: `~/.codex/auth.json`) and extracts
-//! credentials. This lets BastionClaw piggyback on a Codex login without
+//! credentials. This lets T3Claw piggyback on a Codex login without
 //! implementing its own OAuth flow.
 //!
 //! Codex supports two auth modes:

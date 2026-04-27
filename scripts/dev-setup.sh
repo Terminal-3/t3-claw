@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Developer setup script for BastionClaw.
+# Developer setup script for T3Claw.
 #
 # Gets a fresh checkout ready for development without requiring
 # Docker, PostgreSQL, or any external services.
@@ -16,7 +16,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-echo "=== BastionClaw Developer Setup ==="
+echo "=== T3Claw Developer Setup ==="
 echo ""
 
 # 1. Check rustup

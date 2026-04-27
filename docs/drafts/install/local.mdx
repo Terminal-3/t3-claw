@@ -1,10 +1,10 @@
 ---
 title: Local Installation
 sidebarTitle: Local
-description: Install BastionClaw on Linux, macOS, or Windows
+description: Install T3Claw on Linux, macOS, or Windows
 ---
 
-Install BastionClaw directly on your local machine for personal use. This is the simplest and most common installation method.
+Install T3Claw directly on your local machine for personal use. This is the simplest and most common installation method.
 
 ## Installation by OS
 
@@ -13,10 +13,10 @@ Install BastionClaw directly on your local machine for personal use. This is the
     ### Quick Install (Shell Script)
 
     ```bash
-    curl -fsSL https://install.bastionclaw.ai | bash
+    curl -fsSL https://install.t3claw.ai | bash
     ```
 
-    This installs to `~/.local/bin/bastionclaw`. Add to your PATH if needed:
+    This installs to `~/.local/bin/t3claw`. Add to your PATH if needed:
 
     ```bash
     export PATH="$HOME/.local/bin:$PATH"
@@ -27,12 +27,12 @@ Install BastionClaw directly on your local machine for personal use. This is the
 
     ```bash
     # Add repository
-    curl -fsSL https://repo.bastionclaw.ai/gpg | sudo gpg --dearmor -o /usr/share/keyrings/bastionclaw.gpg
-    echo "deb [signed-by=/usr/share/keyrings/bastionclaw.gpg] https://repo.bastionclaw.ai stable main" | sudo tee /etc/apt/sources.list.d/bastionclaw.list
+    curl -fsSL https://repo.t3claw.ai/gpg | sudo gpg --dearmor -o /usr/share/keyrings/t3claw.gpg
+    echo "deb [signed-by=/usr/share/keyrings/t3claw.gpg] https://repo.t3claw.ai stable main" | sudo tee /etc/apt/sources.list.d/t3claw.list
 
     # Install
     sudo apt update
-    sudo apt install bastionclaw
+    sudo apt install t3claw
     ```
 
     ### Build from Source
@@ -43,27 +43,27 @@ Install BastionClaw directly on your local machine for personal use. This is the
     
 
     # Build
-    git clone https://github.com/nearai/bastionclaw.git
-    cd bastionclaw
+    git clone https://github.com/nearai/t3claw.git
+    cd t3claw
     cargo build --release
 
     # Install
-    sudo cp target/release/bastionclaw /usr/local/bin/
+    sudo cp target/release/t3claw /usr/local/bin/
     ```
 
     ### Post-Install
 
     1. **Run the wizard**:
        ```bash
-       bastionclaw onboard
+       t3claw onboard
        ```
 
     2. **Select libSQL** (recommended) during Step 1
 
     3. **Service setup** (optional):
        ```bash
-       bastionclaw service install
-       sudo systemctl enable --now bastionclaw
+       t3claw service install
+       sudo systemctl enable --now t3claw
        ```
   </Tab>
 
@@ -72,37 +72,37 @@ Install BastionClaw directly on your local machine for personal use. This is the
 
     ```bash
     # Add tap
-    brew tap bastionclaw-ai/tap
+    brew tap t3claw-ai/tap
 
     # Install
-    brew install bastionclaw
+    brew install t3claw
     ```
 
     ### Shell Script
 
     ```bash
-    curl -fsSL https://install.bastionclaw.ai | bash
+    curl -fsSL https://install.t3claw.ai | bash
     ```
 
-    Installs to `~/.local/bin/bastionclaw`.
+    Installs to `~/.local/bin/t3claw`.
 
     ### Post-Install
 
     1. **Run the wizard**:
        ```bash
-       bastionclaw onboard
+       t3claw onboard
        ```
 
     2. **macOS Keychain** (Step 2): Two system dialogs are expected:
        - "Enter your password to unlock the keychain"
-       - "Allow bastionclaw to access this keychain item"
+       - "Allow t3claw to access this keychain item"
 
        Click "Always Allow" to minimize future prompts.
 
     3. **Service setup** (optional):
        ```bash
-       bastionclaw service install
-       brew services start bastionclaw
+       t3claw service install
+       brew services start t3claw
        ```
   </Tab>
 
@@ -120,7 +120,7 @@ Install BastionClaw directly on your local machine for personal use. This is the
 
     ```bash
     # Inside WSL2
-    curl -fsSL https://install.bastionclaw.ai | bash
+    curl -fsSL https://install.t3claw.ai | bash
     ```
 
     ### Access from Windows
@@ -133,12 +133,12 @@ Install BastionClaw directly on your local machine for personal use. This is the
     ### Post-Install
 
     ```bash
-    bastionclaw onboard
-    bastionclaw run
+    t3claw onboard
+    t3claw run
     ```
 
     <Note>
-    WSL2 is the recommended way to run BastionClaw on Windows. Native Windows support is available but less tested.
+    WSL2 is the recommended way to run T3Claw on Windows. Native Windows support is available but less tested.
     </Note>
   </Tab>
 
@@ -146,12 +146,12 @@ Install BastionClaw directly on your local machine for personal use. This is the
     ### PowerShell Install
 
     ```powershell
-    irm https://install.bastionclaw.ai | iex
+    irm https://install.t3claw.ai | iex
     ```
 
     Or manually:
-    1. Download `bastionclaw-x86_64-pc-windows-msvc.zip` from [releases](https://github.com/nearai/bastionclaw/releases)
-    2. Extract to `C:\Program Files\BastionClaw\`
+    1. Download `t3claw-x86_64-pc-windows-msvc.zip` from [releases](https://github.com/nearai/t3claw/releases)
+    2. Extract to `C:\Program Files\T3Claw\`
     3. Add to PATH
 
     ### Manual PATH Setup
@@ -160,7 +160,7 @@ Install BastionClaw directly on your local machine for personal use. This is the
     # Add to system PATH
     [Environment]::SetEnvironmentVariable(
       "Path",
-      $env:Path + ";C:\Program Files\BastionClaw",
+      $env:Path + ";C:\Program Files\T3Claw",
       "User"
     )
     ```
@@ -168,8 +168,8 @@ Install BastionClaw directly on your local machine for personal use. This is the
     ### Post-Install
 
     ```powershell
-    bastionclaw onboard
-    bastionclaw run
+    t3claw onboard
+    t3claw run
     ```
 
     <Warning>
@@ -185,7 +185,7 @@ For local installs, use **libSQL** (embedded SQLite):
 ```
 Wizard Step 1: Database Connection
 → Select "libSQL"
-→ Path: ~/.bastionclaw/bastionclaw.db (default)
+→ Path: ~/.t3claw/t3claw.db (default)
 ```
 
 Benefits of libSQL for local use:
@@ -204,7 +204,7 @@ Your OS manages the encryption master key:
   <Accordion title="macOS" icon="apple">
     Uses macOS Keychain. Two dialogs expected:
     1. "Enter your password to unlock the keychain"
-    2. "Allow bastionclaw to access this keychain item"
+    2. "Allow t3claw to access this keychain item"
 
     Click "Always Allow" on the second dialog to prevent repeated prompts.
   </Accordion>
@@ -230,38 +230,38 @@ Your OS manages the encryption master key:
 
 ## Service Installation
 
-Run BastionClaw as a background service:
+Run T3Claw as a background service:
 
 <Tabs>
   <Tab title="Linux (systemd)">
     ```bash
     # Install service
-    bastionclaw service install
+    t3claw service install
 
     # Enable and start
-    sudo systemctl enable --now bastionclaw
+    sudo systemctl enable --now t3claw
 
     # Check status
-    sudo systemctl status bastionclaw
+    sudo systemctl status t3claw
 
     # View logs
-    sudo journalctl -u bastionclaw -f
+    sudo journalctl -u t3claw -f
     ```
   </Tab>
 
   <Tab title="macOS (launchd)">
     ```bash
     # Install service
-    bastionclaw service install
+    t3claw service install
 
     # Start with Homebrew
-    brew services start bastionclaw
+    brew services start t3claw
 
     # Or manually
-    launchctl load ~/Library/LaunchAgents/ai.bastionclaw.service.plist
+    launchctl load ~/Library/LaunchAgents/ai.t3claw.service.plist
 
     # Check status
-    launchctl list | grep bastionclaw
+    launchctl list | grep t3claw
     ```
   </Tab>
 
@@ -277,22 +277,22 @@ Run BastionClaw as a background service:
 
 ```bash
 # Check version
-bastionclaw --version
+t3claw --version
 
 # Run diagnostics
-bastionclaw doctor
+t3claw doctor
 
 # Expected output:
-# ✓ Binary: bastionclaw v0.13.0
-# ✓ Config directory: /home/user/.bastionclaw
+# ✓ Binary: t3claw v0.13.0
+# ✓ Config directory: /home/user/.t3claw
 # ✓ Database: libSQL (not yet initialized)
 # ✓ Docker: available (optional)
 ```
 
 ## Next Steps
 
-1. **Run the wizard**: `bastionclaw onboard`
-2. **Start BastionClaw**: `bastionclaw run`
+1. **Run the wizard**: `t3claw onboard`
+2. **Start T3Claw**: `t3claw run`
 3. **Open Web Gateway**: `http://127.0.0.1:3000`
 
 <CardGroup cols={2}>

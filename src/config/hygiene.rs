@@ -1,4 +1,4 @@
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::config::helpers::{db_first_bool, db_first_or_default};
 use crate::error::ConfigError;
 use crate::settings::Settings;
@@ -48,13 +48,13 @@ impl HygieneConfig {
     }
 
     /// Convert to the workspace hygiene config, resolving the state directory
-    /// to the standard `~/.bastionclaw` location.
+    /// to the standard `~/.t3claw` location.
     pub fn to_workspace_config(&self) -> crate::workspace::hygiene::HygieneConfig {
         crate::workspace::hygiene::HygieneConfig {
             enabled: self.enabled,
             version_keep_count: self.version_keep_count,
             cadence_hours: self.cadence_hours,
-            state_dir: bastionclaw_base_dir(),
+            state_dir: t3claw_base_dir(),
         }
     }
 }

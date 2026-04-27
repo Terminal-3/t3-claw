@@ -52,7 +52,7 @@ Reactive routines can expose an HTTP endpoint that fires the routine when called
 The endpoint is available at:
 
 ```
-POST https://<your-bastionclaw-host>/hooks/<path>
+POST https://<your-t3claw-host>/hooks/<path>
 Authorization: Bearer <secret>
 ```
 
@@ -65,7 +65,7 @@ Webhook trigger endpoints are not yet exposed in the web gateway UI. Create webh
 Trigger a deploy-complete routine from a CI/CD pipeline:
 
 ```bash
-curl -X POST https://bastionclaw.example.com/hooks/deploy-complete \
+curl -X POST https://t3claw.example.com/hooks/deploy-complete \
   -H "Authorization: Bearer ${DEPLOY_WEBHOOK_SECRET}" \
   -H "Content-Type: application/json" \
   -d '{

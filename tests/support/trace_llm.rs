@@ -12,8 +12,8 @@ use async_trait::async_trait;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use bastionclaw::error::LlmError;
-use bastionclaw::llm::{
+use t3claw::error::LlmError;
+use t3claw::llm::{
     ChatMessage, CompletionRequest, CompletionResponse, FinishReason, LlmProvider, Role, ToolCall,
     ToolCompletionRequest, ToolCompletionResponse,
 };
@@ -22,7 +22,7 @@ use bastionclaw::llm::{
 // still import them from here.
 // Re-export all shared types so downstream test files can import from here.
 #[allow(unused_imports)]
-pub use bastionclaw::llm::recording::{
+pub use t3claw::llm::recording::{
     ExpectedToolResult, HttpExchange, HttpExchangeRequest, HttpExchangeResponse,
     MemorySnapshotEntry, RequestHint, TraceResponse, TraceStep, TraceToolCall,
 };
@@ -616,7 +616,7 @@ impl TraceLlm {
     /// Strip `<tool_output name="...">...\n</tool_output>` wrapper from
     /// safety-layer output and reverse the targeted `</tool_output` escape.
     fn unwrap_tool_output(content: &str) -> std::borrow::Cow<'_, str> {
-        if let Some(body) = bastionclaw_safety::SafetyLayer::unwrap_tool_output(content) {
+        if let Some(body) = t3claw_safety::SafetyLayer::unwrap_tool_output(content) {
             return std::borrow::Cow::Owned(body);
         }
         std::borrow::Cow::Borrowed(content)

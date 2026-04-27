@@ -4,7 +4,7 @@ Summary of the Claude Code sessions that built the engine v2, self-improvement s
 
 ## Session 1: Engine v2 Foundation (2026-03-20 to 2026-03-22)
 
-Built the core engine crate (`crates/bastionclaw_engine/`) from scratch in 6 phases:
+Built the core engine crate (`crates/t3claw_engine/`) from scratch in 6 phases:
 
 - **Phase 1**: Core types (Thread, Step, Capability, MemoryDoc, Project), trait definitions (LlmBackend, Store, EffectExecutor), thread state machine. 32 tests.
 - **Phase 2**: Execution engine (Tier 0) — CapabilityRegistry, LeaseManager, PolicyEngine, ThreadManager, ExecutionLoop with structured tool calls. 74 tests.
@@ -13,7 +13,7 @@ Built the core engine crate (`crates/bastionclaw_engine/`) from scratch in 6 pha
 - **Phase 5**: Conversation surface — ConversationManager routing UI messages to threads. 85 tests.
 - **Phase 6**: Bridge adapters — LlmBridgeAdapter, EffectBridgeAdapter, HybridStore, EngineRouter. Parallel deployment via `ENGINE_V2=true`. 151 tests.
 
-**Key design decision**: The engine has zero dependency on the main bastionclaw crate. All interaction goes through three traits (LlmBackend, Store, EffectExecutor) implemented by bridge adapters.
+**Key design decision**: The engine has zero dependency on the main t3claw crate. All interaction goes through three traits (LlmBackend, Store, EffectExecutor) implemented by bridge adapters.
 
 ## Session 2: Debugging via Traces (2026-03-22 to 2026-03-23)
 
@@ -98,11 +98,11 @@ The pivotal architectural change. Motivated by the question: *"What if we move s
 
 ## Session 7: Integration Scaling Research (2026-03-26)
 
-Studied [Pica](https://github.com/withoneai/pica) (formerly IntegrationOS, 200+ third-party API integrations) to understand how to rapidly scale the number of available integrations in BastionClaw.
+Studied [Pica](https://github.com/withoneai/pica) (formerly IntegrationOS, 200+ third-party API integrations) to understand how to rapidly scale the number of available integrations in T3Claw.
 
 **Pica's architecture**: Integrations are MongoDB documents, not code. Each platform has a `ConnectionDefinition` (identity + auth schema) and N `ConnectionModelDefinition` records (one per API endpoint: URL, method, auth method, schemas, JS transform functions). A generic executor dispatches requests. OAuth definitions embed JavaScript compute functions executed by a TypeScript service. Adding a new platform = inserting documents, no code changes.
 
-**Analysis of BastionClaw v1 tools**: Audited all 37 built-in tools. Only 3 (image_gen, image_analyze, image_edit) are HTTP API wrappers. The other 34 are local computation, filesystem, orchestration, or system management — none convertible to data-driven definitions. The value isn't converting existing tools; it's enabling hundreds of new integrations.
+**Analysis of T3Claw v1 tools**: Audited all 37 built-in tools. Only 3 (image_gen, image_analyze, image_edit) are HTTP API wrappers. The other 34 are local computation, filesystem, orchestration, or system management — none convertible to data-driven definitions. The value isn't converting existing tools; it's enabling hundreds of new integrations.
 
 **Key finding — deterministic executors don't solve the LLM problem**: Even with a Pica-style executor, each integration action must be registered as a tool in the LLM's context. At 200+ tools:
 - ~20,000 tokens always-on cost (tool definitions sent every request)
@@ -132,9 +132,9 @@ Studied all OAuth issues reported on GitHub (#1537, #902, #1500, #557, #1441, #1
 
 **The insight**: The `skills/github/SKILL.md` already demonstrated the pattern — skill instructs LLM to call `http` tool, credentials auto-injected by host. The gap was that credential declarations lived in WASM, not skills.
 
-**Implementation** (6 files created/modified in `bastionclaw_skills`, 4 in main crate):
+**Implementation** (6 files created/modified in `t3claw_skills`, 4 in main crate):
 
-1. **Credential types in skill frontmatter** — `SkillCredentialSpec`, `SkillCredentialLocation`, `SkillOAuthConfig`, `ProviderRefreshStrategy` in `crates/bastionclaw_skills/src/types.rs`. Skills declare credentials in YAML; values never in LLM context.
+1. **Credential types in skill frontmatter** — `SkillCredentialSpec`, `SkillCredentialLocation`, `SkillOAuthConfig`, `ProviderRefreshStrategy` in `crates/t3claw_skills/src/types.rs`. Skills declare credentials in YAML; values never in LLM context.
 
 2. **Validation** — HTTPS enforcement on OAuth URLs, credential name patterns, non-empty hosts. Invalid specs logged and skipped during registration.
 
@@ -178,7 +178,7 @@ Three fixes driven by analyzing a live engine trace (`engine_trace_20260328T0305
 
 ### Platform Self-Awareness
 
-**The problem**: The agent had no knowledge of its own identity. It didn't know it was BastionClaw, its GitHub repo, its version, active channels, LLM backend, or database. The system prompt just said "You are BastionClaw Agent, a secure autonomous assistant" with no specifics.
+**The problem**: The agent had no knowledge of its own identity. It didn't know it was T3Claw, its GitHub repo, its version, active channels, LLM backend, or database. The system prompt just said "You are T3Claw Agent, a secure autonomous assistant" with no specifics.
 
 **The insight**: Identity infrastructure was 85% built — `IDENTITY.md`, `SOUL.md`, `USER.md`, `AGENTS.md` injection worked for *user* identity. But nothing existed for *platform* identity. This isn't workspace-level (it changes with runtime config), so a seed file was wrong — it needed to be injected dynamically.
 
@@ -239,7 +239,7 @@ New submission command: `/expected <what should have happened>`. Captures recent
 
 **Flow**: User → `/expected should have logged in via GitHub OAuth` → handler packages recent context → fires via both v2 MissionManager and v1 RoutineEngine → expected-behavior learning mission investigates gap, classifies root cause (MISSING_CAPABILITY / WRONG_TOOL_CHOICE / PROMPT_GAP / CONFIG_ISSUE / BUG), applies fix.
 
-Files: `src/agent/submission.rs` (parser), `src/agent/commands.rs` (handler), `src/agent/agent_loop.rs` (mission_manager slot + dispatch), `src/bridge/router.rs` (wiring), `crates/bastionclaw_engine/src/runtime/mission.rs` (4th learning mission), `crates/bastionclaw_engine/prompts/mission_expected_behavior.md` (goal prompt).
+Files: `src/agent/submission.rs` (parser), `src/agent/commands.rs` (handler), `src/agent/agent_loop.rs` (mission_manager slot + dispatch), `src/bridge/router.rs` (wiring), `crates/t3claw_engine/src/runtime/mission.rs` (4th learning mission), `crates/t3claw_engine/prompts/mission_expected_behavior.md` (goal prompt).
 
 ### Other Fixes
 
@@ -247,9 +247,9 @@ Files: `src/agent/submission.rs` (parser), `src/agent/commands.rs` (handler), `s
 - **Monty runtime limitations documented** in CodeAct preamble — no stdlib, single imports, no classes/with/match. Agent no longer tries `import csv, io, math`.
 - **`MONTY.md` tracking file** — pin version, all limitations, upgrade process.
 - **Gateway new-thread fix** — `createNewThread()` now eagerly resets read-only state.
-- **Glob re-exports removed** — `pub use bastionclaw_safety::*` and `pub use bastionclaw_skills::*` deleted; ~35 files migrated to direct imports.
+- **Glob re-exports removed** — `pub use t3claw_safety::*` and `pub use t3claw_skills::*` deleted; ~35 files migrated to direct imports.
 - **Clippy cleanup** — collapsible ifs, shadow imports, missing SkillActivated match arm, duplicate repl.rs arms. Zero warnings across all crates.
-- **Mission prompt templates extracted** to `crates/bastionclaw_engine/prompts/mission_*.md` from inline Rust strings.
+- **Mission prompt templates extracted** to `crates/t3claw_engine/prompts/mission_*.md` from inline Rust strings.
 
 ## Session 11: E2E Test Suite + Engine Hardening (2026-03-28 to 2026-03-29)
 
@@ -269,7 +269,7 @@ Analyzed two production traces (`engine_trace_20260329T011339.json`, `engine_tra
 
 ### E2E Test Suite (5 files, 12 tests)
 
-Built a v2-engine-specific E2E test framework: mock API servers (aiohttp), mock LLM tool call patterns, dedicated bastionclaw server fixtures with `ENGINE_V2=true`, `HTTP_ALLOW_LOCALHOST=true`, `SECRETS_MASTER_KEY`.
+Built a v2-engine-specific E2E test framework: mock API servers (aiohttp), mock LLM tool call patterns, dedicated t3claw server fixtures with `ENGINE_V2=true`, `HTTP_ALLOW_LOCALHOST=true`, `SECRETS_MASTER_KEY`.
 
 | File | Tests | Coverage |
 |------|-------|---------|
@@ -375,14 +375,14 @@ LLM calls http(url="https://api.github.com/...") →
 
 ### What's NOT Changed
 
-- Engine crate (`crates/bastionclaw_engine/`) — `NeedAuthentication` already existed
+- Engine crate (`crates/t3claw_engine/`) — `NeedAuthentication` already existed
 - HTTP tool (`src/tools/builtin/http.rs`) — existing 401 detection stays as safety net
 - WASM credential injection — zero-exposure model unchanged
 - `/api/chat/auth-token` endpoint — already bypasses LLM correctly
 
 ## Session 13: Plan Mode — Autonomous Long-Running Tasks (2026-03-29)
 
-Designed and built plan mode for autonomous task execution, inspired by OpenAI Codex's `update_plan` checklist and Claude Code's file-based plan mode. The key insight: both systems enforce plan mode restrictions entirely through prompting, not tool removal. BastionClaw's implementation composes existing v2 primitives (MemoryDoc, Mission, SSE events) with a skill and thin command shim.
+Designed and built plan mode for autonomous task execution, inspired by OpenAI Codex's `update_plan` checklist and Claude Code's file-based plan mode. The key insight: both systems enforce plan mode restrictions entirely through prompting, not tool removal. T3Claw's implementation composes existing v2 primitives (MemoryDoc, Mission, SSE events) with a skill and thin command shim.
 
 ### Research
 
@@ -426,14 +426,14 @@ Rather than adding engine states or new worker modes, plan mode maps to existing
 
 3. **Plan execution via Mission, not Job** — Missions track `current_focus` (which step to work on next), `approach_history` (what was tried), and `thread_history` (all execution threads). The outcome watcher updates these automatically. Jobs don't have this evolving-strategy primitive.
 
-4. **No tool restriction in plan mode** — Unlike Codex which prompts the LLM not to mutate, BastionClaw's plan-mode skill naturally guides the LLM to only use read/search/write tools during planning. During execution (mission thread), all tools are available per capability leases.
+4. **No tool restriction in plan mode** — Unlike Codex which prompts the LLM not to mutate, T3Claw's plan-mode skill naturally guides the LLM to only use read/search/write tools during planning. During execution (mission thread), all tools are available per capability leases.
 
 ### Files Changed
 
 | File | Role |
 |------|------|
-| `crates/bastionclaw_engine/src/types/memory.rs` | `DocType::Plan` variant |
-| `crates/bastionclaw_common/src/event.rs` | `PlanStepDto`, `AppEvent::PlanUpdate`, tests |
+| `crates/t3claw_engine/src/types/memory.rs` | `DocType::Plan` variant |
+| `crates/t3claw_common/src/event.rs` | `PlanStepDto`, `AppEvent::PlanUpdate`, tests |
 | `src/tools/builtin/plan.rs` | **New** — `PlanUpdateTool` (SSE broadcast) |
 | `src/tools/builtin/mod.rs` | Module + export registration |
 | `src/tools/registry.rs` | `register_plan_tools()`, auto-register in builtins |

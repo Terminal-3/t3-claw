@@ -4,27 +4,27 @@ sidebarTitle: FAQ
 description: Frequently asked questions
 ---
 
-Common questions about BastionClaw.
+Common questions about T3Claw.
 
 ## General
 
 <AccordionGroup>
-  <Accordion title="What is BastionClaw?" icon="help-circle">
-    BastionClaw is a secure, self-hosted AI assistant that runs on your own hardware. It provides a personal AI with strong privacy guarantees through multi-layer security.
+  <Accordion title="What is T3Claw?" icon="help-circle">
+    T3Claw is a secure, self-hosted AI assistant that runs on your own hardware. It provides a personal AI with strong privacy guarantees through multi-layer security.
   </Accordion>
 
   <Accordion title="Do I need Docker?" icon="container">
     **No for basic use, yes for job sandboxing.**
 
-    BastionClaw runs as a standalone binary. Docker is only required if you want to use:
+    T3Claw runs as a standalone binary. Docker is only required if you want to use:
     - Sandboxed job execution (Claude Code mode)
     - WASM tool building with automatic compilation
 
-    Without Docker, BastionClaw still works fully — just without the Docker sandbox layer.
+    Without Docker, T3Claw still works fully — just without the Docker sandbox layer.
   </Accordion>
 
   <Accordion title="Can I run without PostgreSQL?" icon="database">
-    **Yes.** BastionClaw includes libSQL (embedded SQLite) as an alternative.
+    **Yes.** T3Claw includes libSQL (embedded SQLite) as an alternative.
 
     libSQL requires no separate server and is recommended for personal use. PostgreSQL is recommended for production or multi-user deployments.
   </Accordion>
@@ -39,15 +39,15 @@ Common questions about BastionClaw.
     If using a cloud provider (NEAR AI, Anthropic, OpenAI), your prompts/responses are sent to them. Use Ollama or Tinfoil for maximum privacy.
   </Accordion>
 
-  <Accordion title="How is BastionClaw different from openclaw?" icon="git-compare">
-    | Feature | BastionClaw | openclaw |
+  <Accordion title="How is T3Claw different from openclaw?" icon="git-compare">
+    | Feature | T3Claw | openclaw |
     |---------|----------|----------|
     | Deployment | Local, self-hosted | Cloud service |
     | Data | Your hardware, your control | openclaw infrastructure |
     | Language | Rust | Varies |
     | Security | Multi-layer, local-first | Cloud security |
 
-    BastionClaw is the self-hosted version for users who want complete control over their data.
+    T3Claw is the self-hosted version for users who want complete control over their data.
   </Accordion>
 </AccordionGroup>
 
@@ -57,9 +57,9 @@ Common questions about BastionClaw.
   <Accordion title="How do I switch LLM providers?" icon="refresh-cw">
     ```bash
     # Re-run the wizard
-    bastionclaw onboard --skip-auth
+    t3claw onboard --skip-auth
 
-    # Or edit ~/.bastionclaw/.env
+    # Or edit ~/.t3claw/.env
     export LLM_BACKEND=anthropic
     export ANTHROPIC_API_KEY=sk-ant-...
     ```
@@ -67,7 +67,7 @@ Common questions about BastionClaw.
 
   <Accordion title="How do I add a second channel?" icon="plus">
     ```bash
-    bastionclaw onboard --channels-only
+    t3claw onboard --channels-only
     ```
 
     This runs only Step 6 of the wizard, letting you add channels without reconfiguring everything.
@@ -85,18 +85,18 @@ Common questions about BastionClaw.
   </Accordion>
 
   <Accordion title="Where is my data stored?" icon="database">
-    By default: `~/.bastionclaw/`
+    By default: `~/.t3claw/`
 
     ```
-    ~/.bastionclaw/
-    ├── bastionclaw.db          # libSQL database
+    ~/.t3claw/
+    ├── t3claw.db          # libSQL database
     ├── .env                 # Bootstrap config
     ├── channels/            # WASM channels
     ├── tools/               # WASM tools
     └── skills/              # SKILL.md files
     ```
 
-    Change with `BASTIONCLAW_BASE_DIR`.
+    Change with `T3CLAW_BASE_DIR`.
   </Accordion>
 </AccordionGroup>
 
@@ -105,14 +105,14 @@ Common questions about BastionClaw.
 <AccordionGroup>
   <Accordion title="How do I reset everything?" icon="trash">
     ```bash
-    # Stop BastionClaw
-    killall bastionclaw
+    # Stop T3Claw
+    killall t3claw
 
     # Remove data
-    rm -rf ~/.bastionclaw
+    rm -rf ~/.t3claw
 
     # Restart fresh
-    bastionclaw onboard
+    t3claw onboard
     ```
 
     <Warning>This permanently deletes all your data.</Warning>
@@ -123,21 +123,21 @@ Common questions about BastionClaw.
 
     On VPS/servers without a browser, use:
     - NEAR AI Cloud API key (option 4 in auth menu)
-    - Or set `BASTIONCLAW_OAUTH_CALLBACK_URL` to a public URL
+    - Or set `T3CLAW_OAUTH_CALLBACK_URL` to a public URL
   </Accordion>
 
-  <Accordion title="How do I run BastionClaw as a service?" icon="server">
+  <Accordion title="How do I run T3Claw as a service?" icon="server">
     ```bash
     # Install service
-    bastionclaw service install
+    t3claw service install
 
     # Start
-    sudo systemctl enable --now bastionclaw  # Linux
-    brew services start bastionclaw            # macOS
+    sudo systemctl enable --now t3claw  # Linux
+    brew services start t3claw            # macOS
     ```
   </Accordion>
 
-  <Accordion title="Can I use BastionClaw behind a reverse proxy?" icon="network">
+  <Accordion title="Can I use T3Claw behind a reverse proxy?" icon="network">
     **Yes.** Configure your reverse proxy to forward to the Web Gateway:
 
     ```nginx
@@ -156,8 +156,8 @@ Common questions about BastionClaw.
 ## Security
 
 <AccordionGroup>
-  <Accordion title="How secure is BastionClaw?" icon="shield">
-    BastionClaw uses defense in depth:
+  <Accordion title="How secure is T3Claw?" icon="shield">
+    T3Claw uses defense in depth:
 
     1. **Safety Layer** — Prompt injection defense
     2. **WASM Sandbox** — Sandboxed tool execution
@@ -168,8 +168,8 @@ Common questions about BastionClaw.
     See [Security Overview](/security) for details.
   </Accordion>
 
-  <Accordion title="Can BastionClaw be hacked?" icon="alert-triangle">
-    No software is unhackable. BastionClaw reduces risk through:
+  <Accordion title="Can T3Claw be hacked?" icon="alert-triangle">
+    No software is unhackable. T3Claw reduces risk through:
     - Multiple isolation layers
     - Minimal attack surface
     - Security-first design
@@ -199,7 +199,7 @@ Common questions about BastionClaw.
 ## Advanced
 
 <AccordionGroup>
-  <Accordion title="Can I run BastionClaw on a Raspberry Pi?" icon="cpu">
+  <Accordion title="Can I run T3Claw on a Raspberry Pi?" icon="cpu">
     **Yes**, with caveats:
     - Use libSQL (not PostgreSQL)
     - Use Ollama with small models (3B parameters)
@@ -208,7 +208,7 @@ Common questions about BastionClaw.
 
     ```bash
     # Install for ARM
-    curl -fsSL https://install.bastionclaw.ai | bash
+    curl -fsSL https://install.t3claw.ai | bash
     ```
   </Accordion>
 
@@ -225,9 +225,9 @@ Common questions about BastionClaw.
   </Accordion>
 
   <Accordion title="Can I contribute?" icon="github">
-    Yes! BastionClaw is open source:
+    Yes! T3Claw is open source:
 
-    - GitHub: https://github.com/bastionclaw-ai/bastionclaw
+    - GitHub: https://github.com/t3claw-ai/t3claw
     - Issues: Report bugs and feature requests
     - PRs: Welcome with tests
 
@@ -240,4 +240,4 @@ Common questions about BastionClaw.
 - [Troubleshooting](/help/troubleshooting) — Common issues
 - [CLI Reference](/reference/cli) — Command reference
 - [Configuration](/setup/configuration) — Environment variables
-- [GitHub Issues](https://github.com/bastionclaw-ai/bastionclaw/issues) — Bug reports
+- [GitHub Issues](https://github.com/t3claw-ai/t3claw/issues) — Bug reports

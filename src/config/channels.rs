@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::channels::web::sse::DEFAULT_MAX_CONNECTIONS;
 use crate::config::helpers::{
     db_first_bool, db_first_optional_string, db_first_or_default, optional_env, parse_bool_env,
@@ -19,7 +19,7 @@ pub struct ChannelsConfig {
     pub gateway: Option<GatewayConfig>,
     pub signal: Option<SignalConfig>,
     pub tui: Option<TuiChannelConfig>,
-    /// Directory containing WASM channel modules (default: ~/.bastionclaw/channels/).
+    /// Directory containing WASM channel modules (default: ~/.t3claw/channels/).
     pub wasm_channels_dir: std::path::PathBuf,
     /// Whether WASM channels are enabled.
     pub wasm_channels_enabled: bool,
@@ -426,9 +426,9 @@ impl ChannelsConfig {
 /// other modules that need to construct a gateway URL.
 pub const DEFAULT_GATEWAY_PORT: u16 = 3000;
 
-/// Get the default channels directory (~/.bastionclaw/channels/).
+/// Get the default channels directory (~/.t3claw/channels/).
 fn default_channels_dir() -> PathBuf {
-    bastionclaw_base_dir().join("channels")
+    t3claw_base_dir().join("channels")
 }
 
 #[cfg(test)]

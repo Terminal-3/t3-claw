@@ -5,7 +5,7 @@ description: 用于外部集成的 REST API
 icon: globe
 ---
 
-HTTP Webhook 频道提供 REST API，用于将外部服务与 BastionClaw 集成。
+HTTP Webhook 频道提供 REST API，用于将外部服务与 T3Claw 集成。
 
 <Note>
 如果您还没有设置智能体，请先查看我们的[快速开始指南](../quickstart)
@@ -64,7 +64,7 @@ curl -X POST http://localhost:8080/webhook \
   -H "X-Webhook-Secret: your-secret" \
   -d '{
     "user_id": "default",
-    "message": "Hello, BastionClaw!"
+    "message": "Hello, T3Claw!"
   }'
 ```
 
@@ -132,7 +132,7 @@ curl http://localhost:8080/jobs/{job_id} -H "X-Webhook-Secret: your-secret"
 
 ### GitHub Webhook
 
-配置 GitHub 将事件发送到您的 BastionClaw webhook URL：
+配置 GitHub 将事件发送到您的 T3Claw webhook URL：
 
 ```bash
 # GitHub webhook URL
@@ -143,7 +143,7 @@ https://your-server:8080/webhook
 
 ### Zapier
 
-使用 Zapier 的 Webhook 操作将事件发送到 BastionClaw。
+使用 Zapier 的 Webhook 操作将事件发送到 T3Claw。
 
 ### 自定义脚本
 
@@ -165,7 +165,7 @@ print(response.json()["job_id"])
 
 <AccordionGroup>
   <Accordion title="连接被拒绝" icon="x-circle">
-    - 检查 BastionClaw 是否在运行
+    - 检查 T3Claw 是否在运行
     - 验证 `HTTP_PORT` 正确
     - 检查防火墙：`sudo ufw allow 8080`
   </Accordion>
@@ -181,7 +181,7 @@ print(response.json()["job_id"])
   </Accordion>
 
   <Accordion title="消息未处理" icon="message-circle">
-    - 检查日志：`RUST_LOG=bastionclaw=debug bastionclaw run`
+    - 检查日志：`RUST_LOG=t3claw=debug t3claw run`
     - 验证 JSON 格式
     - 检查 `user_id` 有效
   </Accordion>

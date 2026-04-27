@@ -4,9 +4,9 @@ sidebarTitle: 沙箱工具
 description: 通过 WebAssembly（wasmtime）在沙箱中执行工具
 ---
 
-WASM 工具运行在 [wasmtime](https://wasmtime.dev/) 沙箱中。除 BastionClaw 暴露的宿主函数外，网络、文件系统、凭据等能力都必须在 `capabilities.json` 中显式声明。
+WASM 工具运行在 [wasmtime](https://wasmtime.dev/) 沙箱中。除 T3Claw 暴露的宿主函数外，网络、文件系统、凭据等能力都必须在 `capabilities.json` 中显式声明。
 
-对于需要强隔离的自定义集成，这是 BastionClaw 推荐方案。
+对于需要强隔离的自定义集成，这是 T3Claw 推荐方案。
 
 ---
 
@@ -15,7 +15,7 @@ WASM 工具运行在 [wasmtime](https://wasmtime.dev/) 沙箱中。除 BastionCl
 ```
 LLM 选择工具
     ↓
-BastionClaw 加载 WASM 模块（缓存或磁盘）
+T3Claw 加载 WASM 模块（缓存或磁盘）
     ↓
 模块在 wasmtime 沙箱执行
     ↓
@@ -128,7 +128,7 @@ export WASM_MEMORY_LIMIT=16777216
 
 启动时从以下目录发现工具：
 
-- `~/.bastionclaw/tools/`
+- `~/.t3claw/tools/`
 - `<workspace>/tools/`
 
 每个工具目录至少包含：
@@ -139,9 +139,9 @@ export WASM_MEMORY_LIMIT=16777216
 安装示例：
 
 ```bash
-bastionclaw tool install ./my-tool.wasm
-bastionclaw tool install https://example.com/tools/my-tool.wasm
-bastionclaw tool list
+t3claw tool install ./my-tool.wasm
+t3claw tool install https://example.com/tools/my-tool.wasm
+t3claw tool list
 ```
 
 ---

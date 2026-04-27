@@ -22,7 +22,7 @@ Google Sheets 扩展允许智能体操作电子表格，包括创建表格、读
 <Step title="安装扩展">
 
 ```bash
-bastionclaw registry install google-sheets
+t3claw registry install google-sheets
 ```
 
 </Step>
@@ -30,10 +30,10 @@ bastionclaw registry install google-sheets
 <Step title="授权访问">
 
 ```bash
-bastionclaw tool auth google-sheets
+t3claw tool auth google-sheets
 ```
 
-BastionClaw 会提供认证链接。请确保已按 [auth setup](./oauth-setup) 完成回调配置。若环境支持，会自动打开浏览器。授权成功后，令牌会被安全保存并自动刷新。
+T3Claw 会提供认证链接。请确保已按 [auth setup](./oauth-setup) 完成回调配置。若环境支持，会自动打开浏览器。授权成功后，令牌会被安全保存并自动刷新。
 
 <Tip>
 即使已经授权过其他 Google 扩展，也需要对每个新增扩展单独执行一次授权。

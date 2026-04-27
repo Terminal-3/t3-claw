@@ -1,4 +1,4 @@
-# Running BastionClaw in Docker
+# Running T3Claw in Docker
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ Everything else has a working default. See `.env.example` for the full reference
 ### 2b. Trinity MCP sidecar
 
 When you run the `app` profile, Docker also starts a `t3n-mcp-sidecar` alongside
-`bastionclaw`. The sidecar pulls `@terminal-3/t3n-mcp` from the GitHub npm registry
+`t3claw`. The sidecar pulls `@terminal-3/t3n-mcp` from the GitHub npm registry
 at build time — **no sibling repository is required**.
 
 Required in `.env` before building:
@@ -80,10 +80,10 @@ Notes:
 - `T3N_MCP_PRIVATE_KEY` is **not** required just to prove connectivity.
 - The two containers communicate via a shared Unix socket volume (`t3n_mcp_socket`).
   No network ports are needed between them.
-- After first boot, register the MCP server with BastionClaw (one-time):
+- After first boot, register the MCP server with T3Claw (one-time):
   ```bash
-  docker compose exec bastionclaw \
-    bastionclaw mcp add t3n-mcp --transport unix \
+  docker compose exec t3claw \
+    t3claw mcp add t3n-mcp --transport unix \
     --socket /var/run/t3n-mcp/t3n-mcp.sock
   ```
 
@@ -94,7 +94,7 @@ docker compose --profile app up --build
 ```
 
 If you want a fresh rebuild so code and Dockerfile changes definitely propagate
-through both `bastionclaw` and the Trinity MCP sidecar, use:
+through both `t3claw` and the Trinity MCP sidecar, use:
 
 ```bash
 docker compose --profile app down
@@ -110,12 +110,12 @@ Authorization: Bearer <your GATEWAY_AUTH_TOKEN>
 
 ### 4. One-time Trinity MCP registration
 
-Starting the sidecar is not enough on its own. BastionClaw still needs a
+Starting the sidecar is not enough on its own. T3Claw still needs a
 one-time MCP server registration inside its own config:
 
 ```bash
-docker compose exec bastionclaw \
-  bastionclaw mcp add t3n-mcp \
+docker compose exec t3claw \
+  t3claw mcp add t3n-mcp \
   --transport unix \
   --socket /var/run/t3n-mcp/t3n-mcp.sock
 ```
@@ -123,16 +123,16 @@ docker compose exec bastionclaw \
 Then verify the connection:
 
 ```bash
-docker compose exec bastionclaw bastionclaw mcp test t3n-mcp
+docker compose exec t3claw t3claw mcp test t3n-mcp
 ```
 
 If the test succeeds, the Trinity MCP tools should be available to the running
 instance. The MCP server config is persisted, so you only need to add it again
-if you reset BastionClaw's persisted state.
+if you reset T3Claw's persisted state.
 
-When the server is registered as `t3n-mcp`, BastionClaw now attaches built-in
+When the server is registered as `t3n-mcp`, T3Claw now attaches built-in
 Trinity setup guidance for local auth. If a user has not finished Trinity
-onboarding and granted the agent profile/data permissions yet, BastionClaw will
+onboarding and granted the agent profile/data permissions yet, T3Claw will
 direct them to [staging.network.terminal3.io/login](https://staging.network.terminal3.io/login)
 and ask them to confirm once they have completed the step.
 
@@ -140,9 +140,9 @@ If you added `t3n-mcp` before this support existed, remove and re-add it once so
 the saved MCP config picks up the built-in Trinity setup metadata:
 
 ```bash
-docker compose exec bastionclaw bastionclaw mcp remove t3n-mcp
-docker compose exec bastionclaw \
-  bastionclaw mcp add t3n-mcp \
+docker compose exec t3claw t3claw mcp remove t3n-mcp
+docker compose exec t3claw \
+  t3claw mcp add t3n-mcp \
   --transport unix \
   --socket /var/run/t3n-mcp/t3n-mcp.sock
 ```
@@ -155,7 +155,7 @@ docker compose exec bastionclaw \
 |---|---|
 | Start (after first build) | `docker compose --profile app up` |
 | Start in background | `docker compose --profile app up -d` |
-| View logs | `docker compose logs -f bastionclaw` |
+| View logs | `docker compose logs -f t3claw` |
 | View Trinity MCP sidecar logs | `docker compose logs -f t3n-mcp-sidecar` |
 | Stop (keep data) | `docker compose --profile app down` |
 | Full reset (destroys all data) | `docker compose --profile app down -v` |
@@ -187,7 +187,7 @@ curl -sS -X POST http://127.0.0.1:3000/api/admin/users \
 
 ## Sandbox (Docker-in-Docker)
 
-To allow the agent to spin up Docker containers for job isolation, mount the host socket. Add to the `bastionclaw` service in `docker-compose.yml`:
+To allow the agent to spin up Docker containers for job isolation, mount the host socket. Add to the `t3claw` service in `docker-compose.yml`:
 
 ```yaml
 volumes:
@@ -208,12 +208,12 @@ SANDBOX_ENABLED=true
 
 ```bash
 # Database
-docker compose exec postgres pg_dump -U bastionclaw -d bastionclaw \
+docker compose exec postgres pg_dump -U t3claw -d t3claw \
   --format=custom > backup-$(date +%Y%m%d).dump
 
 # Workspace / skills volume
 docker run --rm \
-  -v bastionclaw-claw_bastionclaw_data:/source:ro \
+  -v t3claw-claw_t3claw_data:/source:ro \
   -v $(pwd)/backups:/dest \
-  alpine tar czf /dest/bastionclaw-$(date +%Y%m%d).tar.gz -C /source .
+  alpine tar czf /dest/t3claw-$(date +%Y%m%d).tar.gz -C /source .
 ```

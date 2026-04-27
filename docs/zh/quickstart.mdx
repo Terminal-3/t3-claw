@@ -4,7 +4,7 @@ description: "几分钟内创建您的智能体"
 icon: rocket
 ---
 
-本指南将帮助您在 10 分钟内从零开始运行一个 BastionClaw 实例。
+本指南将帮助您在 10 分钟内从零开始运行一个 T3Claw 实例。
 
 ---
 
@@ -12,11 +12,11 @@ icon: rocket
 
 <Steps>
 
-<Step title="获取 BastionClaw">
+<Step title="获取 T3Claw">
 
 <Tabs>
   <Tab title="Agent Hub">
-  前往 https://agent.near.ai/ 并使用您偏好的方式登录，然后在私有实例中创建一个 BastionClaw 智能体。
+  前往 https://agent.near.ai/ 并使用您偏好的方式登录，然后在私有实例中创建一个 T3Claw 智能体。
 
   私有实例准备就绪后，您可以通过[智能体仪表盘](https://agent.near.ai/)提供的地址使用 `SSH` 连接到它：
 
@@ -26,7 +26,7 @@ icon: rocket
 
   <Accordion title="SSH 密钥">
 
-  使用 BastionClaw 需要提供 SSH 密钥。如果您还没有，可以在终端中使用以下命令生成：
+  使用 T3Claw 需要提供 SSH 密钥。如果您还没有，可以在终端中使用以下命令生成：
 
   ```bash
   ssh-keygen -t rsa -b 4096 -C "you@example.com"
@@ -49,8 +49,8 @@ icon: rocket
     适合在自己的机器上个人使用。默认使用 libSQL（嵌入式 SQLite），无需单独的数据库服务器。
 
     ```bash
-    # 安装 BastionClaw
-    curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/bastionclaw/releases/latest/download/bastionclaw-installer.sh | sh
+    # 安装 T3Claw
+    curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/t3claw/releases/latest/download/t3claw-installer.sh | sh
     ```
   </Tab>
 </Tabs>
@@ -62,19 +62,19 @@ icon: rocket
 首次启动智能体：
 
 ```bash
-bastionclaw
+t3claw
 ```
 
-<Accordion title="⚠️ 错误：另一个 BastionClaw 实例已在运行">
+<Accordion title="⚠️ 错误：另一个 T3Claw 实例已在运行">
 
-如果出现错误 `Error: Another BastionClaw instance is already running (PID 38). If this is incorrect, remove the stale PID file: /home/agent/.bastionclaw/bastionclaw.pid`，只需运行以下命令删除过期的 PID 文件，然后重新启动智能体：
+如果出现错误 `Error: Another T3Claw instance is already running (PID 38). If this is incorrect, remove the stale PID file: /home/agent/.t3claw/t3claw.pid`，只需运行以下命令删除过期的 PID 文件，然后重新启动智能体：
 
 ```
 # 删除过期的 PID 文件
-rm /home/agent/.bastionclaw/bastionclaw.pid
+rm /home/agent/.t3claw/t3claw.pid
 
 # 然后重新启动智能体
-bastionclaw
+t3claw
 ```
 
 </Accordion>
@@ -96,7 +96,7 @@ bastionclaw
 export HTTP_PORT=8081
 
 # 然后重新启动智能体
-bastionclaw
+t3claw
 ```
 
 </Accordion>
@@ -112,12 +112,12 @@ bastionclaw
 
 </Step>
 
-<Step title="更新 BastionClaw">
+<Step title="更新 T3Claw">
 
-最后，请定期更新 BastionClaw，以获得最新功能和改进。您可以在终端中运行以下命令进行更新：
+最后，请定期更新 T3Claw，以获得最新功能和改进。您可以在终端中运行以下命令进行更新：
 
 ```bash
-bastionclaw-update
+t3claw-update
 ```
 
 </Step>

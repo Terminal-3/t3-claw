@@ -25,7 +25,7 @@ mod tests {
 
     use serde_json::json;
 
-    use bastionclaw::llm::recording::{HttpExchange, HttpExchangeRequest, HttpExchangeResponse};
+    use t3claw::llm::recording::{HttpExchange, HttpExchangeRequest, HttpExchangeResponse};
 
     use crate::support::test_rig::TestRigBuilder;
     use crate::support::trace_llm::{
@@ -83,12 +83,12 @@ mod tests {
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_list_issues_coerces_string_limit() {
         let expected_url =
-            "https://api.github.com/repos/nearai/bastionclaw/issues?state=open&per_page=50";
+            "https://api.github.com/repos/nearai/t3claw/issues?state=open&per_page=50";
 
         let trace = LlmTrace {
             model_name: "test-wasm-coercion-list-issues".to_string(),
             turns: vec![crate::support::trace_llm::TraceTurn {
-                user_input: "List issues in nearai/bastionclaw with limit 50".to_string(),
+                user_input: "List issues in nearai/t3claw with limit 50".to_string(),
                 steps: vec![
                     TraceStep {
                         request_hint: None,
@@ -99,7 +99,7 @@ mod tests {
                                 arguments: json!({
                                     "action": "list_issues",
                                     "owner": "nearai",
-                                    "repo": "bastionclaw",
+                                    "repo": "t3claw",
                                     "state": "open",
                                     "limit": "50"
                                 }),
@@ -141,7 +141,7 @@ mod tests {
             steps: Vec::new(),
         };
 
-        run_trace(trace, "List issues in nearai/bastionclaw with limit 50").await;
+        run_trace(trace, "List issues in nearai/t3claw with limit 50").await;
     }
 
     /// LLM sends `issue_number: "42"` (string) to `get_issue`. Coercion converts
@@ -149,12 +149,12 @@ mod tests {
     #[tokio::test]
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_get_issue_coerces_string_issue_number() {
-        let expected_url = "https://api.github.com/repos/nearai/bastionclaw/issues/42";
+        let expected_url = "https://api.github.com/repos/nearai/t3claw/issues/42";
 
         let trace = LlmTrace {
             model_name: "test-wasm-coercion-get-issue".to_string(),
             turns: vec![crate::support::trace_llm::TraceTurn {
-                user_input: "Get issue 42 from nearai/bastionclaw".to_string(),
+                user_input: "Get issue 42 from nearai/t3claw".to_string(),
                 steps: vec![
                     TraceStep {
                         request_hint: None,
@@ -165,7 +165,7 @@ mod tests {
                                 arguments: json!({
                                     "action": "get_issue",
                                     "owner": "nearai",
-                                    "repo": "bastionclaw",
+                                    "repo": "t3claw",
                                     "issue_number": "42"
                                 }),
                             }],
@@ -206,7 +206,7 @@ mod tests {
             steps: Vec::new(),
         };
 
-        run_trace(trace, "Get issue 42 from nearai/bastionclaw").await;
+        run_trace(trace, "Get issue 42 from nearai/t3claw").await;
     }
 
     /// LLM sends `limit: "25"` (string) to `list_pull_requests`. URL must
@@ -215,12 +215,12 @@ mod tests {
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_list_prs_coerces_string_limit() {
         let expected_url =
-            "https://api.github.com/repos/nearai/bastionclaw/pulls?state=open&per_page=25";
+            "https://api.github.com/repos/nearai/t3claw/pulls?state=open&per_page=25";
 
         let trace = LlmTrace {
             model_name: "test-wasm-coercion-list-prs".to_string(),
             turns: vec![crate::support::trace_llm::TraceTurn {
-                user_input: "List PRs in nearai/bastionclaw".to_string(),
+                user_input: "List PRs in nearai/t3claw".to_string(),
                 steps: vec![
                     TraceStep {
                         request_hint: None,
@@ -231,7 +231,7 @@ mod tests {
                                 arguments: json!({
                                     "action": "list_pull_requests",
                                     "owner": "nearai",
-                                    "repo": "bastionclaw",
+                                    "repo": "t3claw",
                                     "limit": "25"
                                 }),
                             }],
@@ -272,7 +272,7 @@ mod tests {
             steps: Vec::new(),
         };
 
-        run_trace(trace, "List PRs in nearai/bastionclaw").await;
+        run_trace(trace, "List PRs in nearai/t3claw").await;
     }
 
     /// LLM sends pagination as strings to `search_code`. Coercion converts them
@@ -280,12 +280,12 @@ mod tests {
     #[tokio::test]
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_search_code_coerces_string_pagination() {
-        let expected_url = "https://api.github.com/search/code?q=repo%3Anearai%2Fbastionclaw%20path%3Asrc%20Tool&per_page=10&page=2&sort=indexed&order=desc";
+        let expected_url = "https://api.github.com/search/code?q=repo%3Anearai%2Ft3claw%20path%3Asrc%20Tool&per_page=10&page=2&sort=indexed&order=desc";
 
         let trace = LlmTrace {
             model_name: "test-wasm-coercion-search-code".to_string(),
             turns: vec![crate::support::trace_llm::TraceTurn {
-                user_input: "Search code in nearai/bastionclaw".to_string(),
+                user_input: "Search code in nearai/t3claw".to_string(),
                 steps: vec![
                     TraceStep {
                         request_hint: None,
@@ -295,7 +295,7 @@ mod tests {
                                 name: "github".to_string(),
                                 arguments: json!({
                                     "action": "search_code",
-                                    "query": "repo:nearai/bastionclaw path:src Tool",
+                                    "query": "repo:nearai/t3claw path:src Tool",
                                     "limit": "10",
                                     "page": "2",
                                     "sort": "indexed",
@@ -336,7 +336,7 @@ mod tests {
             steps: Vec::new(),
         };
 
-        run_trace(trace, "Search code in nearai/bastionclaw").await;
+        run_trace(trace, "Search code in nearai/t3claw").await;
     }
 
     /// `create_repo` must target the org repos endpoint and send the expected
@@ -419,8 +419,8 @@ mod tests {
     #[tokio::test]
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_create_branch_replays_two_step_ref_flow() {
-        let source_ref_url = "https://api.github.com/repos/nearai/bastionclaw/git/ref/heads/main";
-        let create_ref_url = "https://api.github.com/repos/nearai/bastionclaw/git/refs";
+        let source_ref_url = "https://api.github.com/repos/nearai/t3claw/git/ref/heads/main";
+        let create_ref_url = "https://api.github.com/repos/nearai/t3claw/git/refs";
         let create_ref_body = json!({
             "ref": "refs/heads/feature/replay-test",
             "sha": "abc123def4567890abc123def4567890abc123de"
@@ -441,7 +441,7 @@ mod tests {
                                 arguments: json!({
                                     "action": "create_branch",
                                     "owner": "nearai",
-                                    "repo": "bastionclaw",
+                                    "repo": "t3claw",
                                     "branch": "feature/replay-test",
                                     "from_ref": "main"
                                 }),
@@ -497,13 +497,13 @@ mod tests {
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_create_or_update_file_puts_contents_payload() {
         let expected_url =
-            "https://api.github.com/repos/nearai/bastionclaw/contents/docs/replay.md";
+            "https://api.github.com/repos/nearai/t3claw/contents/docs/replay.md";
         let expected_body = json!({
             "message": "Add replay doc",
             "content": "IyBSZXBsYXkgZG9jCg==",
             "branch": "feature/replay-test",
             "committer": {
-                "name": "BastionClaw Bot",
+                "name": "T3Claw Bot",
                 "email": "bot@example.com"
             }
         })
@@ -523,13 +523,13 @@ mod tests {
                                 arguments: json!({
                                     "action": "create_or_update_file",
                                     "owner": "nearai",
-                                    "repo": "bastionclaw",
+                                    "repo": "t3claw",
                                     "path": "docs/replay.md",
                                     "message": "Add replay doc",
                                     "content": "# Replay doc\n",
                                     "branch": "feature/replay-test",
                                     "committer": {
-                                        "name": "BastionClaw Bot",
+                                        "name": "T3Claw Bot",
                                         "email": "bot@example.com"
                                     }
                                 }),
@@ -577,7 +577,7 @@ mod tests {
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_delete_file_deletes_contents_with_sha() {
         let expected_url =
-            "https://api.github.com/repos/nearai/bastionclaw/contents/docs/replay.md";
+            "https://api.github.com/repos/nearai/t3claw/contents/docs/replay.md";
         let expected_body = json!({
             "message": "Remove replay doc",
             "sha": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
@@ -599,7 +599,7 @@ mod tests {
                                 arguments: json!({
                                     "action": "delete_file",
                                     "owner": "nearai",
-                                    "repo": "bastionclaw",
+                                    "repo": "t3claw",
                                     "path": "docs/replay.md",
                                     "message": "Remove replay doc",
                                     "sha": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
@@ -647,7 +647,7 @@ mod tests {
     #[tokio::test]
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_create_release_posts_expected_payload() {
-        let expected_url = "https://api.github.com/repos/nearai/bastionclaw/releases";
+        let expected_url = "https://api.github.com/repos/nearai/t3claw/releases";
         let expected_body = json!({
             "tag_name": "v1.2.3",
             "draft": false,
@@ -673,7 +673,7 @@ mod tests {
                                 arguments: json!({
                                     "action": "create_release",
                                     "owner": "nearai",
-                                    "repo": "bastionclaw",
+                                    "repo": "t3claw",
                                     "tag_name": "v1.2.3",
                                     "target_commitish": "main",
                                     "name": "Replay Release",

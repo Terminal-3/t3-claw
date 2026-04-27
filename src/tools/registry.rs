@@ -33,12 +33,12 @@ use crate::tools::wasm::{
     WasmStorageError, WasmToolRuntime, WasmToolStore, WasmToolWrapper,
 };
 use crate::workspace::Workspace;
-use bastionclaw_skills::catalog::SkillCatalog;
-use bastionclaw_skills::registry::SkillRegistry;
+use t3claw_skills::catalog::SkillCatalog;
+use t3claw_skills::registry::SkillRegistry;
 
 /// Names of built-in tools that cannot be shadowed by dynamic registrations
 /// and should not be rebuilt by the self-repair system. Protected tools are
-/// authored as part of the bastionclaw binary — errors on them are caller-side
+/// authored as part of the t3claw binary — errors on them are caller-side
 /// issues (bad LLM parameters), not tool defects.
 ///
 /// Keep this list in sync with all `fn name() -> &str` implementations in
@@ -115,7 +115,7 @@ const PROTECTED_TOOL_NAMES: &[&str] = &[
 
 /// Check if a tool name is a protected built-in that should not be rebuilt
 /// by the self-repair system. Protected tools are authored as part of the
-/// bastionclaw binary; errors in these tools are caller-side issues (bad
+/// t3claw binary; errors in these tools are caller-side issues (bad
 /// parameters from the LLM), not tool defects.
 pub fn is_protected_tool_name(name: &str) -> bool {
     PROTECTED_TOOL_NAMES.contains(&name)
@@ -623,7 +623,7 @@ impl ToolRegistry {
         job_manager: Option<Arc<ContainerJobManager>>,
         store: Option<Arc<dyn Database>>,
         job_event_tx: Option<
-            tokio::sync::broadcast::Sender<(uuid::Uuid, String, bastionclaw_common::AppEvent)>,
+            tokio::sync::broadcast::Sender<(uuid::Uuid, String, t3claw_common::AppEvent)>,
         >,
         inject_tx: Option<tokio::sync::mpsc::Sender<crate::channels::IncomingMessage>>,
         prompt_queue: Option<PromptQueue>,
@@ -1601,7 +1601,7 @@ mod tests {
     }
 
     /// Regression test: tool names with hyphens must be resolvable when the
-    /// LLM provider normalises hyphens to underscores (nearai/bastionclaw#NNN).
+    /// LLM provider normalises hyphens to underscores (nearai/t3claw#NNN).
     #[tokio::test]
     async fn get_resolves_hyphen_to_underscore_alias() {
         let registry = ToolRegistry::new();

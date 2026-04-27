@@ -1,10 +1,10 @@
 ---
 title: "本地"
-description: "通过终端或浏览器在本地使用 BastionClaw"
+description: "通过终端或浏览器在本地使用 T3Claw"
 icon: keyboard
 ---
 
-默认情况下，BastionClaw 提供两种本地界面与智能体对话：
+默认情况下，T3Claw 提供两种本地界面与智能体对话：
 
 - **终端界面 (TUI)：** 直接在终端中对话
 - **Web 网关：** 通过本地 HTTP 服务器在浏览器中对话
@@ -17,7 +17,7 @@ icon: keyboard
 
 ## 终端界面
 
-只需运行 `bastionclaw`，TUI 将在终端中启动。使用以下快捷键进行导航和对话。
+只需运行 `t3claw`，TUI 将在终端中启动。使用以下快捷键进行导航和对话。
 | 按键 | 操作 |
 |-----|--------|
 | `Enter` | 发送消息 |
@@ -48,7 +48,7 @@ icon: keyboard
 
 ### 认证
 
-默认情况下，BastionClaw 在启动时生成认证令牌并在日志中打印。要在重启间使用固定令牌：
+默认情况下，T3Claw 在启动时生成认证令牌并在日志中打印。要在重启间使用固定令牌：
 
 ```bash
 export GATEWAY_AUTH_TOKEN="your-secure-token-here"
@@ -107,7 +107,7 @@ export GATEWAY_HOST=0.0.0.0
   </Accordion>
 
   <Accordion title="Web UI 连接被拒绝">
-    - 确认 `bastionclaw run` 正在运行
+    - 确认 `t3claw run` 正在运行
     - 检查 `GATEWAY_PORT` 值
     - 确认主机和防火墙设置
   </Accordion>

@@ -1,10 +1,10 @@
 ---
 title: VPS Installation
 sidebarTitle: VPS / Cloud
-description: Deploy BastionClaw to a cloud server
+description: Deploy T3Claw to a cloud server
 ---
 
-Deploy BastionClaw to a remote VPS or cloud server for always-on operation.
+Deploy T3Claw to a remote VPS or cloud server for always-on operation.
 
 ## Recommended Providers
 
@@ -26,11 +26,11 @@ ssh user@your-server-ip
 sudo apt update && sudo apt upgrade -y
 ```
 
-## Step 1: Install BastionClaw
+## Step 1: Install T3Claw
 
 ```bash
-# Install BastionClaw
-curl -fsSL https://install.bastionclaw.ai | bash
+# Install T3Claw
+curl -fsSL https://install.t3claw.ai | bash
 
 # Add to PATH if needed
 export PATH="$HOME/.local/bin:$PATH"
@@ -50,16 +50,16 @@ sudo systemctl enable --now postgresql
 
 # Create database and user
 sudo -u postgres psql <<EOF
-CREATE USER bastionclaw WITH PASSWORD 'your-secure-password';
-CREATE DATABASE bastionclaw OWNER bastionclaw;
+CREATE USER t3claw WITH PASSWORD 'your-secure-password';
+CREATE DATABASE t3claw OWNER t3claw;
 EOF
 
 # Detect PostgreSQL major version (e.g., 14, 15, 16)
 PG_MAJOR=$(psql -V | awk '{print $3}' | cut -d. -f1)
 # Install matching pgvector package for the detected PostgreSQL version
 sudo apt install "postgresql-$PG_MAJOR-pgvector"
-# Enable the vector extension in the bastionclaw database
-sudo -u postgres psql -d bastionclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
+# Enable the vector extension in the t3claw database
+sudo -u postgres psql -d t3claw -c "CREATE EXTENSION IF NOT EXISTS vector;"
 ```
 
 ## Step 3: Run the Wizard
@@ -68,18 +68,18 @@ sudo -u postgres psql -d bastionclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
 **Browser OAuth blocked on VPS.** The default NEAR AI authentication requires a browser on the same machine. On a VPS, use:
 
 1. **NEAR AI Cloud API key** (recommended): Get an API key from https://cloud.near.ai and paste it into the wizard
-2. **Custom callback URL**: Set `BASTIONCLAW_OAUTH_CALLBACK_URL` to a publicly reachable URL
+2. **Custom callback URL**: Set `T3CLAW_OAUTH_CALLBACK_URL` to a publicly reachable URL
 
 </Warning>
 
 ```bash
-bastionclaw onboard
+t3claw onboard
 ```
 
 **Wizard selections:**
 
 1. **Database**: Select "PostgreSQL"
-   - Enter connection string: `postgres://bastionclaw:your-secure-password@localhost/bastionclaw`
+   - Enter connection string: `postgres://t3claw:your-secure-password@localhost/t3claw`
 
 2. **Security**: Select "OS Keychain" or "Environment Variable"
 
@@ -99,7 +99,7 @@ bastionclaw onboard
 ## Step 4: Firewall Configuration
 
 <Warning>
-**Important:** BastionClaw's orchestrator binds to `0.0.0.0:50051` on Linux for container communication. This port should **not** be exposed externally. The firewall configuration below includes rules to block external access to this port—do not add any UFW allow rules for `50051`.
+**Important:** T3Claw's orchestrator binds to `0.0.0.0:50051` on Linux for container communication. This port should **not** be exposed externally. The firewall configuration below includes rules to block external access to this port—do not add any UFW allow rules for `50051`.
 </Warning>
 
 ```bash
@@ -161,7 +161,7 @@ sudo systemctl enable --now caddy
 sudo apt install nginx
 
 # Configure site
-sudo tee /etc/nginx/sites-available/bastionclaw <<'EOF'
+sudo tee /etc/nginx/sites-available/t3claw <<'EOF'
 server {
   listen 443 ssl http2;
   server_name webg.example.com;
@@ -189,7 +189,7 @@ server {
 EOF
 
 # Enable site
-sudo ln -sf /etc/nginx/sites-available/bastionclaw /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/t3claw /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo systemctl restart nginx
 ```
@@ -205,7 +205,7 @@ sudo dpkg -i cloudflared.deb
 cloudflared tunnel login
 
 # Create tunnel
-cloudflared tunnel create bastionclaw
+cloudflared tunnel create t3claw
 
 # Configure
 sudo mkdir -p /etc/cloudflared
@@ -228,10 +228,10 @@ sudo systemctl enable --now cloudflared
 
 ```bash
 # Install systemd service
-bastionclaw service install
+t3claw service install
 
 # Configure service
-sudo systemctl edit bastionclaw
+sudo systemctl edit t3claw
 ```
 
 Add environment variables:
@@ -239,28 +239,28 @@ Add environment variables:
 ```ini
 [Service]
 Environment="DATABASE_BACKEND=postgres"
-Environment="DATABASE_URL=postgres://bastionclaw:your-secure-password@localhost/bastionclaw"
+Environment="DATABASE_URL=postgres://t3claw:your-secure-password@localhost/t3claw"
 Environment="GATEWAY_HOST=127.0.0.1"
 ```
 
 Start the service:
 
 ```bash
-sudo systemctl enable --now bastionclaw
-sudo systemctl status bastionclaw
+sudo systemctl enable --now t3claw
+sudo systemctl status t3claw
 ```
 
 ## Step 7: Verify
 
 ```bash
 # Check service status
-sudo systemctl status bastionclaw
+sudo systemctl status t3claw
 
 # View logs
-sudo journalctl -u bastionclaw -f
+sudo journalctl -u t3claw -f
 
 # Run diagnostics
-bastionclaw doctor
+t3claw doctor
 ```
 
 ## Security Hardening
@@ -271,7 +271,7 @@ bastionclaw doctor
 sudo apt install fail2ban
 
 # Create filter
-sudo tee /etc/fail2ban/filter.d/bastionclaw.conf <<'EOF'
+sudo tee /etc/fail2ban/filter.d/t3claw.conf <<'EOF'
 [Definition]
 failregex = ^.*Unauthorized.*from <HOST>.*$
             ^.*Invalid token.*from <HOST>.*$
@@ -279,12 +279,12 @@ ignoreregex =
 EOF
 
 # Create jail
-sudo tee /etc/fail2ban/jail.d/bastionclaw.conf <<EOF
-[bastionclaw]
+sudo tee /etc/fail2ban/jail.d/t3claw.conf <<EOF
+[t3claw]
 enabled = true
 port = http,https
-filter = bastionclaw
-logpath = /var/log/bastionclaw/web.log
+filter = t3claw
+logpath = /var/log/t3claw/web.log
 maxretry = 5
 bantime = 3600
 EOF
@@ -325,7 +325,7 @@ sudo dpkg-reconfigure unattended-upgrades
     On VPS, use NEAR AI Cloud API key instead of browser OAuth:
     ```bash
     export NEARAI_API_KEY=your-api-key
-    bastionclaw onboard
+    t3claw onboard
     ```
   </Accordion>
 </AccordionGroup>

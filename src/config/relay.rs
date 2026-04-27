@@ -62,8 +62,8 @@ impl RelayConfig {
         Some(Self {
             url,
             api_key,
-            callback_url: env("BASTIONCLAW_OAUTH_CALLBACK_URL"),
-            instance_id: env("BASTIONCLAW_INSTANCE_ID"),
+            callback_url: env("T3CLAW_OAUTH_CALLBACK_URL"),
+            instance_id: env("T3CLAW_INSTANCE_ID"),
             request_timeout_secs: env("RELAY_REQUEST_TIMEOUT_SECS")
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(30),
@@ -117,8 +117,8 @@ mod tests {
         let config = RelayConfig::from_env_reader(|key| match key {
             "CHANNEL_RELAY_URL" => Some("http://relay:3001".into()),
             "CHANNEL_RELAY_API_KEY" => Some("secret".into()),
-            "BASTIONCLAW_OAUTH_CALLBACK_URL" => Some("https://tunnel.example.com".into()),
-            "BASTIONCLAW_INSTANCE_ID" => Some("my-instance".into()),
+            "T3CLAW_OAUTH_CALLBACK_URL" => Some("https://tunnel.example.com".into()),
+            "T3CLAW_INSTANCE_ID" => Some("my-instance".into()),
             "RELAY_REQUEST_TIMEOUT_SECS" => Some("60".into()),
             "RELAY_WEBHOOK_PATH" => Some("/custom/events".into()),
             _ => None,

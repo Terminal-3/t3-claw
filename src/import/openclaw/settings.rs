@@ -1,11 +1,11 @@
-//! OpenClaw configuration to BastionClaw settings mapping.
+//! OpenClaw configuration to T3Claw settings mapping.
 
 use secrecy::SecretString;
 use std::collections::HashMap;
 
 use super::reader::OpenClawConfig;
 
-/// Map OpenClaw configuration to BastionClaw settings (dotted-key format).
+/// Map OpenClaw configuration to T3Claw settings (dotted-key format).
 pub fn map_openclaw_config_to_settings(
     config: &OpenClawConfig,
 ) -> HashMap<String, serde_json::Value> {

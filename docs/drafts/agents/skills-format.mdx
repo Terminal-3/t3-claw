@@ -27,7 +27,7 @@ activation:
     - namespace
   max_context_tokens: 2000
 metadata:
-  bastionclaw:
+  t3claw:
     requires:
       bins:
         - kubectl
@@ -78,8 +78,8 @@ kubectl logs -l app=<name> -n <namespace> --tail=100
 | `activation.patterns` | string[] | No | Regex patterns matched against the full incoming message. Any match raises the skill's score. |
 | `activation.keywords` | string[] | No | Simple keyword matches (case-insensitive, substring). Each keyword match adds to the score. |
 | `activation.max_context_tokens` | integer | No | Maximum tokens this skill may contribute per turn. Defaults to `SKILLS_MAX_TOKENS / 2` if omitted. |
-| `metadata.bastionclaw.requires.bins` | string[] | No | Binaries that must exist on `PATH`. Skill is gated out if any are missing. |
-| `metadata.bastionclaw.requires.env` | string[] | No | Environment variables that must be set. Skill is gated out if any are missing. |
+| `metadata.t3claw.requires.bins` | string[] | No | Binaries that must exist on `PATH`. Skill is gated out if any are missing. |
+| `metadata.t3claw.requires.env` | string[] | No | Environment variables that must be set. Skill is gated out if any are missing. |
 
 ## Activation Scoring
 
@@ -151,7 +151,7 @@ Place your SKILL.md file in one of the trusted directories:
 
 ```bash
 # Global skill (available everywhere)
-~/.bastionclaw/skills/my-skill/SKILL.md
+~/.t3claw/skills/my-skill/SKILL.md
 
 # Workspace-scoped skill
 <workspace>/skills/my-skill/SKILL.md

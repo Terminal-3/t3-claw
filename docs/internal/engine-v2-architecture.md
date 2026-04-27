@@ -1,10 +1,10 @@
 # Engine v2 Architecture
 
-This document describes the BastionClaw Engine v2 architecture for new contributors. It covers the execution model, the Python orchestrator, the bridge layer, and how everything fits together.
+This document describes the T3Claw Engine v2 architecture for new contributors. It covers the execution model, the Python orchestrator, the bridge layer, and how everything fits together.
 
 ## Overview
 
-BastionClaw Engine v2 replaces ~10 fragmented abstractions (Session, Job, Routine, Channel, Tool, Skill, Hook, Observer, Extension, LoopDelegate) with a unified model built on 5 primitives. The engine lives in `crates/bastionclaw_engine/` as a standalone crate with no dependency on the main `bastionclaw` crate.
+T3Claw Engine v2 replaces ~10 fragmented abstractions (Session, Job, Routine, Channel, Tool, Skill, Hook, Observer, Extension, LoopDelegate) with a unified model built on 5 primitives. The engine lives in `crates/t3claw_engine/` as a standalone crate with no dependency on the main `t3claw` crate.
 
 The key architectural innovation: **the execution loop is Python code running inside the Monty interpreter, not Rust**. Rust provides the infrastructure (LLM calls, tool execution, safety, persistence). Python provides the orchestration (tool dispatch, output formatting, state management). This makes the glue layer self-modifiable at runtime by the self-improvement Mission.
 
@@ -105,7 +105,7 @@ Terminal states: `Done`, `Failed`. Validated by `ThreadState::can_transition_to(
 
 ## Bridge Layer (`src/bridge/`)
 
-The bridge connects the engine to existing BastionClaw infrastructure:
+The bridge connects the engine to existing T3Claw infrastructure:
 
 | Adapter | Wraps | Purpose |
 |---------|-------|---------|
@@ -118,7 +118,7 @@ The bridge connects the engine to existing BastionClaw infrastructure:
 
 Set `ENGINE_V2=true` environment variable. The router in `src/bridge/router.rs` intercepts messages and routes them through the engine instead of the v1 agent loop.
 
-For trace debugging set `BASTIONCLAW_RECORD_TRACE=1`. Engine v2 reuses the host crate's `RecordingLlm` (see `src/llm/recording.rs`) — the engine's `LlmBackend` is wired to the same provider chain, so LLM interactions are captured in the standard `trace_*.json` fixture file (configurable via `BASTIONCLAW_TRACE_OUTPUT`). There is no separate engine trace file.
+For trace debugging set `T3CLAW_RECORD_TRACE=1`. Engine v2 reuses the host crate's `RecordingLlm` (see `src/llm/recording.rs`) — the engine's `LlmBackend` is wired to the same provider chain, so LLM interactions are captured in the standard `trace_*.json` fixture file (configurable via `T3CLAW_TRACE_OUTPUT`). There is no separate engine trace file.
 
 ## Memory System
 
@@ -159,10 +159,10 @@ Skills are the v2 evolution of SKILL.md prompt extensions. They provide determin
 
 ### Architecture
 
-Skills live in the `bastionclaw_skills` crate (extracted from `src/skills/`), shared by both v1 and v2 engines. The engine crate depends on `bastionclaw_skills` with `default-features = false` (no catalog/registry — just types + selection).
+Skills live in the `t3claw_skills` crate (extracted from `src/skills/`), shared by both v1 and v2 engines. The engine crate depends on `t3claw_skills` with `default-features = false` (no catalog/registry — just types + selection).
 
 ```
-bastionclaw_skills crate (shared)
+t3claw_skills crate (shared)
   ├── types.rs       — SkillManifest, ActivationCriteria, LoadedSkill, SkillTrust
   ├── v2.rs          — V2SkillMetadata, CodeSnippet, SkillMetrics
   ├── selector.rs    — Deterministic scoring + confidence factor
@@ -172,12 +172,12 @@ bastionclaw_skills crate (shared)
   ├── registry.rs    — Filesystem discovery (feature-gated)
   └── catalog.rs     — ClawHub HTTP catalog (feature-gated)
 
-bastionclaw_engine crate (v2 integration)
+t3claw_engine crate (v2 integration)
   ├── capability/skill_selector.rs  — MemoryDoc → LoadedSkill bridge
   ├── capability/skill_tracker.rs   — Confidence tracking + rollback
 
 src/skills/ (v1 shim)
-  ├── mod.rs          — Re-exports from bastionclaw_skills + credential conversion
+  ├── mod.rs          — Re-exports from t3claw_skills + credential conversion
   └── attenuation.rs  — Trust-based tool filtering (depends on ToolDefinition)
 
 src/bridge/
@@ -462,24 +462,24 @@ Studied all 37 v1 built-in tools to determine which fit the knowledge-driven pat
 - **JS sandbox transforms** — `fromCommonModel`/`toCommonModel` functions for data mapping
 - **`knowledge` field** — free-text documentation per action for AI tool discovery
 
-Pica's model is optimized for programmatic API access (SDK calls from code). For LLM agents, the skill-as-knowledge approach is superior because it avoids tool list bloat while leveraging the LLM's ability to construct HTTP calls from documentation. The two approaches share the insight that **integrations should be data, not code**. BastionClaw extends this further: the skill-extraction mission can learn new skills from successful thread executions, making the integration library self-expanding.
+Pica's model is optimized for programmatic API access (SDK calls from code). For LLM agents, the skill-as-knowledge approach is superior because it avoids tool list bloat while leveraging the LLM's ability to construct HTTP calls from documentation. The two approaches share the insight that **integrations should be data, not code**. T3Claw extends this further: the skill-extraction mission can learn new skills from successful thread executions, making the integration library self-expanding.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `crates/bastionclaw_engine/orchestrator/default.py` | The Python execution loop (v0) |
-| `crates/bastionclaw_engine/src/executor/orchestrator.rs` | Host functions + versioning + loading |
-| `crates/bastionclaw_engine/src/executor/loop_engine.rs` | Bootstrap (loads + runs orchestrator, skill injection) |
-| `crates/bastionclaw_engine/src/executor/scripting.rs` | Monty VM integration, user code execution, CodeAct skill snippets |
-| `crates/bastionclaw_engine/src/executor/prompt.rs` | System prompt construction, skill section formatting |
-| `crates/bastionclaw_engine/src/runtime/manager.rs` | ThreadManager (spawn, stop, join, skill selector wiring) |
-| `crates/bastionclaw_engine/src/runtime/mission.rs` | MissionManager (lifecycle, firing, learning missions) |
-| `crates/bastionclaw_engine/src/capability/skill_selector.rs` | MemoryDoc → LoadedSkill bridge, deterministic selection |
-| `crates/bastionclaw_engine/src/capability/skill_tracker.rs` | Confidence tracking, versioned updates, rollback |
-| `crates/bastionclaw_engine/src/types/` | All core data structures |
-| `crates/bastionclaw_engine/src/traits/` | LlmBackend, Store, EffectExecutor |
-| `crates/bastionclaw_skills/` | Shared skills crate (types, selector, parser, validation) |
+| `crates/t3claw_engine/orchestrator/default.py` | The Python execution loop (v0) |
+| `crates/t3claw_engine/src/executor/orchestrator.rs` | Host functions + versioning + loading |
+| `crates/t3claw_engine/src/executor/loop_engine.rs` | Bootstrap (loads + runs orchestrator, skill injection) |
+| `crates/t3claw_engine/src/executor/scripting.rs` | Monty VM integration, user code execution, CodeAct skill snippets |
+| `crates/t3claw_engine/src/executor/prompt.rs` | System prompt construction, skill section formatting |
+| `crates/t3claw_engine/src/runtime/manager.rs` | ThreadManager (spawn, stop, join, skill selector wiring) |
+| `crates/t3claw_engine/src/runtime/mission.rs` | MissionManager (lifecycle, firing, learning missions) |
+| `crates/t3claw_engine/src/capability/skill_selector.rs` | MemoryDoc → LoadedSkill bridge, deterministic selection |
+| `crates/t3claw_engine/src/capability/skill_tracker.rs` | Confidence tracking, versioned updates, rollback |
+| `crates/t3claw_engine/src/types/` | All core data structures |
+| `crates/t3claw_engine/src/traits/` | LlmBackend, Store, EffectExecutor |
+| `crates/t3claw_skills/` | Shared skills crate (types, selector, parser, validation) |
 | `src/bridge/router.rs` | Engine v2 entry point, skill migration at startup |
 | `src/bridge/skill_migration.rs` | V1 SKILL.md → V2 MemoryDoc conversion |
 | `src/bridge/effect_adapter.rs` | Tool execution bridge with safety |
@@ -491,10 +491,10 @@ Pica's model is optimized for programmatic API access (SDK calls from code). For
 ## Testing
 
 ```bash
-cargo check -p bastionclaw_skills                                    # skills crate compiles
-cargo test -p bastionclaw_skills                                     # 94 tests (types, selector, parser, gating, registry, catalog)
-cargo check -p bastionclaw_engine                                    # engine crate compiles
-cargo test -p bastionclaw_engine                                     # 203 tests (execution, missions, skills, tracking)
+cargo check -p t3claw_skills                                    # skills crate compiles
+cargo test -p t3claw_skills                                     # 94 tests (types, selector, parser, gating, registry, catalog)
+cargo check -p t3claw_engine                                    # engine crate compiles
+cargo test -p t3claw_engine                                     # 203 tests (execution, missions, skills, tracking)
 cargo test --test engine_v2_skill_codeact                         # E2E: full CodeAct loop with mock HTTP
 cargo clippy --all -- -D warnings                                 # zero warnings across workspace
 cargo test                                                        # full suite

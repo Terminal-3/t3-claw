@@ -6,7 +6,7 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use bastionclaw::testing::fault_injection::*;
+//! use t3claw::testing::fault_injection::*;
 //!
 //! // Fail twice with transient errors, then succeed
 //! let injector = FaultInjector::sequence([

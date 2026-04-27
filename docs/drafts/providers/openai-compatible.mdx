@@ -4,7 +4,7 @@ sidebarTitle: OpenAI-Compatible
 description: OpenRouter, Together AI, Fireworks, vLLM, LiteLLM, LM Studio
 ---
 
-BastionClaw supports any OpenAI-compatible API endpoint. This includes OpenRouter, Together AI, Fireworks AI, self-hosted inference, and more.
+T3Claw supports any OpenAI-compatible API endpoint. This includes OpenRouter, Together AI, Fireworks AI, self-hosted inference, and more.
 
 ## Overview
 
@@ -19,7 +19,7 @@ Content-Type: application/json
 ## Configuration
 
 ```bash
-# ~/.bastionclaw/.env
+# ~/.t3claw/.env
 
 LLM_BACKEND=openai_compatible
 LLM_BASE_URL=https://api.openrouter.ai/api/v1
@@ -84,7 +84,7 @@ export LLM_MODEL=accounts/fireworks/models/llama4-maverick-instruct-basic
 python -m vllm.entrypoints.openai.api_server \
   --model meta-llama/Meta-Llama-3-8B-Instruct
 
-# BastionClaw config
+# T3Claw config
 export LLM_BACKEND=openai_compatible
 export LLM_BASE_URL=http://localhost:8000/v1
 export LLM_API_KEY=token-abc123  # any value if auth not configured
@@ -103,7 +103,7 @@ model_list:
       model: openai/gpt-4o
       api_key: sk-...
 
-# BastionClaw config
+# T3Claw config
 export LLM_BACKEND=openai_compatible
 export LLM_BASE_URL=http://localhost:4000/v1
 export LLM_API_KEY=sk-...
@@ -117,7 +117,7 @@ export LLM_MODEL=gpt-4o
 1. Download and install LM Studio
 2. Load a model
 3. Start local server
-4. Configure BastionClaw:
+4. Configure T3Claw:
 
 ```bash
 export LLM_BACKEND=openai_compatible

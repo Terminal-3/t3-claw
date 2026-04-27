@@ -11,7 +11,7 @@ mod support;
 mod tests {
     use std::time::Duration;
 
-    use bastionclaw::channels::StatusUpdate;
+    use t3claw::channels::StatusUpdate;
 
     use crate::support::test_rig::TestRigBuilder;
     use crate::support::trace_llm::LlmTrace;

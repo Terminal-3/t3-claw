@@ -49,7 +49,7 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use bastionclaw::sandbox::{SandboxManager, SandboxManagerBuilder, SandboxPolicy};
+//! use t3claw::sandbox::{SandboxManager, SandboxManagerBuilder, SandboxPolicy};
 //! use std::collections::HashMap;
 //! use std::path::Path;
 //!

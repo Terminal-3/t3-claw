@@ -1,5 +1,5 @@
 ---
-title: "Playwright Screenshot Pipeline for BastionClaw Web UI"
+title: "Playwright Screenshot Pipeline for T3Claw Web UI"
 description: "Auto-detecting screenshot capture pipeline with token-based authentication for documentation generation"
 category: integration-issues
 date: 2026-03-04
@@ -16,15 +16,15 @@ symptoms:
   - Malformed URLs with token in wrong position
 root_causes:
   - pnpm scripts don't automatically load .env files
-  - BastionClaw web UI uses client-side routing (SPA)
+  - T3Claw web UI uses client-side routing (SPA)
   - Token must be passed in URL query parameter for auto-authentication
   - URL construction was appending paths after query parameters
 ---
 
 ## Problem
 
-Build a screenshot capture pipeline for BastionClaw documentation that:
-1. Auto-detects running BastionClaw instances
+Build a screenshot capture pipeline for T3Claw documentation that:
+1. Auto-detects running T3Claw instances
 2. Captures screenshots of the web gateway UI (6 different views)
 3. Passes authentication tokens correctly for automatic login
 4. Generates Mintlify documentation from captured screenshots
@@ -46,14 +46,14 @@ Build a screenshot capture pipeline for BastionClaw documentation that:
 
 ```bash
 # Tests passed when token was set explicitly:
-BASTIONCLAW_TOKEN="..." pnpm exec playwright test
+T3CLAW_TOKEN="..." pnpm exec playwright test
 ```
 
 ### Step 2: Fix URL Construction
 
 **Tried:** Append paths directly to tokenized URLs
 **Result:** Created malformed URLs: `/?token=TOKEN/settings`
-**Solution:** Modify `getBastionClawUrlWithToken()` to accept optional path parameter
+**Solution:** Modify `getT3ClawUrlWithToken()` to accept optional path parameter
 
 ```typescript
 // Before: Malformed URL
@@ -73,7 +73,7 @@ return `${url}${normalizedPath}?token=${token}`;
 
 ```typescript
 // Correct approach for SPA routes
-await page.goto(await getBastionClawUrlWithToken('/'));
+await page.goto(await getT3ClawUrlWithToken('/'));
 await page.waitForSelector('#app', { state: 'visible' });
 await page.click('button[data-tab="routines"]');
 ```
@@ -96,16 +96,16 @@ await page.click('button[data-tab="routines"]');
 
 ```bash
 # Authentication token for API calls
-BASTIONCLAW_TOKEN=your-token-here
-BASTIONCLAW_URL=http://127.0.0.1:3000
+T3CLAW_TOKEN=your-token-here
+T3CLAW_URL=http://127.0.0.1:3000
 ```
 
 ### 2. Token Helper Function (docs/tests/fixtures/seed.ts)
 
 ```typescript
-export async function getBastionClawUrlWithToken(path?: string): Promise<string> {
+export async function getT3ClawUrlWithToken(path?: string): Promise<string> {
   const baseUrl = await getBaseUrl();
-  const token = process.env.BASTIONCLAW_TOKEN ?? 'screenshot-test-token';
+  const token = process.env.T3CLAW_TOKEN ?? 'screenshot-test-token';
 
   let url = baseUrl;
   if (path) {
@@ -122,15 +122,15 @@ export async function getBastionClawUrlWithToken(path?: string): Promise<string>
 
 ```typescript
 test('routines tab overview', async ({ page }) => {
-  // Check if BastionClaw is running
-  const ready = await isBastionClawReady();
+  // Check if T3Claw is running
+  const ready = await isT3ClawReady();
   if (!ready) {
-    test.skip(true, 'BastionClaw not running');
+    test.skip(true, 'T3Claw not running');
     return;
   }
 
   // Navigate to root with token
-  const url = await getBastionClawUrlWithToken('/');
+  const url = await getT3ClawUrlWithToken('/');
   await page.goto(url);
 
   // Wait for auto-authentication
@@ -159,14 +159,14 @@ if [ -f "$DOCS_DIR/.env.screenshot" ]; then
   # Export variables so they're available to child processes
   export SCREENSHOT_PORT
   export SCREENSHOT_HOST
-  export BASTIONCLAW_URL
-  export BASTIONCLAW_TOKEN
+  export T3CLAW_URL
+  export T3CLAW_TOKEN
   export SCREENSHOT_VIEWPORT
   export HEALTH_TIMEOUT
 fi
 
-# Auto-detect BastionClaw port
-find_bastionclaw_http_port() {
+# Auto-detect T3Claw port
+find_t3claw_http_port() {
   for port in 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 3010 8080 13001; do
     response=$(curl -s -o /dev/null -w "%{http_code}" \
       "http://127.0.0.1:$port/api/health" 2>/dev/null || echo "000")
@@ -193,9 +193,9 @@ find_bastionclaw_http_port() {
 
 ## Key Insights
 
-### BastionClaw Web UI Authentication Flow
+### T3Claw Web UI Authentication Flow
 
-The BastionClaw web UI (`src/channels/web/static/app.js`) has an `autoAuth()` function that:
+The T3Claw web UI (`src/channels/web/static/app.js`) has an `autoAuth()` function that:
 1. Extracts token from URL query parameters (`?token=XXX`)
 2. Sets the token in the input field
 3. Calls `authenticate()` which tests the token against `/api/chat/threads`
@@ -238,7 +238,7 @@ The pipeline now captures 6 views:
 
 - [Mintlify Documentation](../../../ui-reference/)
 - [Playwright Best Practices](https://playwright.dev/docs/best-practices)
-- BastionClaw web UI source: `src/channels/web/static/app.js` (autoAuth function)
+- T3Claw web UI source: `src/channels/web/static/app.js` (autoAuth function)
 
 ## File Changes
 

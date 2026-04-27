@@ -12,9 +12,9 @@
 mod tests {
     use std::sync::Arc;
 
-    use bastionclaw::db::libsql::LibSqlBackend;
-    use bastionclaw::db::{ChannelPairingStore, Database, UserRecord, UserStore};
-    use bastionclaw::ownership::{Identity, OwnerId, UserRole};
+    use t3claw::db::libsql::LibSqlBackend;
+    use t3claw::db::{ChannelPairingStore, Database, UserRecord, UserStore};
+    use t3claw::ownership::{Identity, OwnerId, UserRole};
 
     // -----------------------------------------------------------------------
     // Helpers
@@ -178,14 +178,14 @@ mod tests {
 
         // Use TenantScope::new (the legacy bridge, avoids needing LibSqlBackend directly)
         // libSQL FK enforcement is off by default, so users table rows are not required here.
-        let alice_scope = bastionclaw::tenant::TenantScope::new("alice", Arc::clone(&db));
+        let alice_scope = t3claw::tenant::TenantScope::new("alice", Arc::clone(&db));
         alice_scope
             .set_setting("theme", &serde_json::json!("dark"))
             .await
             .unwrap();
 
         // Bob's scope should not see Alice's setting
-        let bob_scope = bastionclaw::tenant::TenantScope::new("bob", Arc::clone(&db));
+        let bob_scope = t3claw::tenant::TenantScope::new("bob", Arc::clone(&db));
         let bobs_theme = bob_scope.get_setting("theme").await.unwrap();
         assert!(
             bobs_theme.is_none(),
@@ -204,7 +204,7 @@ mod tests {
 
         let alice_identity = Identity::new(OwnerId::from("alice"), UserRole::Member);
         let alice_scope =
-            bastionclaw::tenant::TenantScope::with_identity(alice_identity, Arc::clone(&db));
+            t3claw::tenant::TenantScope::with_identity(alice_identity, Arc::clone(&db));
         alice_scope
             .set_setting("lang", &serde_json::json!("en"))
             .await
@@ -213,7 +213,7 @@ mod tests {
         // Bob uses Identity with Admin role — still cannot see Alice's setting
         let bob_identity = Identity::new(OwnerId::from("bob"), UserRole::Admin);
         let bob_scope =
-            bastionclaw::tenant::TenantScope::with_identity(bob_identity, Arc::clone(&db));
+            t3claw::tenant::TenantScope::with_identity(bob_identity, Arc::clone(&db));
         let result = bob_scope.get_setting("lang").await.unwrap();
         assert!(
             result.is_none(),
@@ -223,7 +223,7 @@ mod tests {
         // Alice sees her own setting
         let alice_identity2 = Identity::new(OwnerId::from("alice"), UserRole::Member);
         let alice_scope2 =
-            bastionclaw::tenant::TenantScope::with_identity(alice_identity2, Arc::clone(&db));
+            t3claw::tenant::TenantScope::with_identity(alice_identity2, Arc::clone(&db));
         let alices = alice_scope2.get_setting("lang").await.unwrap();
         assert_eq!(alices, Some(serde_json::json!("en")));
     }
@@ -234,7 +234,7 @@ mod tests {
         let db: Arc<dyn Database> = Arc::new(backend);
 
         let identity = Identity::new(OwnerId::from("henry"), UserRole::Admin);
-        let scope = bastionclaw::tenant::TenantScope::with_identity(identity, db);
+        let scope = t3claw::tenant::TenantScope::with_identity(identity, db);
         assert_eq!(scope.user_id(), "henry");
         assert_eq!(scope.identity().owner_id.as_str(), "henry");
         assert_eq!(scope.identity().role, UserRole::Admin);
@@ -335,7 +335,7 @@ mod tests {
 
     #[test]
     fn test_owned_trait_is_owned_by() {
-        use bastionclaw::ownership::Owned;
+        use t3claw::ownership::Owned;
 
         struct TestResource {
             user_id: String,
@@ -355,8 +355,8 @@ mod tests {
 
     #[test]
     fn test_owned_sandbox_job_record() {
-        use bastionclaw::history::SandboxJobRecord;
-        use bastionclaw::ownership::Owned;
+        use t3claw::history::SandboxJobRecord;
+        use t3claw::ownership::Owned;
 
         let job = SandboxJobRecord {
             id: uuid::Uuid::new_v4(),
@@ -380,8 +380,8 @@ mod tests {
 
     #[test]
     fn test_owned_agent_job_record() {
-        use bastionclaw::history::AgentJobRecord;
-        use bastionclaw::ownership::Owned;
+        use t3claw::history::AgentJobRecord;
+        use t3claw::ownership::Owned;
 
         let job = AgentJobRecord {
             id: uuid::Uuid::new_v4(),
@@ -400,10 +400,10 @@ mod tests {
 
     #[test]
     fn test_owned_routine() {
-        use bastionclaw::agent::routine::{
+        use t3claw::agent::routine::{
             NotifyConfig, Routine, RoutineAction, RoutineGuardrails, Trigger,
         };
-        use bastionclaw::ownership::Owned;
+        use t3claw::ownership::Owned;
 
         let routine = Routine {
             id: uuid::Uuid::new_v4(),

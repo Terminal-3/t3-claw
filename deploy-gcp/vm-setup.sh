@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VM bootstrap for BastionClaw on GCP Compute Engine (Debian 12).
+# VM bootstrap for T3Claw on GCP Compute Engine (Debian 12).
 #
 # Copy this directory and docker-compose.yml to the VM first, then run:
 #   sudo bash /tmp/deploy/vm-setup.sh
@@ -17,7 +17,7 @@ fi
 
 REGION="${REGION:-us-central1}"
 PROJECT="${PROJECT:-gen-lang-client-0263867259}"
-REPO="bastionclaw"
+REPO="t3claw"
 IMAGE_PREFIX="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
 
 # ── Docker (official repo — Debian 12 default repos lack docker-compose-plugin)
@@ -60,11 +60,11 @@ docker pull "${IMAGE_PREFIX}/agent:latest"
 docker pull "${IMAGE_PREFIX}/t3n-mcp-sidecar:latest"
 
 # ── App directory ─────────────────────────────────────────────────────────────
-echo "==> Setting up /opt/bastionclaw"
-mkdir -p /opt/bastionclaw
-chmod 700 /opt/bastionclaw
+echo "==> Setting up /opt/t3claw"
+mkdir -p /opt/t3claw
+chmod 700 /opt/t3claw
 
-cp /tmp/docker-compose.yml /opt/bastionclaw/docker-compose.yml
+cp /tmp/docker-compose.yml /opt/t3claw/docker-compose.yml
 
 # Rewrite image references so compose uses the Artifact Registry images instead
 # of building from source (the VM has no source tree).
@@ -73,36 +73,36 @@ sed -i \
    /context:/d;
    /dockerfile:/d;
    /target:/d;
-   s|image: bastionclaw.*|image: ${IMAGE_PREFIX}/agent:latest|g" \
-  /opt/bastionclaw/docker-compose.yml
+   s|image: t3claw.*|image: ${IMAGE_PREFIX}/agent:latest|g" \
+  /opt/t3claw/docker-compose.yml
 
 # ── Environment file ──────────────────────────────────────────────────────────
-if [ ! -f /opt/bastionclaw/.env ]; then
+if [ ! -f /opt/t3claw/.env ]; then
   echo ""
-  echo "WARNING: /opt/bastionclaw/.env does not exist."
+  echo "WARNING: /opt/t3claw/.env does not exist."
   echo "Create it with your secrets before starting the service."
   echo "See deploy-gcp/env.example for the required variables."
   echo ""
   echo "Once .env is in place, run:"
-  echo "  systemctl enable bastionclaw && systemctl start bastionclaw"
+  echo "  systemctl enable t3claw && systemctl start t3claw"
 else
-  chmod 600 /opt/bastionclaw/.env
+  chmod 600 /opt/t3claw/.env
 fi
 
 # ── Systemd service ───────────────────────────────────────────────────────────
-echo "==> Installing bastionclaw.service"
-cp /tmp/deploy/bastionclaw.service /etc/systemd/system/bastionclaw.service
+echo "==> Installing t3claw.service"
+cp /tmp/deploy/t3claw.service /etc/systemd/system/t3claw.service
 systemctl daemon-reload
 
-if [ -f /opt/bastionclaw/.env ]; then
-  echo "==> Starting BastionClaw"
-  systemctl enable bastionclaw
-  systemctl start bastionclaw
+if [ -f /opt/t3claw/.env ]; then
+  echo "==> Starting T3Claw"
+  systemctl enable t3claw
+  systemctl start t3claw
 fi
 
 echo ""
 echo "==> Bootstrap complete"
 echo ""
 echo "    Verify with:"
-echo "      systemctl status bastionclaw"
-echo "      docker logs bastion-claw-bastionclaw-1"
+echo "      systemctl status t3claw"
+echo "      docker logs t3-claw-t3claw-1"

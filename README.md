@@ -1,12 +1,12 @@
-# BastionClaw
+# T3Claw
 
-**BastionClaw** is Terminal3's secure AI assistant runtime, built on the foundations of [IronClaw](https://github.com/nearai/ironclaw) and hardened with the Trinity decentralised secret network.
+**T3Claw** is Terminal3's secure AI assistant runtime, built on the foundations of [IronClaw](https://github.com/nearai/ironclaw) and hardened with the Trinity decentralised secret network.
 
-## What makes BastionClaw different
+## What makes T3Claw different
 
 Standard AI assistants handle credentials unsafely — storing them in plaintext, passing them through model context, or trusting third-party services with your keys.
 
-BastionClaw takes a different approach: **secrets never live in the assistant at all**. The [Trinity network](https://terminal3.io/trinity) is a decentralised, audited secret management layer. Keys are stored encrypted across Trinity nodes and are only injected at the execution boundary — just-in-time, only for explicitly allowed URLs, and only when the reason for access matches a defined policy.
+T3Claw takes a different approach: **secrets never live in the assistant at all**. The [Trinity network](https://terminal3.io/trinity) is a decentralised, audited secret management layer. Keys are stored encrypted across Trinity nodes and are only injected at the execution boundary — just-in-time, only for explicitly allowed URLs, and only when the reason for access matches a defined policy.
 
 ```
 Tool Request ──► Allowlist Check ──► Trinity Fetch ──► Credential Inject ──► Execute ──► Leak Scan
@@ -21,7 +21,7 @@ This means:
 
 ## Built on IronClaw
 
-BastionClaw forks [IronClaw](https://github.com/nearai/ironclaw) (MIT / Apache-2.0), which provides:
+T3Claw forks [IronClaw](https://github.com/nearai/ironclaw) (MIT / Apache-2.0), which provides:
 
 - WASM-sandboxed tool execution with capability-based permissions
 - Multi-channel input (REPL, HTTP, Telegram, Slack, web gateway)
@@ -100,18 +100,18 @@ BastionClaw forks [IronClaw](https://github.com/nearai/ironclaw) (MIT / Apache-2
 ### Build from source
 
 ```bash
-git clone https://github.com/Terminal-3/bastion-claw.git
-cd bastion-claw
+git clone https://github.com/Terminal-3/t3-claw.git
+cd t3-claw
 cargo build --release
 ```
 
 ### First-time setup
 
 ```bash
-bastionclaw onboard
+t3claw onboard
 ```
 
-The wizard configures your database connection, LLM provider, and Trinity secret network credentials. Bootstrap variables are written to `~/.bastionclaw/.env`.
+The wizard configures your database connection, LLM provider, and Trinity secret network credentials. Bootstrap variables are written to `~/.t3claw/.env`.
 
 ## LLM Providers
 
@@ -128,7 +128,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 cargo fmt
 cargo clippy --all --benches --tests --examples --all-features
 cargo test
-RUST_LOG=bastionclaw=debug cargo run
+RUST_LOG=t3claw=debug cargo run
 ```
 
 ## Security
@@ -144,4 +144,4 @@ Licensed under either of:
 
 at your option.
 
-BastionClaw is a derivative work of [IronClaw](https://github.com/nearai/ironclaw) by NEAR AI, used under the same dual licence. Original copyright notices are retained in [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).
+T3Claw is a derivative work of [IronClaw](https://github.com/nearai/ironclaw) by NEAR AI, used under the same dual licence. Original copyright notices are retained in [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).

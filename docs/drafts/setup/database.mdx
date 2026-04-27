@@ -3,7 +3,7 @@ title: Database Backends
 description: PostgreSQL vs libSQL — choosing your database
 ---
 
-BastionClaw supports two database backends: **PostgreSQL** and **libSQL** (embedded SQLite). Choose based on your deployment needs.
+T3Claw supports two database backends: **PostgreSQL** and **libSQL** (embedded SQLite). Choose based on your deployment needs.
 
 ## Quick Comparison
 
@@ -44,19 +44,19 @@ brew services start postgresql          # macOS
 
 ```bash
 # Create database
-sudo -u postgres psql -c "CREATE DATABASE bastionclaw;"
-sudo -u postgres psql -c "CREATE USER bastionclaw WITH PASSWORD 'your-password';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE bastionclaw TO bastionclaw;"
+sudo -u postgres psql -c "CREATE DATABASE t3claw;"
+sudo -u postgres psql -c "CREATE USER t3claw WITH PASSWORD 'your-password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE t3claw TO t3claw;"
 
 # Enable pgvector
-sudo -u postgres psql -d bastionclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
+sudo -u postgres psql -d t3claw -c "CREATE EXTENSION IF NOT EXISTS vector;"
 ```
 
-### BastionClaw Configuration
+### T3Claw Configuration
 
 ```bash
 export DATABASE_BACKEND=postgres
-export DATABASE_URL="postgres://bastionclaw:your-password@localhost/bastionclaw"
+export DATABASE_URL="postgres://t3claw:your-password@localhost/t3claw"
 ```
 
 Or in the wizard:
@@ -83,16 +83,16 @@ Recommended for personal use, development, and single-user deployments. Zero set
 ### How It Works
 
 libSQL is an embedded SQLite-compatible database:
-- Database is a single file (`~/.bastionclaw/bastionclaw.db`)
+- Database is a single file (`~/.t3claw/t3claw.db`)
 - No separate server process
 - Auto-created on first connection
 - Full SQLite feature set
 
-### BastionClaw Configuration
+### T3Claw Configuration
 
 ```bash
 export DATABASE_BACKEND=libsql
-export LIBSQL_PATH="/home/user/.bastionclaw/bastionclaw.db"
+export LIBSQL_PATH="/home/user/.t3claw/t3claw.db"
 ```
 
 Or just use the wizard defaults:
@@ -106,7 +106,7 @@ libSQL supports syncing to Turso for cloud backup:
 
 ```bash
 export DATABASE_BACKEND=libsql
-export LIBSQL_PATH="/home/user/.bastionclaw/bastionclaw.db"
+export LIBSQL_PATH="/home/user/.t3claw/t3claw.db"
 export LIBSQL_URL="libsql://your-db.turso.io"
 export LIBSQL_AUTH_TOKEN="your-auth-token"
 ```
@@ -149,38 +149,38 @@ Both backends support embeddings, but with different implementations:
 
 1. **Export from libSQL:**
    ```bash
-   sqlite3 ~/.bastionclaw/bastionclaw.db ".dump" > bastionclaw.sql
+   sqlite3 ~/.t3claw/t3claw.db ".dump" > t3claw.sql
    ```
 
 2. **Import to PostgreSQL:**
    ```bash
-   psql -d bastionclaw -f bastionclaw.sql
+   psql -d t3claw -f t3claw.sql
    ```
 
-3. **Update BastionClaw config:**
+3. **Update T3Claw config:**
    ```bash
    export DATABASE_BACKEND=postgres
-   export DATABASE_URL="postgres://user:pass@localhost/bastionclaw"
+   export DATABASE_URL="postgres://user:pass@localhost/t3claw"
    ```
 
-4. **Restart BastionClaw**
+4. **Restart T3Claw**
 
 ### From PostgreSQL to libSQL
 
 1. **Export:**
    ```bash
-   pg_dump -h localhost -U bastionclaw bastionclaw > bastionclaw.sql
+   pg_dump -h localhost -U t3claw t3claw > t3claw.sql
    ```
 
 2. **Convert and import to SQLite** (requires conversion tools)
 
-3. **Update BastionClaw config**
+3. **Update T3Claw config**
 
 ## When to Choose Which
 
 ### Choose libSQL if:
 
-- Running BastionClaw on a personal laptop/desktop
+- Running T3Claw on a personal laptop/desktop
 - Single-user deployment
 - Want zero database administration
 - Don't need horizontal scaling
@@ -201,20 +201,20 @@ Both backends support embeddings, but with different implementations:
 
 ```bash
 # Backup
-pg_dump -h localhost -U bastionclaw bastionclaw > backup.sql
+pg_dump -h localhost -U t3claw t3claw > backup.sql
 
 # Restore
-psql -d bastionclaw -f backup.sql
+psql -d t3claw -f backup.sql
 ```
 
 ### libSQL
 
 ```bash
 # Backup (simple file copy)
-cp ~/.bastionclaw/bastionclaw.db ~/.bastionclaw/bastionclaw.db.backup
+cp ~/.t3claw/t3claw.db ~/.t3claw/t3claw.db.backup
 
 # Restore
-cp ~/.bastionclaw/bastionclaw.db.backup ~/.bastionclaw/bastionclaw.db
+cp ~/.t3claw/t3claw.db.backup ~/.t3claw/t3claw.db
 
 # With Turso: automatic cloud backup
 ```
@@ -238,7 +238,7 @@ cp ~/.bastionclaw/bastionclaw.db.backup ~/.bastionclaw/bastionclaw.db
   <Accordion title="Database file is locked" icon="lock">
     ```bash
     # Find and kill process
-    lsof ~/.bastionclaw/bastionclaw.db
+    lsof ~/.t3claw/t3claw.db
     kill -9 <pid>
 
     # Or wait for it to release

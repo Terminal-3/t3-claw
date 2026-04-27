@@ -1,7 +1,7 @@
 //! OpenClaw migration and import functionality.
 //!
 //! Provides tools to migrate existing OpenClaw installations (memory, history,
-//! settings, and credentials) into BastionClaw without data loss.
+//! settings, and credentials) into T3Claw without data loss.
 
 #[cfg(feature = "import")]
 pub mod openclaw;

@@ -2,11 +2,11 @@
 
 use crate::channels::web::types::{ToolCallInfo, TurnInfo};
 
-pub use bastionclaw_common::truncate_preview;
+pub use t3claw_common::truncate_preview;
 
 /// Convert stored tool errors into plain text suitable for UI display.
 pub fn tool_error_for_display(error: &str) -> String {
-    bastionclaw_safety::SafetyLayer::unwrap_tool_output(error).unwrap_or_else(|| error.to_string())
+    t3claw_safety::SafetyLayer::unwrap_tool_output(error).unwrap_or_else(|| error.to_string())
 }
 
 /// Parse tool call summary JSON objects into `ToolCallInfo` structs.

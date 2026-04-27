@@ -142,9 +142,9 @@ pub struct GateResolveRequest {
     pub resolution: GateResolutionPayload,
 }
 
-// --- App Event (re-exported from bastionclaw_common) ---
+// --- App Event (re-exported from t3claw_common) ---
 
-pub use bastionclaw_common::{AppEvent, ToolDecisionDto};
+pub use t3claw_common::{AppEvent, ToolDecisionDto};
 
 // --- Admin System Prompt ---
 

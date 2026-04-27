@@ -1,15 +1,15 @@
 ---
-description: Trace a data flow or bug through the BastionClaw codebase end-to-end
+description: Trace a data flow or bug through the T3Claw codebase end-to-end
 allowed-tools: Read, Glob, Grep, Bash(cargo test:*)
 argument-hint: <symptom or feature name>
 model: sonnet
 ---
 
-Trace the flow of `$ARGUMENTS` through the BastionClaw codebase. Your job is to map every file and function involved, identify where data transforms or could break, and report the full chain.
+Trace the flow of `$ARGUMENTS` through the T3Claw codebase. Your job is to map every file and function involved, identify where data transforms or could break, and report the full chain.
 
 ## Architecture Reference
 
-BastionClaw has three main data flow paths. Identify which one(s) are relevant and trace through them:
+T3Claw has three main data flow paths. Identify which one(s) are relevant and trace through them:
 
 ### Message Flow (user input to LLM response)
 ```

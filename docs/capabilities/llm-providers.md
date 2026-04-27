@@ -1,17 +1,17 @@
 ---
 title: Inference Providers
-description: BastionClaw readily supports multiple LLM providers
+description: T3Claw readily supports multiple LLM providers
 ---
 
-BastionClaw supports multiple LLM providers out of the box, including NEAR AI , Anthropic, OpenAI, Google Gemini, GitHub Copilot, Ollama, AWS Bedrock, and any OpenAI-compatible endpoint.
+T3Claw supports multiple LLM providers out of the box, including NEAR AI , Anthropic, OpenAI, Google Gemini, GitHub Copilot, Ollama, AWS Bedrock, and any OpenAI-compatible endpoint.
 
-Providers can be configured via environment variables or the onboarding wizard. BastionClaw's modular architecture allows seamless integration with new providers by implementing the `LLMProvider` trait.
+Providers can be configured via environment variables or the onboarding wizard. T3Claw's modular architecture allows seamless integration with new providers by implementing the `LLMProvider` trait.
 
 #### Configuring a Provider
 To config a new provider, simply run the onboarding wizard:
 
 ```bash
-bastionclaw onboard --provider-only
+t3claw onboard --provider-only
 ```
 
 ---
@@ -121,7 +121,7 @@ API (`generativelanguage.googleapis.com`).
 ## GitHub Copilot
 
 GitHub Copilot exposes chat endpoint at
-`https://api.githubcopilot.com`. BastionClaw uses that endpoint directly through the
+`https://api.githubcopilot.com`. T3Claw uses that endpoint directly through the
 built-in `github_copilot` provider.
 
 ```env
@@ -132,14 +132,14 @@ GITHUB_COPILOT_MODEL=gpt-4o
 # GITHUB_COPILOT_EXTRA_HEADERS=Copilot-Integration-Id:vscode-chat
 ```
 
-`bastionclaw onboard` can acquire this token for you using GitHub device login. If you
+`t3claw onboard` can acquire this token for you using GitHub device login. If you
 already signed into Copilot through VS Code or a JetBrains IDE, you can also reuse
 the `oauth_token` stored in `~/.config/github-copilot/apps.json`. If you prefer,
 `LLM_BACKEND=github-copilot` also works as an alias.
 
-Popular models vary by subscription, but `gpt-4o` is a safe default. BastionClaw keeps
+Popular models vary by subscription, but `gpt-4o` is a safe default. T3Claw keeps
 model entry manual for this provider because GitHub Copilot model listing may require
-extra integration headers on some clients. BastionClaw automatically injects the standard
+extra integration headers on some clients. T3Claw automatically injects the standard
 VS Code identity headers (`User-Agent`, `Editor-Version`, `Editor-Plugin-Version`,
 `Copilot-Integration-Id`) and lets you override them with
 `GITHUB_COPILOT_EXTRA_HEADERS`.

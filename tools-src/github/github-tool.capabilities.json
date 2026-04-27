@@ -27,16 +27,16 @@
       },
       {
         "action": "search_code",
-        "query": "repo:nearai/bastionclaw tool_info",
+        "query": "repo:nearai/t3claw tool_info",
         "limit": 5
       },
       {
         "action": "create_or_update_file",
         "owner": "nearai",
-        "repo": "bastionclaw",
+        "repo": "t3claw",
         "path": "docs/example.txt",
         "message": "docs: add example",
-        "content": "Hello from BastionClaw"
+        "content": "Hello from T3Claw"
       }
     ]
   },

@@ -13,7 +13,7 @@
   },
   "artifacts": {
     "wasm32-wasip2": {
-      "url": "https://github.com/terminal-3/bastion-claw/releases/download/bastionclaw-v0.1.0/tool-telegram_mtproto-0.1.0-wasm32-wasip2.tar.gz",
+      "url": "https://github.com/terminal-3/t3-claw/releases/download/t3claw-v0.1.0/tool-telegram_mtproto-0.1.0-wasm32-wasip2.tar.gz",
       "sha256": "509db374f6fe4e5a25aa4262c455bd243aa442143ee37625a464b6164de14f09"
     }
   },

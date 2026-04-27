@@ -1,38 +1,38 @@
 ---
 title: Docker Installation
 sidebarTitle: Docker
-description: Run BastionClaw in a Docker container
+description: Run T3Claw in a Docker container
 ---
 
-Run BastionClaw inside a Docker container. This provides isolation and consistency across environments.
+Run T3Claw inside a Docker container. This provides isolation and consistency across environments.
 
 <Warning>
-**Important distinction:** BastionClaw runs **alongside** Docker (for job sandboxing), not inside Docker by default. This page covers running BastionClaw itself in a container — a different use case from the default installation.
+**Important distinction:** T3Claw runs **alongside** Docker (for job sandboxing), not inside Docker by default. This page covers running T3Claw itself in a container — a different use case from the default installation.
 </Warning>
 
 ## When to Use Docker
 
 - **Testing**: Quick experiments without modifying your system
 - **Consistent environments**: Same configuration across dev/staging/prod
-- **Multi-tenant**: Run multiple BastionClaw instances on one host
+- **Multi-tenant**: Run multiple T3Claw instances on one host
 - **CI/CD**: Automated deployments
 
 ## Quick Start
 
 ```bash
 # Create data directory
-mkdir -p ~/.bastionclaw
+mkdir -p ~/.t3claw
 
-# Run BastionClaw
+# Run T3Claw
 docker run -d \
-  --name bastionclaw \
-  -v ~/.bastionclaw:/home/bastionclaw/.bastionclaw \
+  --name t3claw \
+  -v ~/.t3claw:/home/t3claw/.t3claw \
   # enabling this mount will allow the container to control the docker daemon, use at own risk
   # -v /var/run/docker.sock:/var/run/docker.sock \
   -p 3000:3000 \
   -p 8080:8080 \
-  # Pin to a specific BastionClaw version for reproducible, rollback-friendly deployments.
-  nearai/bastionclaw:latest 
+  # Pin to a specific T3Claw version for reproducible, rollback-friendly deployments.
+  nearai/t3claw:latest 
 ```
 
 ## Docker Compose
@@ -43,15 +43,15 @@ Save as `docker-compose.yml`:
 version: '3.8'
 
 services:
-  bastionclaw:
-    # Pin to a specific BastionClaw version for reproducible, rollback-friendly deployments.
-    image: nearai/bastionclaw:latest
-    container_name: bastionclaw
+  t3claw:
+    # Pin to a specific T3Claw version for reproducible, rollback-friendly deployments.
+    image: nearai/t3claw:latest
+    container_name: t3claw
     restart: unless-stopped
 
     volumes:
       # Persistent data
-      - ~/.bastionclaw:/home/bastionclaw/.bastionclaw
+      - ~/.t3claw:/home/t3claw/.t3claw
 
       # Docker socket for sandbox jobs, also exposes your docker host to this container!
       - /var/run/docker.sock:/var/run/docker.sock
@@ -84,9 +84,9 @@ services:
 #  postgres:
 #    image: pgvector/pgvector:pg15
 #    environment:
-#      POSTGRES_USER: bastionclaw
+#      POSTGRES_USER: t3claw
 #      POSTGRES_PASSWORD: changeme
-#      POSTGRES_DB: bastionclaw
+#      POSTGRES_DB: t3claw
 #    volumes:
 #      - postgres_data:/var/lib/postgresql/data
 #
@@ -104,7 +104,7 @@ docker compose up -d
 
 | Host Path | Container Path | Purpose |
 |-----------|---------------|---------|
-| `~/.bastionclaw` | `/home/bastionclaw/.bastionclaw` | Config, database, logs |
+| `~/.t3claw` | `/home/t3claw/.t3claw` | Config, database, logs |
 | `/var/run/docker.sock` | `/var/run/docker.sock` | Launch sandbox containers |
 
 ## Environment Variables
@@ -113,32 +113,32 @@ Pass configuration via environment variables:
 
 ```bash
 docker run -d \
-  --name bastionclaw \
+  --name t3claw \
   -e DATABASE_BACKEND=libsql \
   -e LLM_BACKEND=nearai \
   -e NEARAI_SESSION_TOKEN=sess_xxx \
   -e GATEWAY_ENABLED=true \
-  -v ~/.bastionclaw:/home/bastionclaw/.bastionclaw \
+  -v ~/.t3claw:/home/t3claw/.t3claw \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -p 3000:3000 \
-  nearai/bastionclaw:latest
+  nearai/t3claw:latest
 ```
 
 See [Configuration Reference](/setup/configuration) for all options.
 
 ## Docker-in-Docker Considerations
 
-BastionClaw can launch sandbox containers. In Docker, this requires:
+T3Claw can launch sandbox containers. In Docker, this requires:
 
-1. **Docker socket mount** (shown above): Allows BastionClaw to launch sibling containers
+1. **Docker socket mount** (shown above): Allows T3Claw to launch sibling containers
 2. **Privileged mode** (optional): Only if sandbox jobs need elevated permissions
 
 ```bash
 # With privileged mode (not recommended unless needed)
 docker run -d \
-  --name bastionclaw \
+  --name t3claw \
   --privileged \
-  -v ~/.bastionclaw:/home/bastionclaw/.bastionclaw \
+  -v ~/.t3claw:/home/t3claw/.t3claw \
   -v /var/run/docker.sock:/var/run/docker.sock \
   ...
 ```
@@ -148,12 +148,12 @@ docker run -d \
 To use a different data location:
 
 ```bash
-mkdir -p /opt/bastionclaw/data
+mkdir -p /opt/t3claw/data
 
 docker run -d \
-  --name bastionclaw \
-  -e BASTIONCLAW_BASE_DIR=/data \
-  -v /opt/bastionclaw/data:/data \
+  --name t3claw \
+  -e T3CLAW_BASE_DIR=/data \
+  -v /opt/t3claw/data:/data \
   ...
 ```
 
@@ -195,17 +195,17 @@ server {
 
 ```bash
 # Pull latest image
-docker pull nearai/bastionclaw:latest
+docker pull nearai/t3claw:latest
 
 # Recreate container
-docker stop bastionclaw
-docker rm bastionclaw
+docker stop t3claw
+docker rm t3claw
 docker run -d \
-  --name bastionclaw \
-  -v ~/.bastionclaw:/home/bastionclaw/.bastionclaw \
+  --name t3claw \
+  -v ~/.t3claw:/home/t3claw/.t3claw \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -p 3000:3000 \
-  nearai/bastionclaw:latest
+  nearai/t3claw:latest
 
 # Or with docker compose
 docker compose pull
@@ -225,7 +225,7 @@ docker compose up -d
   <Accordion title="Permission denied on data directory" icon="lock">
     Fix ownership:
     ```bash
-    sudo chown -R 1000:1000 ~/.bastionclaw
+    sudo chown -R 1000:1000 ~/.t3claw
     ```
   </Accordion>
 

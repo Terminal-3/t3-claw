@@ -100,5 +100,5 @@ pub mod prelude {
     pub use crate::llm::LlmProvider;
     pub use crate::tools::{Tool, ToolOutput, ToolRegistry};
     pub use crate::workspace::{MemoryDocument, Workspace};
-    pub use bastionclaw_safety::{SanitizedOutput, Sanitizer};
+    pub use t3claw_safety::{SanitizedOutput, Sanitizer};
 }

@@ -20,7 +20,7 @@ use crate::channels::web::types::*;
 /// explicit owner_id in settings. Either is sufficient to upgrade an active
 /// channel from `Pairing` to `Active`.
 ///
-/// See nearai/bastionclaw#1921 for the regression that motivated plumbing
+/// See nearai/t3claw#1921 for the regression that motivated plumbing
 /// `has_paired` through here instead of hardcoding it to `false`.
 pub(crate) fn derive_activation_status(
     ext: &crate::extensions::InstalledExtension,
@@ -192,7 +192,7 @@ mod tests {
     ///
     /// Either `has_paired` or `has_owner_binding` is sufficient to upgrade
     /// from `Pairing` to `Active`. Pinning the four-cell matrix here means a
-    /// regression that drops one axis (the bug shape behind nearai/bastionclaw#1921)
+    /// regression that drops one axis (the bug shape behind nearai/t3claw#1921)
     /// trips at least two cells, not zero.
     #[test]
     fn derive_activation_status_truth_table_for_active_wasm_channel() {
@@ -215,7 +215,7 @@ mod tests {
         }
     }
 
-    /// Regression for nearai/bastionclaw#1921 — caller-level coverage.
+    /// Regression for nearai/t3claw#1921 — caller-level coverage.
     ///
     /// Before this fix the wrapper hardcoded the underlying classifier's
     /// `has_paired` axis to `false`, so a paired-but-not-owner-bound
@@ -229,7 +229,7 @@ mod tests {
             derive_activation_status(&ext, true, false),
             Some(ExtensionActivationStatus::Active),
             "a WASM channel with paired senders must report Active even when \
-             no owner binding is set (nearai/bastionclaw#1921)"
+             no owner binding is set (nearai/t3claw#1921)"
         );
     }
 }

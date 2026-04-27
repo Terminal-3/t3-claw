@@ -106,11 +106,11 @@ impl OpenAiCodexProvider {
         );
         headers.insert(
             HeaderName::from_static("originator"),
-            HeaderValue::from_static("bastionclaw"),
+            HeaderValue::from_static("t3claw"),
         );
         headers.insert(
             USER_AGENT,
-            HeaderValue::from_static(concat!("bastionclaw/", env!("CARGO_PKG_VERSION"))),
+            HeaderValue::from_static(concat!("t3claw/", env!("CARGO_PKG_VERSION"))),
         );
         headers.insert(ACCEPT, HeaderValue::from_static("text/event-stream"));
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));

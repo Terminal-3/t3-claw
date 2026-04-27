@@ -414,7 +414,7 @@ pub struct Reasoning {
     /// This is passed to the LLM to provide clarity about who/group it's talking to.
     conversation_context: std::collections::HashMap<String, String>,
     /// Platform identity and runtime metadata for self-awareness.
-    platform_info: Option<bastionclaw_engine::PlatformInfo>,
+    platform_info: Option<t3claw_engine::PlatformInfo>,
 }
 
 impl Reasoning {
@@ -472,7 +472,7 @@ impl Reasoning {
     }
 
     /// Set platform metadata for self-awareness in system prompts.
-    pub fn with_platform_info(mut self, info: bastionclaw_engine::PlatformInfo) -> Self {
+    pub fn with_platform_info(mut self, info: t3claw_engine::PlatformInfo) -> Self {
         self.platform_info = Some(info);
         self
     }
@@ -1052,7 +1052,7 @@ Respond directly with your final answer. Do not wrap your response in any specia
         };
 
         format!(
-            r#"You are BastionClaw Agent, a secure autonomous assistant.
+            r#"You are T3Claw Agent, a secure autonomous assistant.
 
 {response_format}
 
@@ -2273,10 +2273,10 @@ That's my plan."#;
 
     #[test]
     fn test_clean_response_thinking_tags_reasoning_properly_tagged() {
-        let input = "<thinking>The user is asking about my name.</thinking>\n\nI'm BastionClaw, a secure personal AI assistant.";
+        let input = "<thinking>The user is asking about my name.</thinking>\n\nI'm T3Claw, a secure personal AI assistant.";
         assert_eq!(
             clean_response(input),
-            "I'm BastionClaw, a secure personal AI assistant."
+            "I'm T3Claw, a secure personal AI assistant."
         );
     }
 

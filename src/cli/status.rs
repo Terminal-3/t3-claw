@@ -5,7 +5,7 @@
 
 use std::path::PathBuf;
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::cli::fmt;
 use crate::settings::Settings;
 
@@ -55,7 +55,7 @@ pub async fn run_status_command() -> anyhow::Result<()> {
     let settings = load_settings();
 
     println!();
-    println!("  {}BastionClaw Status{}", fmt::bold(), fmt::reset());
+    println!("  {}T3Claw Status{}", fmt::bold(), fmt::reset());
     println!();
 
     // Version
@@ -106,7 +106,7 @@ pub async fn run_status_command() -> anyhow::Result<()> {
     let session_value = if session_path.exists() {
         format!("found ({})", session_path.display())
     } else {
-        "not found (run `bastionclaw onboard`)".to_string()
+        "not found (run `t3claw onboard`)".to_string()
     };
     println!("{}", fmt::kv_line("Session", &session_value, 12));
 
@@ -214,7 +214,7 @@ pub async fn run_status_command() -> anyhow::Result<()> {
         "{}",
         fmt::kv_line(
             "Config",
-            &crate::bootstrap::bastionclaw_env_path()
+            &crate::bootstrap::t3claw_env_path()
                 .display()
                 .to_string(),
             12,
@@ -266,11 +266,11 @@ fn count_wasm_files(dir: &std::path::Path) -> usize {
 }
 
 fn default_tools_dir() -> PathBuf {
-    bastionclaw_base_dir().join("tools")
+    t3claw_base_dir().join("tools")
 }
 
 fn default_channels_dir() -> PathBuf {
-    bastionclaw_base_dir().join("channels")
+    t3claw_base_dir().join("channels")
 }
 
 #[cfg(test)]

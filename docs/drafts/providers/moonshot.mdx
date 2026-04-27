@@ -17,7 +17,7 @@ Moonshot AI offers the Kimi family of models through an OpenAI-compatible API:
 ## Configuration
 
 ```bash
-# ~/.bastionclaw/.env
+# ~/.t3claw/.env
 
 LLM_BACKEND=openai_compatible
 LLM_BASE_URL=https://api.moonshot.ai/v1
@@ -49,7 +49,7 @@ Model IDs may vary. Check the [Moonshot documentation](https://platform.moonshot
 ### Via Wizard
 
 ```bash
-bastionclaw onboard
+t3claw onboard
 ```
 
 1. Step 3: Select "Other (OpenAI-compatible)"
@@ -60,16 +60,16 @@ bastionclaw onboard
 ### Manual Configuration
 
 ```bash
-# Add to ~/.bastionclaw/.env
+# Add to ~/.t3claw/.env
 export LLM_BACKEND=openai_compatible
 export LLM_BASE_URL=https://api.moonshot.ai/v1
 export LLM_API_KEY=sk-your-moonshot-key
 export LLM_MODEL=kimi-k2-5
 ```
 
-Restart BastionClaw:
+Restart T3Claw:
 ```bash
-bastionclaw run
+t3claw run
 ```
 
 ## Using Kimi K2.5

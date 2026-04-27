@@ -1,10 +1,10 @@
-//! OS service management for running BastionClaw as a daemon.
+//! OS service management for running T3Claw as a daemon.
 //!
 //! Generates and manages platform-native service definitions:
-//! - **macOS**: launchd plist at `~/Library/LaunchAgents/com.bastionclaw.daemon.plist`
-//! - **Linux**: systemd user unit at `~/.config/systemd/user/bastionclaw.service`
+//! - **macOS**: launchd plist at `~/Library/LaunchAgents/com.t3claw.daemon.plist`
+//! - **Linux**: systemd user unit at `~/.config/systemd/user/t3claw.service`
 //!
-//! The installed service runs `bastionclaw run` (the default agent mode) and is
+//! The installed service runs `t3claw run` (the default agent mode) and is
 //! configured to restart automatically on failure.
 
 use std::path::PathBuf;
@@ -12,10 +12,10 @@ use std::process::Command;
 
 use anyhow::{Context, Result, bail};
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 
-const SERVICE_LABEL: &str = "com.bastionclaw.daemon";
-const SYSTEMD_UNIT: &str = "bastionclaw.service";
+const SERVICE_LABEL: &str = "com.t3claw.daemon";
+const SYSTEMD_UNIT: &str = "t3claw.service";
 
 // ── Public dispatch ─────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ fn install_macos() -> Result<()> {
     }
 
     let exe = std::env::current_exe().context("failed to resolve current executable")?;
-    let logs_dir = bastionclaw_logs_dir();
+    let logs_dir = t3claw_logs_dir();
     std::fs::create_dir_all(&logs_dir)?;
 
     let stdout = logs_dir.join("daemon.stdout.log");
@@ -73,7 +73,7 @@ fn install_macos() -> Result<()> {
 
     std::fs::write(&file, plist)?;
     println!("Installed launchd service: {}", file.display());
-    println!("  Start with: bastionclaw service start");
+    println!("  Start with: t3claw service start");
     Ok(())
 }
 
@@ -123,7 +123,7 @@ fn install_linux() -> Result<()> {
     let exe = std::env::current_exe().context("failed to resolve current executable")?;
     let unit = format!(
         "[Unit]\n\
-         Description=BastionClaw daemon\n\
+         Description=T3Claw daemon\n\
          After=network.target\n\
          \n\
          [Service]\n\
@@ -143,7 +143,7 @@ fn install_linux() -> Result<()> {
     run_checked(Command::new("systemctl").args(["--user", "daemon-reload"])).ok();
     run_checked(Command::new("systemctl").args(["--user", "enable", SYSTEMD_UNIT])).ok();
     println!("Installed systemd user service: {}", file.display());
-    println!("  Start with: bastionclaw service start");
+    println!("  Start with: t3claw service start");
     Ok(())
 }
 
@@ -153,7 +153,7 @@ fn start() -> Result<()> {
     if cfg!(target_os = "macos") {
         let plist = macos_plist_path()?;
         if !plist.exists() {
-            bail!("Service not installed. Run `bastionclaw service install` first.");
+            bail!("Service not installed. Run `t3claw service install` first.");
         }
         run_checked(Command::new("launchctl").arg("load").arg("-w").arg(&plist))?;
         run_checked(Command::new("launchctl").arg("start").arg(SERVICE_LABEL))?;
@@ -268,8 +268,8 @@ fn linux_unit_path() -> Result<PathBuf> {
         .join(SYSTEMD_UNIT))
 }
 
-fn bastionclaw_logs_dir() -> PathBuf {
-    bastionclaw_base_dir().join("logs")
+fn t3claw_logs_dir() -> PathBuf {
+    t3claw_base_dir().join("logs")
 }
 
 // ── Shell helpers ───────────────────────────────────────────────
@@ -349,7 +349,7 @@ mod tests {
         let path = macos_plist_path().unwrap();
         let s = path.to_string_lossy();
         assert!(
-            s.ends_with("Library/LaunchAgents/com.bastionclaw.daemon.plist"),
+            s.ends_with("Library/LaunchAgents/com.t3claw.daemon.plist"),
             "unexpected path: {s}"
         );
     }
@@ -360,21 +360,21 @@ mod tests {
         let path = linux_unit_path().unwrap();
         let s = path.to_string_lossy();
         assert!(
-            s.ends_with(".config/systemd/user/bastionclaw.service"),
+            s.ends_with(".config/systemd/user/t3claw.service"),
             "unexpected path: {s}"
         );
     }
 
     #[test]
-    fn logs_dir_under_bastionclaw() {
-        let path = bastionclaw_logs_dir();
+    fn logs_dir_under_t3claw() {
+        let path = t3claw_logs_dir();
         let s = path.to_string_lossy();
-        assert!(s.ends_with(".bastionclaw/logs"), "unexpected path: {s}");
+        assert!(s.ends_with(".t3claw/logs"), "unexpected path: {s}");
     }
 
     #[test]
     fn macos_plist_sets_cli_enabled_false() {
-        let plist = macos_plist_content("/tmp/bastionclaw", "/tmp/stdout.log", "/tmp/stderr.log");
+        let plist = macos_plist_content("/tmp/t3claw", "/tmp/stdout.log", "/tmp/stderr.log");
         assert!(plist.contains("<key>EnvironmentVariables</key>"));
         assert!(plist.contains("    <key>CLI_ENABLED</key>\n    <string>false</string>"));
     }

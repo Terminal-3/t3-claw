@@ -14,8 +14,8 @@ mod tests {
     use async_trait::async_trait;
     use serde_json::json;
 
-    use bastionclaw::context::JobContext;
-    use bastionclaw::tools::{Tool, ToolError, ToolOutput};
+    use t3claw::context::JobContext;
+    use t3claw::tools::{Tool, ToolError, ToolOutput};
 
     use crate::support::test_rig::TestRigBuilder;
     use crate::support::trace_llm::LlmTrace;
@@ -103,7 +103,7 @@ mod tests {
         ))
         .expect("read fixture");
         let fixture_str = fixture_str.replace(
-            "/tmp/bastionclaw_error_feedback_test/recovered.txt",
+            "/tmp/t3claw_error_feedback_test/recovered.txt",
             &format!("{test_dir}/recovered.txt"),
         );
         let trace: LlmTrace = serde_json::from_str(&fixture_str).expect("parse patched fixture");

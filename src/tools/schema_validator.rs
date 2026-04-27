@@ -506,8 +506,8 @@ mod tests {
         use crate::tools::builtin::{
             SkillInstallTool, SkillListTool, SkillRemoveTool, SkillSearchTool,
         };
-        use bastionclaw_skills::catalog::SkillCatalog;
-        use bastionclaw_skills::registry::SkillRegistry;
+        use t3claw_skills::catalog::SkillCatalog;
+        use t3claw_skills::registry::SkillRegistry;
 
         let dir = tempfile::tempdir().expect("tempdir");
         let path = dir.keep();

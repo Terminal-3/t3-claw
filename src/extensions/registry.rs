@@ -238,7 +238,7 @@ fn score_entry(entry: &RegistryEntry, tokens: &[String]) -> u32 {
     score
 }
 
-/// Well-known extensions that ship with bastionclaw.
+/// Well-known extensions that ship with t3claw.
 ///
 /// If `relay_url` is provided, a channel-relay Slack entry is included in the list.
 /// Pass `None` when the relay is not configured.

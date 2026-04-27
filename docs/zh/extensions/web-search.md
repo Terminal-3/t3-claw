@@ -30,17 +30,17 @@ icon: globe
 在终端中运行以下命令安装网页搜索扩展：
 
 ```bash
-bastionclaw registry install web-search
+t3claw registry install web-search
 ```
 
 </Step>
 
 <Step title="配置 API 密钥">
 
-安装扩展后，需要在 BastionClaw 中配置您的 Brave Search API 密钥。运行：
+安装扩展后，需要在 T3Claw 中配置您的 Brave Search API 密钥。运行：
 
 ```bash
-bastionclaw tool auth web-search
+t3claw tool auth web-search
 ```
 
 然后按照提示输入您的 API 密钥。

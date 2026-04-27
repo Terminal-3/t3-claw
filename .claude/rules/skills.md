@@ -11,8 +11,8 @@ SKILL.md files extend the agent's prompt with domain-specific instructions. Each
 
 | Trust Level | Source | Tool Access |
 |-------------|--------|-------------|
-| **Trusted** | User-placed in `~/.bastionclaw/skills/` or workspace `skills/` | All tools available to the agent |
-| **Installed** | Downloaded from ClawHub registry (`~/.bastionclaw/installed_skills/`) | Read-only tools only (no shell, file write, HTTP) |
+| **Trusted** | User-placed in `~/.t3claw/skills/` or workspace `skills/` | All tools available to the agent |
+| **Installed** | Downloaded from ClawHub registry (`~/.t3claw/installed_skills/`) | Read-only tools only (no shell, file write, HTTP) |
 
 ## SKILL.md Format
 

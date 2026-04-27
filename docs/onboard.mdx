@@ -11,7 +11,7 @@ If you haven't set up your agent yet, follow our [Quickstart guide](/quickstart)
 </Note>
 
 <Danger>
-If you are new to BastionClaw, we recommend you to configure [channels](/channels/telegram), tools, and other settings one at a time instead of 
+If you are new to T3Claw, we recommend you to configure [channels](/channels/telegram), tools, and other settings one at a time instead of 
 all at once through the `onboard` command.
 </Danger>
 
@@ -19,7 +19,7 @@ all at once through the `onboard` command.
 
 ## Onboarding Wizard
 
-If you are new to BastionClaw, we recommend you to configure channels, tools, and other settings one at a time instead of all at once through the onboard command.
+If you are new to T3Claw, we recommend you to configure channels, tools, and other settings one at a time instead of all at once through the onboard command.
 
 <Steps>
 
@@ -28,14 +28,14 @@ If you are new to BastionClaw, we recommend you to configure channels, tools, an
 To start the onboarding wizard, run the following command in your terminal:
 
 ```bash
-bastionclaw onboard
+t3claw onboard
 ```
 
 </Step>
 
 <Step title="Select the Database Path">
 
-The wizard will first ask you to select a path for the agent's database, by default `/home/agent/.bastionclaw/bastionclaw.db`. This is where the agent will store your configuration.
+The wizard will first ask you to select a path for the agent's database, by default `/home/agent/.t3claw/t3claw.db`. This is where the agent will store your configuration.
 
 </Step>
 
@@ -81,14 +81,14 @@ You can always add more tools and extensions later.
 
 <Step title="Docker Sandboxing">
 
-BastionClaw can execute code, run builds, and use tools inside Docker
+T3Claw can execute code, run builds, and use tools inside Docker
 containers. This keeps your system safe -- commands from the LLM run
 in an isolated sandbox with no access to your credentials, limited
 filesystem access, and network traffic restricted to an allowlist.
 
 <Info>
 
-If you are running BastionClaw in an environment without Docker (like a server or a container), you can disable sandboxing
+If you are running T3Claw in an environment without Docker (like a server or a container), you can disable sandboxing
 </Info>
 
 </Step>

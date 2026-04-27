@@ -21,7 +21,7 @@
 --      That is a real correctness bug.
 --
 -- This migration:
---   * Adds an immutable SQL helper `bastionclaw_escape_like(s TEXT)` that
+--   * Adds an immutable SQL helper `t3claw_escape_like(s TEXT)` that
 --     prefixes `\`, `%`, and `_` with `\`. Backslash is escaped first so
 --     the escapes we add don't get re-escaped.
 --   * Replaces `list_workspace_files()` with a version that escapes both
@@ -33,7 +33,7 @@
 -- differs for inputs that contain LIKE metacharacters, where the new
 -- version returns the *correct* result.
 
-CREATE OR REPLACE FUNCTION bastionclaw_escape_like(s TEXT) RETURNS TEXT AS $$
+CREATE OR REPLACE FUNCTION t3claw_escape_like(s TEXT) RETURNS TEXT AS $$
     SELECT replace(replace(replace(s, '\', '\\'), '%', '\%'), '_', '\_');
 $$ LANGUAGE SQL IMMUTABLE;
 
@@ -59,7 +59,7 @@ BEGIN
     -- Escaped form for LIKE clauses. Plain p_directory is still used for
     -- `=`, length(), and string concatenation, where wildcards are
     -- harmless.
-    p_directory_esc := bastionclaw_escape_like(p_directory);
+    p_directory_esc := t3claw_escape_like(p_directory);
 
     RETURN QUERY
     WITH files AS (
@@ -102,8 +102,8 @@ BEGIN
               AND d2.agent_id IS NOT DISTINCT FROM p_agent_id
               AND d2.path LIKE
                 CASE
-                    WHEN p_directory = '' THEN bastionclaw_escape_like(f.child_name)
-                    ELSE p_directory_esc || bastionclaw_escape_like(f.child_name)
+                    WHEN p_directory = '' THEN t3claw_escape_like(f.child_name)
+                    ELSE p_directory_esc || t3claw_escape_like(f.child_name)
                 END
                 || '/%' ESCAPE '\'
         ) as is_directory,
@@ -115,8 +115,8 @@ BEGIN
                   AND d2.agent_id IS NOT DISTINCT FROM p_agent_id
                   AND d2.path LIKE
                     CASE
-                        WHEN p_directory = '' THEN bastionclaw_escape_like(f.child_name)
-                        ELSE p_directory_esc || bastionclaw_escape_like(f.child_name)
+                        WHEN p_directory = '' THEN t3claw_escape_like(f.child_name)
+                        ELSE p_directory_esc || t3claw_escape_like(f.child_name)
                     END
                     || '/%' ESCAPE '\'
             ) THEN NULL

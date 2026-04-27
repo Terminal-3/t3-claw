@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use async_trait::async_trait;
 use tokio::process::Command;
 
-use bastionclaw_safety::sensitive_paths::is_sensitive_path;
+use t3claw_safety::sensitive_paths::is_sensitive_path;
 
 use crate::context::JobContext;
 use crate::tools::builtin::path_utils::validate_path;

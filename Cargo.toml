@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/bastionclaw_common", "crates/bastionclaw_safety", "crates/bastionclaw_skills", "crates/bastionclaw_engine", "crates/bastionclaw_gateway", "crates/bastionclaw_tui"]
+members = [".", "crates/t3claw_common", "crates/t3claw_safety", "crates/t3claw_skills", "crates/t3claw_engine", "crates/t3claw_gateway", "crates/t3claw_tui"]
 exclude = [
     "channels-src/discord",
     "channels-src/telegram",
@@ -16,19 +16,19 @@ exclude = [
     "tools-src/slack",
     "tools-src/telegram",
     "fuzz",
-    "crates/bastionclaw_safety/fuzz",
+    "crates/t3claw_safety/fuzz",
 ]
 
 [package]
-name = "bastionclaw"
+name = "t3claw"
 version = "0.25.0"
 edition = "2024"
 rust-version = "1.92"
-description = "BastionClaw — Terminal3's secure AI assistant runtime powered by the Trinity decentralised secret network"
+description = "T3Claw — Terminal3's secure AI assistant runtime powered by the Trinity decentralised secret network"
 authors = ["Terminal3 <hello@terminal3.io>"]
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/Terminal-3/bastion-claw"
-repository = "https://github.com/Terminal-3/bastion-claw"
+homepage = "https://github.com/Terminal-3/t3-claw"
+repository = "https://github.com/Terminal-3/t3-claw"
 
 [package.metadata.wix]
 upgrade-guid = "D0156E61-BA37-451E-8AB9-1A2ECCCFA48F"
@@ -113,14 +113,14 @@ cron = "0.13"
 jsonschema = { version = "0.45", default-features = false }
 
 # Shared types
-bastionclaw_common = { path = "crates/bastionclaw_common", version = "0.2.0" }
+t3claw_common = { path = "crates/t3claw_common", version = "0.2.0" }
 
 # Safety/sanitization
-bastionclaw_engine = { path = "crates/bastionclaw_engine", version = "0.1.0" }
-bastionclaw_gateway = { path = "crates/bastionclaw_gateway", version = "0.1.0" }
-bastionclaw_safety = { path = "crates/bastionclaw_safety", version = "0.2.1" }
-bastionclaw_skills = { path = "crates/bastionclaw_skills", version = "0.1.0" }
-bastionclaw_tui = { path = "crates/bastionclaw_tui", optional = true, version = "0.1.0" }
+t3claw_engine = { path = "crates/t3claw_engine", version = "0.1.0" }
+t3claw_gateway = { path = "crates/t3claw_gateway", version = "0.1.0" }
+t3claw_safety = { path = "crates/t3claw_safety", version = "0.2.1" }
+t3claw_skills = { path = "crates/t3claw_skills", version = "0.1.0" }
+t3claw_tui = { path = "crates/t3claw_tui", optional = true, version = "0.1.0" }
 regex = "1"
 aho-corasick = "1"
 
@@ -248,7 +248,7 @@ libsql = ["dep:libsql"]
 integration = []
 html-to-markdown = ["dep:html-to-markdown-rs", "dep:readabilityrs"]
 bedrock = ["dep:aws-config", "dep:aws-sdk-bedrockruntime", "dep:aws-smithy-types"]
-tui = ["dep:bastionclaw_tui"]
+tui = ["dep:t3claw_tui"]
 import = ["dep:json5", "libsql"]
 
 [[test]]

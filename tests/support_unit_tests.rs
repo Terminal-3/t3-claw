@@ -96,7 +96,7 @@ mod cleanup_tests {
 
     #[test]
     fn cleanup_guard_removes_file() {
-        let path = "/tmp/bastionclaw_cleanup_guard_test.txt";
+        let path = "/tmp/t3claw_cleanup_guard_test.txt";
         std::fs::write(path, "test").unwrap();
         {
             let _guard = CleanupGuard::new().file(path);
@@ -107,7 +107,7 @@ mod cleanup_tests {
 
     #[test]
     fn cleanup_guard_removes_dir() {
-        let dir = "/tmp/bastionclaw_cleanup_guard_test_dir";
+        let dir = "/tmp/t3claw_cleanup_guard_test_dir";
         std::fs::create_dir_all(dir).unwrap();
         std::fs::write(format!("{dir}/file.txt"), "test").unwrap();
         {
@@ -119,7 +119,7 @@ mod cleanup_tests {
 
     #[test]
     fn cleanup_guard_file_does_not_remove_dir() {
-        let dir = "/tmp/bastionclaw_cleanup_guard_file_not_dir";
+        let dir = "/tmp/t3claw_cleanup_guard_file_not_dir";
         std::fs::create_dir_all(dir).unwrap();
         {
             // Registering a directory path as .file() should not remove it
@@ -144,7 +144,7 @@ mod test_channel_tests {
     use std::time::Duration;
 
     use crate::support::test_channel::TestChannel;
-    use bastionclaw::channels::{Channel, IncomingMessage, OutgoingResponse, StatusUpdate};
+    use t3claw::channels::{Channel, IncomingMessage, OutgoingResponse, StatusUpdate};
 
     #[tokio::test]
     async fn send_and_receive_message() {
@@ -352,7 +352,7 @@ mod test_channel_tests {
 
 mod trace_llm_tests {
     use crate::support::trace_llm::*;
-    use bastionclaw::llm::{
+    use t3claw::llm::{
         ChatMessage, CompletionRequest, FinishReason, LlmProvider, ToolCompletionRequest,
     };
 

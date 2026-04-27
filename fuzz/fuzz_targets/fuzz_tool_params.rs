@@ -1,6 +1,6 @@
 #![no_main]
-use bastionclaw::safety::Validator;
-use bastionclaw::tools::validate_tool_schema;
+use t3claw::safety::Validator;
+use t3claw::tools::validate_tool_schema;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

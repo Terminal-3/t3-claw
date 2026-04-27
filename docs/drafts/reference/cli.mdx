@@ -4,12 +4,12 @@ sidebarTitle: CLI
 description: Command-line interface reference
 ---
 
-Complete reference for the `bastionclaw` CLI.
+Complete reference for the `t3claw` CLI.
 
 ## Global Options
 
 ```bash
-bastionclaw [OPTIONS] [COMMAND]
+t3claw [OPTIONS] [COMMAND]
 ```
 
 | Option | Description |
@@ -24,10 +24,10 @@ bastionclaw [OPTIONS] [COMMAND]
 
 ### run
 
-Start the BastionClaw agent.
+Start the T3Claw agent.
 
 ```bash
-bastionclaw run [OPTIONS]
+t3claw run [OPTIONS]
 ```
 
 Starts the agent with all configured channels. This is the main command for normal operation.
@@ -42,13 +42,13 @@ Starts the agent with all configured channels. This is the main command for norm
 
 ```bash
 # Start normally
-bastionclaw run
+t3claw run
 
 # Start without TUI
-bastionclaw run --no-tui
+t3claw run --no-tui
 
 # With verbose logging
-RUST_LOG=bastionclaw=debug bastionclaw run
+RUST_LOG=t3claw=debug t3claw run
 ```
 
 ### onboard
@@ -56,7 +56,7 @@ RUST_LOG=bastionclaw=debug bastionclaw run
 Run the interactive setup wizard.
 
 ```bash
-bastionclaw onboard [OPTIONS]
+t3claw onboard [OPTIONS]
 ```
 
 Configures database, LLM, channels, and security settings.
@@ -72,13 +72,13 @@ Configures database, LLM, channels, and security settings.
 
 ```bash
 # Full wizard
-bastionclaw onboard
+t3claw onboard
 
 # Skip auth (use existing)
-bastionclaw onboard --skip-auth
+t3claw onboard --skip-auth
 
 # Add new channel
-bastionclaw onboard --channels-only
+t3claw onboard --channels-only
 ```
 
 ### config
@@ -86,7 +86,7 @@ bastionclaw onboard --channels-only
 Manage configuration settings.
 
 ```bash
-bastionclaw config <SUBCOMMAND>
+t3claw config <SUBCOMMAND>
 ```
 
 **Subcommands:**
@@ -102,16 +102,16 @@ bastionclaw config <SUBCOMMAND>
 
 ```bash
 # List all settings
-bastionclaw config list
+t3claw config list
 
 # Get LLM backend
-bastionclaw config get llm.backend
+t3claw config get llm.backend
 
 # Set model
-bastionclaw config set llm.model claude-sonnet-4
+t3claw config set llm.model claude-sonnet-4
 
 # Delete setting (reset to default)
-bastionclaw config delete llm.model
+t3claw config delete llm.model
 ```
 
 ### tool
@@ -119,7 +119,7 @@ bastionclaw config delete llm.model
 Manage tools.
 
 ```bash
-bastionclaw tool <SUBCOMMAND>
+t3claw tool <SUBCOMMAND>
 ```
 
 **Subcommands:**
@@ -135,13 +135,13 @@ bastionclaw tool <SUBCOMMAND>
 
 ```bash
 # List tools
-bastionclaw tool list
+t3claw tool list
 
 # Install from file
-bastionclaw tool install ./my-tool.wasm
+t3claw tool install ./my-tool.wasm
 
 # Remove tool
-bastionclaw tool remove my-tool
+t3claw tool remove my-tool
 ```
 
 ### registry
@@ -149,7 +149,7 @@ bastionclaw tool remove my-tool
 Manage the tool registry.
 
 ```bash
-bastionclaw registry <SUBCOMMAND>
+t3claw registry <SUBCOMMAND>
 ```
 
 **Subcommands:**
@@ -165,13 +165,13 @@ bastionclaw registry <SUBCOMMAND>
 
 ```bash
 # List available tools
-bastionclaw registry list
+t3claw registry list
 
 # Search
-bastionclaw registry search calendar
+t3claw registry search calendar
 
 # Install
-bastionclaw registry install google-calendar
+t3claw registry install google-calendar
 ```
 
 ### mcp
@@ -179,7 +179,7 @@ bastionclaw registry install google-calendar
 Manage MCP (Model Context Protocol) servers.
 
 ```bash
-bastionclaw mcp <SUBCOMMAND>
+t3claw mcp <SUBCOMMAND>
 ```
 
 **Subcommands:**
@@ -193,8 +193,8 @@ bastionclaw mcp <SUBCOMMAND>
 **Examples:**
 
 ```bash
-bastionclaw mcp list
-bastionclaw mcp add http://localhost:3000/sse
+t3claw mcp list
+t3claw mcp add http://localhost:3000/sse
 ```
 
 ### memory
@@ -202,7 +202,7 @@ bastionclaw mcp add http://localhost:3000/sse
 Manage workspace memory.
 
 ```bash
-bastionclaw memory <SUBCOMMAND>
+t3claw memory <SUBCOMMAND>
 ```
 
 **Subcommands:**
@@ -219,13 +219,13 @@ bastionclaw memory <SUBCOMMAND>
 
 ```bash
 # List documents
-bastionclaw memory list
+t3claw memory list
 
 # Write a document
-echo "My note" | bastionclaw memory write notes/idea.md
+echo "My note" | t3claw memory write notes/idea.md
 
 # Search
-bastionclaw memory search "project idea"
+t3claw memory search "project idea"
 ```
 
 ### pairing
@@ -233,7 +233,7 @@ bastionclaw memory search "project idea"
 Manage channel pairing.
 
 ```bash
-bastionclaw pairing <SUBCOMMAND>
+t3claw pairing <SUBCOMMAND>
 ```
 
 **Subcommands:**
@@ -247,13 +247,13 @@ bastionclaw pairing <SUBCOMMAND>
 
 ```bash
 # List Telegram pending
-bastionclaw pairing list telegram
+t3claw pairing list telegram
 
 # Approve
-bastionclaw pairing approve telegram ABC12345
+t3claw pairing approve telegram ABC12345
 
 # List as JSON
-bastionclaw pairing list telegram --json
+t3claw pairing list telegram --json
 ```
 
 ### service
@@ -261,7 +261,7 @@ bastionclaw pairing list telegram --json
 Manage system service.
 
 ```bash
-bastionclaw service <SUBCOMMAND>
+t3claw service <SUBCOMMAND>
 ```
 
 **Subcommands:**
@@ -278,14 +278,14 @@ bastionclaw service <SUBCOMMAND>
 
 ```bash
 # Install
-bastionclaw service install
+t3claw service install
 
 # Check status
-bastionclaw service status
+t3claw service status
 
 # Control
-sudo systemctl start bastionclaw  # Linux
-brew services start bastionclaw   # macOS
+sudo systemctl start t3claw  # Linux
+brew services start t3claw   # macOS
 ```
 
 ### doctor
@@ -293,7 +293,7 @@ brew services start bastionclaw   # macOS
 Run diagnostics.
 
 ```bash
-bastionclaw doctor [OPTIONS]
+t3claw doctor [OPTIONS]
 ```
 
 Checks:
@@ -312,8 +312,8 @@ Checks:
 **Example:**
 
 ```bash
-bastionclaw doctor
-bastionclaw doctor --json
+t3claw doctor
+t3claw doctor --json
 ```
 
 ### status
@@ -321,7 +321,7 @@ bastionclaw doctor --json
 Show current status.
 
 ```bash
-bastionclaw status [OPTIONS]
+t3claw status [OPTIONS]
 ```
 
 Shows:
@@ -334,7 +334,7 @@ Shows:
 **Example:**
 
 ```bash
-bastionclaw status
+t3claw status
 ```
 
 ### completion
@@ -342,7 +342,7 @@ bastionclaw status
 Generate shell completion scripts.
 
 ```bash
-bastionclaw completion <SHELL>
+t3claw completion <SHELL>
 ```
 
 **Shells:** `bash`, `zsh`, `fish`, `powershell`
@@ -351,10 +351,10 @@ bastionclaw completion <SHELL>
 
 ```bash
 # Bash
-bastionclaw completion bash > /etc/bash_completion.d/bastionclaw
+t3claw completion bash > /etc/bash_completion.d/t3claw
 
 # Zsh
-bastionclaw completion zsh > /usr/local/share/zsh/site-functions/_bastionclaw
+t3claw completion zsh > /usr/local/share/zsh/site-functions/_t3claw
 ```
 
 ## Environment Variables
@@ -363,13 +363,13 @@ CLI behavior can be modified with environment variables:
 
 ```bash
 # Config directory
-export BASTIONCLAW_BASE_DIR=/custom/path
+export T3CLAW_BASE_DIR=/custom/path
 
 # Skip onboarding
 export ONBOARD_COMPLETED=true
 
 # Logging
-export RUST_LOG=bastionclaw=debug
+export RUST_LOG=t3claw=debug
 ```
 
 ## Exit Codes

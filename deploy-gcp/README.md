@@ -1,4 +1,4 @@
-# BastionClaw — GCP Staging Deployment
+# T3Claw — GCP Staging Deployment
 
 **Stack:** Compute Engine VM (asia-southeast1-a) · Artifact Registry · Global HTTPS Load Balancer · Cloud DNS  
 **Endpoint:** `https://t3claw.agent.staging.gc.terminal3.io`  
@@ -28,14 +28,14 @@ export $(grep GITHUB_TOKEN .env | xargs)
 
 # Agent
 docker buildx build --platform linux/amd64 \
-  -t us-central1-docker.pkg.dev/gen-lang-client-0263867259/bastionclaw/agent:latest \
+  -t us-central1-docker.pkg.dev/gen-lang-client-0263867259/t3claw/agent:latest \
   --push .
 
 # t3n-mcp sidecar
 docker buildx build --platform linux/amd64 \
   --build-arg GITHUB_TOKEN=$GITHUB_TOKEN \
   -f docker/t3n-mcp-sidecar.Dockerfile \
-  -t us-central1-docker.pkg.dev/gen-lang-client-0263867259/bastionclaw/t3n-mcp-sidecar:latest \
+  -t us-central1-docker.pkg.dev/gen-lang-client-0263867259/t3claw/t3n-mcp-sidecar:latest \
   --push .
 ```
 
@@ -48,10 +48,10 @@ docker buildx build --platform linux/amd64 \
 `--push` in the build commands above pushes directly. If you need to push a pre-built local image (e.g. one built by `make up`):
 
 ```bash
-IMAGE_PREFIX="us-central1-docker.pkg.dev/gen-lang-client-0263867259/bastionclaw"
+IMAGE_PREFIX="us-central1-docker.pkg.dev/gen-lang-client-0263867259/t3claw"
 
-docker tag bastion-claw-bastionclaw:latest ${IMAGE_PREFIX}/agent:latest
-docker tag bastion-claw-t3n-mcp-sidecar:latest ${IMAGE_PREFIX}/t3n-mcp-sidecar:latest
+docker tag t3-claw-t3claw:latest ${IMAGE_PREFIX}/agent:latest
+docker tag t3-claw-t3n-mcp-sidecar:latest ${IMAGE_PREFIX}/t3n-mcp-sidecar:latest
 
 docker push ${IMAGE_PREFIX}/agent:latest
 docker push ${IMAGE_PREFIX}/t3n-mcp-sidecar:latest
@@ -63,10 +63,10 @@ docker push ${IMAGE_PREFIX}/t3n-mcp-sidecar:latest
 
 ## 3 — Update the startup script
 
-`deploy-gcp/startup-script.sh` is the single source of truth for what runs on the VM. It embeds the `docker-compose.yml`, the `bastionclaw.service` systemd unit, and the `mcp-servers.json` seed. Edit it here, then upload to VM metadata:
+`deploy-gcp/startup-script.sh` is the single source of truth for what runs on the VM. It embeds the `docker-compose.yml`, the `t3claw.service` systemd unit, and the `mcp-servers.json` seed. Edit it here, then upload to VM metadata:
 
 ```bash
-gcloud compute instances add-metadata bastionclaw-staging \
+gcloud compute instances add-metadata t3claw-staging \
   --zone=asia-southeast1-a --project=gen-lang-client-0263867259 \
   --metadata-from-file startup-script=deploy-gcp/startup-script.sh
 ```
@@ -81,17 +81,17 @@ A reset is a hard reboot. It re-runs the startup script from scratch — reinsta
 
 ```bash
 # Upload latest startup script then reset
-gcloud compute instances add-metadata bastionclaw-staging \
+gcloud compute instances add-metadata t3claw-staging \
   --zone=asia-southeast1-a --project=gen-lang-client-0263867259 \
   --metadata-from-file startup-script=deploy-gcp/startup-script.sh && \
-gcloud compute instances reset bastionclaw-staging \
+gcloud compute instances reset t3claw-staging \
   --zone=asia-southeast1-a --project=gen-lang-client-0263867259
 ```
 
 Monitor boot progress (no SSH needed):
 
 ```bash
-gcloud compute instances get-serial-port-output bastionclaw-staging \
+gcloud compute instances get-serial-port-output t3claw-staging \
   --zone=asia-southeast1-a --project=gen-lang-client-0263867259 | tail -50
 ```
 
@@ -102,9 +102,9 @@ gcloud compute instances get-serial-port-output bastionclaw-staging \
 To deploy a new image without resetting the VM, SSH in and pull + restart:
 
 ```bash
-gcloud compute ssh bastionclaw-staging \
+gcloud compute ssh t3claw-staging \
   --zone=asia-southeast1-a --project=gen-lang-client-0263867259 --tunnel-through-iap \
-  -- "sudo bash -c 'cd /opt/bastionclaw && docker compose --profile app pull && docker compose --profile app up -d'"
+  -- "sudo bash -c 'cd /opt/t3claw && docker compose --profile app pull && docker compose --profile app up -d'"
 ```
 
 ---
@@ -114,7 +114,7 @@ gcloud compute ssh bastionclaw-staging \
 The VM has no public IP. Use IAP tunneling:
 
 ```bash
-gcloud compute ssh bastionclaw-staging \
+gcloud compute ssh t3claw-staging \
   --zone=asia-southeast1-a --project=gen-lang-client-0263867259 --tunnel-through-iap
 ```
 
@@ -122,9 +122,9 @@ Useful commands once inside:
 
 ```bash
 sudo docker ps -a                                        # container status
-sudo journalctl -u bastionclaw -f                        # live service logs
-sudo docker logs -f bastionclaw-bastionclaw-1            # agent logs only
-sudo bash -c 'cd /opt/bastionclaw && docker compose --profile app restart bastionclaw'
+sudo journalctl -u t3claw -f                        # live service logs
+sudo docker logs -f t3claw-t3claw-1            # agent logs only
+sudo bash -c 'cd /opt/t3claw && docker compose --profile app restart t3claw'
 ```
 
 ---
@@ -137,7 +137,7 @@ To provision the full GCP stack from scratch (AR repo, service account, VM, LB, 
 bash deploy-gcp/gcp-provision.sh
 ```
 
-See `gcp-provision.sh` for details. After the VM is created, populate `/opt/bastionclaw/.env` using `deploy-gcp/env.example` as a template, then start the service.
+See `gcp-provision.sh` for details. After the VM is created, populate `/opt/t3claw/.env` using `deploy-gcp/env.example` as a template, then start the service.
 
 ---
 
@@ -145,11 +145,11 @@ See `gcp-provision.sh` for details. After the VM is created, populate `/opt/bast
 
 | Resource | Name | Details |
 |----------|------|---------|
-| Artifact Registry | `bastionclaw` | `us-central1` |
-| VM | `bastionclaw-staging` | e2-standard-2, asia-southeast1-a, no public IP |
-| Service account | `bastionclaw-vm` | `roles/artifactregistry.reader` |
-| Static IP | `bastionclaw-staging-ip` | `34.102.220.159` |
-| SSL cert | `bastionclaw-cert-v2` | Google-managed, auto-renews |
-| Load balancer | `bastionclaw-backend` | HTTPS → VM:3000 |
+| Artifact Registry | `t3claw` | `us-central1` |
+| VM | `t3claw-staging` | e2-standard-2, asia-southeast1-a, no public IP |
+| Service account | `t3claw-vm` | `roles/artifactregistry.reader` |
+| Static IP | `t3claw-staging-ip` | `34.102.220.159` |
+| SSL cert | `t3claw-cert-v2` | Google-managed, auto-renews |
+| Load balancer | `t3claw-backend` | HTTPS → VM:3000 |
 | DNS zone | `claw-dns-staging` | `agent.staging.gc.terminal3.io` |
 | DNS record | `t3claw` | A → `34.102.220.159` |

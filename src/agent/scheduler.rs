@@ -21,7 +21,7 @@ use crate::tools::{
     prepare_tool_params,
 };
 use crate::worker::job::{Worker, WorkerDeps};
-use bastionclaw_safety::SafetyLayer;
+use t3claw_safety::SafetyLayer;
 
 /// Message to send to a worker.
 #[derive(Debug)]
@@ -749,7 +749,7 @@ mod tests {
         ToolCompletionResponse,
     };
     use crate::tools::{ApprovalRequirement, Tool, ToolError, ToolOutput};
-    use bastionclaw_safety::SafetyLayer;
+    use t3claw_safety::SafetyLayer;
     use rust_decimal_macros::dec;
 
     /// Minimal LLM provider stub for scheduler tests that don't exercise LLM calls.

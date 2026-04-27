@@ -15,7 +15,7 @@
             "id": "call_list_dir",
             "name": "list_dir",
             "arguments": {
-              "path": "/tmp/bastionclaw_coverage_test_list_dir",
+              "path": "/tmp/t3claw_coverage_test_list_dir",
               "recursive": false
             }
           }

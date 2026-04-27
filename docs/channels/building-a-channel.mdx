@@ -1,6 +1,6 @@
 ---
 title: How to build a channel
-description: "Build a WASM messaging channel that plugs into BastionClaw"
+description: "Build a WASM messaging channel that plugs into T3Claw"
 ---
 
 Channels are WASM components that handle communication with external messaging platforms (Telegram, WhatsApp, Slack, etc.). They run in a sandboxed environment and communicate with the host via the WIT (WebAssembly Interface Types) interface.
@@ -39,7 +39,7 @@ channels-src/
 After building, deploy to:
 
 ```text
-~/.bastionclaw/channels/
+~/.t3claw/channels/
 ├── my-channel.wasm
 └── my-channel.capabilities.json
 ```
@@ -53,7 +53,7 @@ After building, deploy to:
 name = "my-channel"
 version = "0.1.0"
 edition = "2021"
-description = "My messaging platform channel for BastionClaw"
+description = "My messaging platform channel for T3Claw"
 
 [lib]
 crate-type = ["cdylib"]
@@ -317,9 +317,9 @@ wasm-tools component new target/wasm32-wasip2/release/my_channel.wasm -o my-chan
   2>/dev/null || cp target/wasm32-wasip2/release/my_channel.wasm my-channel.wasm
 wasm-tools strip my-channel.wasm -o my-channel.wasm
 
-mkdir -p ~/.bastionclaw/channels
-cp my-channel.wasm ~/.bastionclaw/channels/my-channel.wasm
-cp my-channel.capabilities.json ~/.bastionclaw/channels/
+mkdir -p ~/.t3claw/channels
+cp my-channel.wasm ~/.t3claw/channels/my-channel.wasm
+cp my-channel.capabilities.json ~/.t3claw/channels/
 ```
 
 <Note>
@@ -332,12 +332,12 @@ The channels shipped in `channels-src/` use small `build.sh` wrappers that do ex
 rustup target add wasm32-wasip2
 ./channels-src/telegram/build.sh
 
-mkdir -p ~/.bastionclaw/channels
-cp channels-src/telegram/telegram.wasm channels-src/telegram/telegram.capabilities.json ~/.bastionclaw/channels/
+mkdir -p ~/.t3claw/channels
+cp channels-src/telegram/telegram.wasm channels-src/telegram/telegram.capabilities.json ~/.t3claw/channels/
 ```
 
 <Danger>
-If you are contributing a channel to the public repository, **do not commit compiled WASM binaries.** They are a supply chain risk — the binary in a PR may not match the source. BastionClaw builds channels from source.
+If you are contributing a channel to the public repository, **do not commit compiled WASM binaries.** They are a supply chain risk — the binary in a PR may not match the source. T3Claw builds channels from source.
 </Danger>
 
 ---

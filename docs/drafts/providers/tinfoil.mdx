@@ -18,7 +18,7 @@ Tinfoil runs models inside hardware-attested TEEs:
 ## Configuration
 
 ```bash
-# ~/.bastionclaw/.env
+# ~/.t3claw/.env
 
 LLM_BACKEND=tinfoil
 TINFOIL_API_KEY=your-api-key
@@ -43,7 +43,7 @@ TINFOIL_MODEL=kimi-k2-5
 ### Via Wizard
 
 ```bash
-bastionclaw onboard
+t3claw onboard
 ```
 
 1. Step 3: Select "Tinfoil"
@@ -58,9 +58,9 @@ export TINFOIL_API_KEY=your-api-key
 export TINFOIL_MODEL=kimi-k2-5
 ```
 
-Restart BastionClaw:
+Restart T3Claw:
 ```bash
-bastionclaw run
+t3claw run
 ```
 
 ## How It Works
@@ -86,7 +86,7 @@ bastionclaw run
 
 - **Tinfoil** — Cannot see prompts (attested code)
 - **Cloud provider** — Only sees encrypted traffic
-- **BastionClaw** — Your local client, you control
+- **T3Claw** — Your local client, you control
 
 ## Cost
 

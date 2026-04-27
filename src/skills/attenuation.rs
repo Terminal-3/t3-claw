@@ -18,12 +18,12 @@
 //! | Installed present  | Read-only tools ONLY                              |
 
 use crate::llm::ToolDefinition;
-use bastionclaw_skills::{LoadedSkill, SkillTrust};
+use t3claw_skills::{LoadedSkill, SkillTrust};
 
 /// Tools that are always safe -- read-only, no side effects.
 ///
 /// **Maintenance note**: This list is intentionally hardcoded and conservative.
-/// When adding new tools to BastionClaw, they default to *excluded* from the
+/// When adding new tools to T3Claw, they default to *excluded* from the
 /// read-only list (i.e., blocked under Installed ceilings). A tool
 /// should only be added here if it is provably free of side effects -- it must
 /// not write files, make network requests, execute commands, or modify any state.
@@ -122,7 +122,7 @@ pub fn attenuate_tools(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bastionclaw_skills::{ActivationCriteria, GatingRequirements, SkillManifest, SkillSource};
+    use t3claw_skills::{ActivationCriteria, GatingRequirements, SkillManifest, SkillSource};
     use std::path::PathBuf;
 
     fn make_tool(name: &str) -> ToolDefinition {

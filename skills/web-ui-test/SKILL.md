@@ -1,7 +1,7 @@
 ---
 name: web-ui-test
 version: 0.1.0
-description: Test the BastionClaw web UI using the Claude for Chrome browser extension.
+description: Test the T3Claw web UI using the Claude for Chrome browser extension.
 activation:
   keywords:
     - test web ui
@@ -19,11 +19,11 @@ activation:
 
 # Web UI Testing with Claude for Chrome
 
-Use this skill when manually testing the BastionClaw web gateway UI via the Claude for Chrome browser extension.
+Use this skill when manually testing the T3Claw web gateway UI via the Claude for Chrome browser extension.
 
 ## Prerequisites
 
-- BastionClaw must be running with `GATEWAY_ENABLED=true`
+- T3Claw must be running with `GATEWAY_ENABLED=true`
 - Note the gateway URL (default: `http://127.0.0.1:3000/`) and auth token
 - The Claude for Chrome extension must be installed and connected
 
@@ -33,7 +33,7 @@ Use this skill when manually testing the BastionClaw web gateway UI via the Clau
 CLI_ENABLED=false GATEWAY_AUTH_TOKEN=<your-token> cargo run
 ```
 
-Wait for "Agent bastionclaw ready and listening" in the logs before proceeding.
+Wait for "Agent t3claw ready and listening" in the logs before proceeding.
 
 ## Test Checklist
 
@@ -94,7 +94,7 @@ Wait for "Agent bastionclaw ready and listening" in the logs before proceeding.
 After testing, remove any test-installed skills:
 
 ```bash
-rm -rf ~/.bastionclaw/installed_skills/<skill-name>
+rm -rf ~/.t3claw/installed_skills/<skill-name>
 ```
 
 Stop the server with Ctrl+C or by killing the process.

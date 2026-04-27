@@ -1,16 +1,16 @@
 ---
 title: Installation
 sidebarTitle: Overview
-description: Choose how to install BastionClaw
+description: Choose how to install T3Claw
 ---
 
-BastionClaw can run in multiple environments — from your local machine to a cloud VPS. Choose the installation method that fits your needs.
+T3Claw can run in multiple environments — from your local machine to a cloud VPS. Choose the installation method that fits your needs.
 
 ## Installation Methods
 
 <CardGroup cols={2}>
   <Card title="Local Install" icon="monitor" href="/install/local">
-    Run BastionClaw directly on your machine. Best for personal use.
+    Run T3Claw directly on your machine. Best for personal use.
 
     - **Linux**: Shell script or package manager
     - **macOS**: Homebrew or shell script
@@ -18,7 +18,7 @@ BastionClaw can run in multiple environments — from your local machine to a cl
   </Card>
 
   <Card title="Docker" icon="container" href="/install/docker">
-    Run BastionClaw in a container. Good for consistent environments.
+    Run T3Claw in a container. Good for consistent environments.
 
     - Docker Compose available
     - Volume persistence
@@ -71,7 +71,7 @@ BastionClaw can run in multiple environments — from your local machine to a cl
   </Accordion>
 
   <Accordion title="Optional: Docker" icon="box">
-    Docker is **optional** for running BastionClaw itself, but required if you want to use:
+    Docker is **optional** for running T3Claw itself, but required if you want to use:
     - Sandboxed job execution (Docker isolation)
     - Claude Code mode
     - Automatic WASM tool compilation
@@ -94,13 +94,13 @@ BastionClaw can run in multiple environments — from your local machine to a cl
 For local installations, we recommend **libSQL** (embedded SQLite) as your database backend:
 
 - **Zero-dependency**: No separate database server to install
-- **Auto-created**: Database created automatically at `~/.bastionclaw/bastionclaw.db`
+- **Auto-created**: Database created automatically at `~/.t3claw/t3claw.db`
 - **Zero-config**: Works out of the box
 - **Turso option**: Can sync to Turso cloud for backup
 
 ```bash
 # During wizard Step 1, select "libSQL"
-# Path: ~/.bastionclaw/bastionclaw.db (default)
+# Path: ~/.t3claw/t3claw.db (default)
 ```
 
 **When to use PostgreSQL instead:**
@@ -122,8 +122,8 @@ Before installing:
 
 After installation:
 
-- [ ] Run the onboarding wizard: `bastionclaw onboard`
-- [ ] Start BastionClaw: `bastionclaw run`
+- [ ] Run the onboarding wizard: `t3claw onboard`
+- [ ] Start T3Claw: `t3claw run`
 - [ ] Verify Web Gateway loads (if enabled)
 - [ ] Test sending a message
 
@@ -136,13 +136,13 @@ After installation:
 ## What's Next?
 
 <Steps>
-  <Step title="Install BastionClaw" icon="download">
+  <Step title="Install T3Claw" icon="download">
     Follow the installation guide for your chosen method
   </Step>
   <Step title="Run the Wizard" icon="settings">
     Configure your database, LLM, and channels
   </Step>
-  <Step title="Start Using BastionClaw" icon="message-square">
+  <Step title="Start Using T3Claw" icon="message-square">
     Open the Web Gateway or chat via Telegram
   </Step>
 </Steps>

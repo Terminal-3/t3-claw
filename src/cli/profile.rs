@@ -27,7 +27,7 @@ pub async fn run_profile_command(cmd: ProfileCommand) -> anyhow::Result<()> {
 ///
 /// Built-in profiles have a header like:
 /// ```text
-/// # BastionClaw Profile: local
+/// # T3Claw Profile: local
 /// #
 /// # Stripped-down configuration for solo developers working locally.
 /// ```
@@ -36,7 +36,7 @@ pub async fn run_profile_command(cmd: ProfileCommand) -> anyhow::Result<()> {
 /// non-empty comment line as the description.
 fn extract_description(toml_content: &str) -> Option<String> {
     let mut lines = toml_content.lines();
-    // Skip the `# BastionClaw Profile: <name>` title line.
+    // Skip the `# T3Claw Profile: <name>` title line.
     lines.next()?;
 
     for line in lines {
@@ -83,7 +83,7 @@ fn profile_description(info: &ProfileInfo) -> Option<String> {
 /// List all available profiles.
 fn cmd_list(json: bool) -> anyhow::Result<()> {
     let profiles = list_profiles();
-    let active_name = std::env::var("BASTIONCLAW_PROFILE")
+    let active_name = std::env::var("T3CLAW_PROFILE")
         .ok()
         .filter(|s| !s.is_empty())
         .map(|s| s.to_ascii_lowercase());
@@ -141,9 +141,9 @@ fn cmd_list(json: bool) -> anyhow::Result<()> {
     println!();
     if active_name.is_none() {
         println!("No profile is currently active.");
-        println!("Set BASTIONCLAW_PROFILE=<name> to activate one.");
+        println!("Set T3CLAW_PROFILE=<name> to activate one.");
     }
-    println!("\nCustom profiles can be added to ~/.bastionclaw/profiles/");
+    println!("\nCustom profiles can be added to ~/.t3claw/profiles/");
 
     Ok(())
 }
@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn extract_description_from_builtin() {
-        let toml = "# BastionClaw Profile: local\n#\n# A short description.\n#\ndatabase_backend = \"libsql\"\n";
+        let toml = "# T3Claw Profile: local\n#\n# A short description.\n#\ndatabase_backend = \"libsql\"\n";
         assert_eq!(
             extract_description(toml),
             Some("A short description.".to_string())
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn extract_description_skips_blank_comments() {
-        let toml = "# BastionClaw Profile: foo\n#\n#\n# Real description.\n";
+        let toml = "# T3Claw Profile: foo\n#\n#\n# Real description.\n";
         assert_eq!(
             extract_description(toml),
             Some("Real description.".to_string())
@@ -192,7 +192,7 @@ mod tests {
         let path = tmp.path().join("custom.toml");
         std::fs::write(
             &path,
-            "# BastionClaw Profile: custom\n#\n# My custom profile.\n\ndatabase_backend = \"postgres\"\n",
+            "# T3Claw Profile: custom\n#\n# My custom profile.\n\ndatabase_backend = \"postgres\"\n",
         )
         .unwrap();
         assert_eq!(

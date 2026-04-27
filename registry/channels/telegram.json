@@ -13,7 +13,7 @@
   },
   "artifacts": {
     "wasm32-wasip2": {
-      "url": "https://github.com/terminal-3/bastion-claw/releases/download/bastionclaw-v0.1.0/channel-telegram-0.1.0-wasm32-wasip2.tar.gz",
+      "url": "https://github.com/terminal-3/t3-claw/releases/download/t3claw-v0.1.0/channel-telegram-0.1.0-wasm32-wasip2.tar.gz",
       "sha256": "77743de860c82b1518de57643f83c657a45aeab3966afad2e65f40530f1fa496"
     }
   },

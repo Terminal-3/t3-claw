@@ -4,7 +4,7 @@ sidebarTitle: 自修复
 description: 自动检测并恢复卡住的任务
 ---
 
-BastionClaw 会监控所有正在运行的任务，并自动恢复那些停止推进的任务，无需人工介入。
+T3Claw 会监控所有正在运行的任务，并自动恢复那些停止推进的任务，无需人工介入。
 
 ---
 
@@ -121,14 +121,14 @@ Completed (或再次回到 Stuck)
 卡住与恢复的任务可以在以下位置看到：
 
 - **任务历史**：Web 网关中的任务列表会展示带时间戳的状态流转
-- **日志**：设置 `RUST_LOG=bastionclaw::agent::self_repair=debug` 查看详细修复事件
+- **日志**：设置 `RUST_LOG=t3claw::agent::self_repair=debug` 查看详细修复事件
 - **`list_jobs` 工具**：可查看当前状态，包括 Stuck 任务
 
 ## 故障排查
 
 <AccordionGroup>
   <Accordion title="任务反复卡住" icon="refresh-cw">
-    - 查看 `RUST_LOG=bastionclaw::agent::self_repair=debug` 以确认失败原因
+    - 查看 `RUST_LOG=t3claw::agent::self_repair=debug` 以确认失败原因
     - 通过 `job_status` 工具检查工具失败记录
     - 如果任务本身执行时间确实较长，可考虑增大 `SELF_REPAIR_TIMEOUT_SECS`
     - 检查到 LLM 提供商和外部服务的网络连通性

@@ -1,6 +1,6 @@
-# BastionClaw Coverage Plan: 63.3% to 95%
+# T3Claw Coverage Plan: 63.3% to 95%
 
-> Generated 2025-03-06 from [Codecov](https://app.codecov.io/gh/nearai/bastionclaw/tree/main/src)
+> Generated 2025-03-06 from [Codecov](https://app.codecov.io/gh/nearai/t3claw/tree/main/src)
 
 ## Current State
 

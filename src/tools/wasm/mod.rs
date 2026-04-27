@@ -51,8 +51,8 @@
 //! # Example
 //!
 //! ```ignore
-//! use bastionclaw::tools::wasm::{WasmToolRuntime, WasmRuntimeConfig, WasmToolWrapper};
-//! use bastionclaw::tools::wasm::Capabilities;
+//! use t3claw::tools::wasm::{WasmToolRuntime, WasmRuntimeConfig, WasmToolWrapper};
+//! use t3claw::tools::wasm::Capabilities;
 //! use std::sync::Arc;
 //!
 //! // Create runtime

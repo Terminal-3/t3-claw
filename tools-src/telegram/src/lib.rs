@@ -1,4 +1,4 @@
-//! Telegram User-Mode WASM Tool for BastionClaw.
+//! Telegram User-Mode WASM Tool for T3Claw.
 //!
 //! Provides Telegram integration operating from the **user's personal account**,
 //! not a bot. This tool sends encrypted MTProto messages directly to Telegram's
@@ -24,8 +24,8 @@
 //! # Prerequisites
 //!
 //! 1. Get Telegram API credentials from https://my.telegram.org/apps
-//! 2. Store them: `bastionclaw secret set telegram_api_id <id>`
-//!    `bastionclaw secret set telegram_api_hash <hash>`
+//! 2. Store them: `t3claw secret set telegram_api_id <id>`
+//!    `t3claw secret set telegram_api_hash <hash>`
 //! 3. Use the `login` action with your phone number
 //!
 //! # Authentication Flow

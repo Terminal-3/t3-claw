@@ -11,17 +11,17 @@ use chrono::{DateTime, Utc};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::error::OrchestratorError;
 use crate::orchestrator::auth::{CredentialGrant, TokenStore};
 use crate::sandbox::connect_docker;
 
-use bastionclaw_common::MAX_WORKER_ITERATIONS;
+use t3claw_common::MAX_WORKER_ITERATIONS;
 
 /// Which mode a sandbox container runs in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobMode {
-    /// Standard BastionClaw worker with proxied LLM calls.
+    /// Standard T3Claw worker with proxied LLM calls.
     Worker,
     /// Claude Code bridge that spawns the `claude` CLI directly.
     ClaudeCode,
@@ -112,7 +112,7 @@ pub struct ContainerJobConfig {
 impl Default for ContainerJobConfig {
     fn default() -> Self {
         Self {
-            image: "bastionclaw-worker:latest".to_string(),
+            image: "t3claw-worker:latest".to_string(),
             memory_limit_mb: 2048,
             cpu_shares: 1024,
             orchestrator_port: 50051,
@@ -178,7 +178,7 @@ pub struct CompletionResult {
     pub message: Option<String>,
 }
 
-/// Validate that a project directory is under `~/.bastionclaw/projects/`.
+/// Validate that a project directory is under `~/.t3claw/projects/`.
 ///
 /// Returns the canonicalized path if valid. Creates the base directory if
 /// it doesn't exist (so the prefix check always runs).
@@ -188,7 +188,7 @@ pub struct CompletionResult {
 /// There is a time-of-check/time-of-use gap between `canonicalize()` here
 /// and the actual Docker `binds.push()` in the caller. In a multi-tenant
 /// system a malicious actor could swap a symlink after validation. This is
-/// acceptable in BastionClaw's single-tenant design where the user controls
+/// acceptable in T3Claw's single-tenant design where the user controls
 /// the filesystem.
 fn validate_bind_mount_path(
     dir: &std::path::Path,
@@ -205,7 +205,7 @@ fn validate_bind_mount_path(
             ),
         })?;
 
-    let projects_base = bastionclaw_base_dir().join("projects");
+    let projects_base = t3claw_base_dir().join("projects");
 
     if !projects_base.is_absolute() {
         return Err(OrchestratorError::ContainerCreationFailed {
@@ -431,17 +431,17 @@ impl ContainerJobManager {
         );
 
         let mut env_vec = vec![
-            format!("BASTIONCLAW_WORKER_TOKEN={}", token),
-            format!("BASTIONCLAW_JOB_ID={}", job_id),
-            format!("BASTIONCLAW_ORCHESTRATOR_URL={}", orchestrator_url),
+            format!("T3CLAW_WORKER_TOKEN={}", token),
+            format!("T3CLAW_JOB_ID={}", job_id),
+            format!("T3CLAW_ORCHESTRATOR_URL={}", orchestrator_url),
         ];
 
-        // Build volume mounts (validate project_dir stays within ~/.bastionclaw/projects/)
+        // Build volume mounts (validate project_dir stays within ~/.t3claw/projects/)
         let mut binds = Vec::new();
         if let Some(ref dir) = project_dir {
             let canonical = validate_bind_mount_path(dir, job_id)?;
             binds.push(format!("{}:/workspace:rw", canonical.display()));
-            env_vec.push("BASTIONCLAW_WORKSPACE=/workspace".to_string());
+            env_vec.push("T3CLAW_WORKSPACE=/workspace".to_string());
         }
 
         // Inject max_iterations if specified (only for Worker mode — ClaudeCode uses max_turns).
@@ -451,13 +451,13 @@ impl ContainerJobManager {
             && mode == JobMode::Worker
         {
             let capped = iters.clamp(1, MAX_WORKER_ITERATIONS);
-            env_vec.push(format!("BASTIONCLAW_MAX_ITERATIONS={}", capped));
+            env_vec.push(format!("T3CLAW_MAX_ITERATIONS={}", capped));
         }
 
         // Mount per-job MCP config when the feature is enabled. The master
         // config comes from the caller (loaded from the per-user DB setting),
         // not from a hardcoded host file path — bootstrap migrates the legacy
-        // ~/.bastionclaw/mcp-servers.json into the DB on first run, so any
+        // ~/.t3claw/mcp-servers.json into the DB on first run, so any
         // file-based source would be empty on most installs.
         if self.config.mcp_per_job_enabled {
             match generate_worker_mcp_config(
@@ -469,7 +469,7 @@ impl ContainerJobManager {
             {
                 Some(config_path) => {
                     binds.push(format!(
-                        "{}:/home/sandbox/.bastionclaw/mcp-servers.json:ro",
+                        "{}:/home/sandbox/.t3claw/mcp-servers.json:ro",
                         config_path.display()
                     ));
                     tracing::debug!(
@@ -571,9 +571,9 @@ impl ContainerJobManager {
 
         // Add Docker labels for reaper identification and orphan detection
         let mut labels = std::collections::HashMap::new();
-        labels.insert("bastionclaw.job_id".to_string(), job_id.to_string());
+        labels.insert("t3claw.job_id".to_string(), job_id.to_string());
         labels.insert(
-            "bastionclaw.created_at".to_string(),
+            "t3claw.created_at".to_string(),
             chrono::Utc::now().to_rfc3339(),
         );
 
@@ -589,9 +589,9 @@ impl ContainerJobManager {
         };
 
         let container_name = match mode {
-            JobMode::Worker => format!("bastionclaw-worker-{}", job_id),
-            JobMode::ClaudeCode => format!("bastionclaw-claude-{}", job_id),
-            JobMode::Acp => format!("bastionclaw-acp-{}", job_id),
+            JobMode::Worker => format!("t3claw-worker-{}", job_id),
+            JobMode::ClaudeCode => format!("t3claw-claude-{}", job_id),
+            JobMode::Acp => format!("t3claw-acp-{}", job_id),
         };
         let options = CreateContainerOptions {
             name: container_name,
@@ -752,7 +752,7 @@ impl ContainerJobManager {
         // Clean up per-job MCP config temp file if one was written.
         // Use remove_file directly — avoids TOCTOU race with exists() check.
         let tmp_path = std::env::temp_dir()
-            .join("bastionclaw-mcp-configs")
+            .join("t3claw-mcp-configs")
             .join(format!("{}.json", job_id));
         match std::fs::remove_file(&tmp_path) {
             Ok(()) => {}
@@ -825,7 +825,7 @@ fn type_name_of(value: &serde_json::Value) -> &'static str {
 /// orchestrator hardcoded a host file path that bootstrap moves into the
 /// DB on first run, leaving most installs with no MCP mount.
 ///
-/// Temp files are written to `<temp_dir>/bastionclaw-mcp-configs/` and cleaned
+/// Temp files are written to `<temp_dir>/t3claw-mcp-configs/` and cleaned
 /// up in `cleanup_job`.
 async fn generate_worker_mcp_config(
     master: Option<&serde_json::Value>,
@@ -928,7 +928,7 @@ async fn generate_worker_mcp_config(
         "schema_version": schema_version
     });
 
-    let tmp_dir = std::env::temp_dir().join("bastionclaw-mcp-configs");
+    let tmp_dir = std::env::temp_dir().join("t3claw-mcp-configs");
     tokio::fs::create_dir_all(&tmp_dir).await.map_err(|e| {
         OrchestratorError::ContainerCreationFailed {
             job_id,
@@ -980,7 +980,7 @@ mod tests {
 
     #[test]
     fn test_validate_bind_mount_valid_path() {
-        let base = crate::bootstrap::compute_bastionclaw_base_dir().join("projects");
+        let base = crate::bootstrap::compute_t3claw_base_dir().join("projects");
         std::fs::create_dir_all(&base).unwrap();
 
         let test_dir = base.join("test_validate_bind");
@@ -1203,7 +1203,7 @@ mod tests {
     /// no master config (e.g. caller did not load it from the DB, or the user
     /// has no MCP servers configured), the function must return `None` rather
     /// than touching any hardcoded host file path. Pre-fix the function read
-    /// from `/opt/bastionclaw/config/worker/mcp-servers.json`, which bootstrap
+    /// from `/opt/t3claw/config/worker/mcp-servers.json`, which bootstrap
     /// migrates into the DB and removes from disk on first run, so per-job
     /// MCP filtering silently no-op'd on every typical install.
     #[tokio::test]
@@ -1271,32 +1271,32 @@ mod tests {
 
     #[test]
     fn test_max_iterations_env_var_injected() {
-        // Verify the BASTIONCLAW_MAX_ITERATIONS env var name matches what the
+        // Verify the T3CLAW_MAX_ITERATIONS env var name matches what the
         // worker CLI reads via clap's `env` attribute.
         let config = ContainerJobConfig::default();
         let mgr = ContainerJobManager::new(config, TokenStore::new());
         // We can't test actual container creation without Docker, but we can
         // verify the env var name matches the clap definition.
-        // The clap definition uses: #[arg(long, env = "BASTIONCLAW_MAX_ITERATIONS")]
-        // The create_job_inner injects: format!("BASTIONCLAW_MAX_ITERATIONS={}", iters)
+        // The clap definition uses: #[arg(long, env = "T3CLAW_MAX_ITERATIONS")]
+        // The create_job_inner injects: format!("T3CLAW_MAX_ITERATIONS={}", iters)
         // This test ensures the constant isn't accidentally changed in either place.
-        let env_var_in_job = "BASTIONCLAW_MAX_ITERATIONS";
+        let env_var_in_job = "T3CLAW_MAX_ITERATIONS";
         let source = include_str!("../cli/mod.rs");
         assert!(
             source.contains(&format!("env = \"{}\"", env_var_in_job)),
-            "cli/mod.rs must have env = \"BASTIONCLAW_MAX_ITERATIONS\" on the max_iterations arg"
+            "cli/mod.rs must have env = \"T3CLAW_MAX_ITERATIONS\" on the max_iterations arg"
         );
         drop(mgr);
     }
 
     #[test]
     fn test_max_iterations_not_injected_for_claude_code() {
-        // ClaudeCode mode uses its own `max_turns`, not BASTIONCLAW_MAX_ITERATIONS.
+        // ClaudeCode mode uses its own `max_turns`, not T3CLAW_MAX_ITERATIONS.
         // Verify the gate in create_job_inner only injects for Worker mode.
         let source = include_str!("job_manager.rs");
         assert!(
             source.contains("mode == JobMode::Worker"),
-            "create_job_inner must gate BASTIONCLAW_MAX_ITERATIONS on JobMode::Worker \
+            "create_job_inner must gate T3CLAW_MAX_ITERATIONS on JobMode::Worker \
              (ClaudeCode has its own max_turns)"
         );
     }
@@ -1419,7 +1419,7 @@ mod tests {
 
         // Simulate what cleanup_job does
         let expected_path = std::env::temp_dir()
-            .join("bastionclaw-mcp-configs")
+            .join("t3claw-mcp-configs")
             .join(format!("{}.json", job_id));
         assert_eq!(
             out_path, expected_path,
@@ -1458,7 +1458,7 @@ mod tests {
         let mode = std::fs::metadata(dir_path).unwrap().permissions().mode() & 0o777;
         assert_eq!(
             mode, 0o700,
-            "bastionclaw-mcp-configs dir must be 0700, got {:o}",
+            "t3claw-mcp-configs dir must be 0700, got {:o}",
             mode
         );
 
@@ -1490,7 +1490,7 @@ mod tests {
             // safety: test fixture
             "DB-loaded master with no filter must produce a mountable config — \
              pre-fix this would silently fall back to None on installs where \
-             the hardcoded /opt/bastionclaw/config/worker/mcp-servers.json did not exist",
+             the hardcoded /opt/t3claw/config/worker/mcp-servers.json did not exist",
         );
 
         let content: serde_json::Value =

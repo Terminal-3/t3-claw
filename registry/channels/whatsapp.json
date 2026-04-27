@@ -13,7 +13,7 @@
   },
   "artifacts": {
     "wasm32-wasip2": {
-      "url": "https://github.com/terminal-3/bastion-claw/releases/download/bastionclaw-v0.1.0/channel-whatsapp-0.1.0-wasm32-wasip2.tar.gz",
+      "url": "https://github.com/terminal-3/t3-claw/releases/download/t3claw-v0.1.0/channel-whatsapp-0.1.0-wasm32-wasip2.tar.gz",
       "sha256": "6d6dcacac0aa66fd38e0972448e81b631827e4097875309ef092432f2a85dd5c"
     }
   },

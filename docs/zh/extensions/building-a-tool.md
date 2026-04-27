@@ -3,7 +3,7 @@ title: 从零构建一个工具
 description: 使用 Rust 构建一个天气 WASM 工具
 ---
 
-本教程带你从零实现一个 weather-tool：通过 Open-Meteo（免费、无需 API Key）获取实时天气、5 天预报与空气质量，并让 BastionClaw 代理可直接调用。
+本教程带你从零实现一个 weather-tool：通过 Open-Meteo（免费、无需 API Key）获取实时天气、5 天预报与空气质量，并让 T3Claw 代理可直接调用。
 
 目标效果：
 
@@ -11,7 +11,7 @@ description: 使用 Rust 构建一个天气 WASM 工具
 
 完整参考实现：
 
-<Card title="weather-tool source" icon="github" href="https://github.com/matiasbenary/bastionclaw/tree/tools/weather/tools-src/weather">
+<Card title="weather-tool source" icon="github" href="https://github.com/matiasbenary/t3claw/tree/tools/weather/tools-src/weather">
   查看完整代码：lib.rs、Cargo.toml 与 capabilities.json。
 </Card>
 
@@ -42,7 +42,7 @@ cd weather-tool
 name = "weather-tool"
 version = "0.1.0"
 edition = "2021"
-description = "Weather information tool for BastionClaw (WASM component)"
+description = "Weather information tool for T3Claw (WASM component)"
 
 [lib]
 crate-type = ["cdylib"]
@@ -69,7 +69,7 @@ codegen-units = 1
 
 ## 2. 接入 WIT 接口
 
-BastionClaw 工具是实现了 WIT 接口的 WASM 组件。宿主提供 HTTP、日志与工作区能力；你的工具需导出 `execute`、`schema`、`description`。
+T3Claw 工具是实现了 WIT 接口的 WASM 组件。宿主提供 HTTP、日志与工作区能力；你的工具需导出 `execute`、`schema`、`description`。
 
 `src/lib.rs` 骨架：
 
@@ -208,8 +208,8 @@ cargo build --release --target wasm32-wasip2
 ## 8. 安装并测试
 
 ```bash
-bastionclaw tool install ./target/wasm32-wasip2/release/weather_tool.wasm
-bastionclaw tool list
+t3claw tool install ./target/wasm32-wasip2/release/weather_tool.wasm
+t3claw tool list
 ```
 
 然后在聊天中测试：

@@ -6,7 +6,7 @@ description: 基于上下文自动激活的提示扩展
 Skill 是包含领域指令的 Markdown 文件。激活后，其内容会注入到 LLM 上下文中，让代理在特定场景下具备稳定、可复用的专业能力。
 
 <Tip>
-BastionClaw 支持从 ClawHub 社区注册表搜索和安装技能。
+T3Claw 支持从 ClawHub 社区注册表搜索和安装技能。
 </Tip>
 
 ---
@@ -50,7 +50,7 @@ BastionClaw 支持从 ClawHub 社区注册表搜索和安装技能。
 
 | 级别 | 来源 | 工具权限 |
 |------|------|----------|
-| Trusted | `~/.bastionclaw/skills/` 或工作区 `skills/` | 与代理一致的完整权限 |
+| Trusted | `~/.t3claw/skills/` 或工作区 `skills/` | 与代理一致的完整权限 |
 | Installed | 通过 `skill_install` 从 ClawHub 安装 | 只读工具（无 shell、无文件写入、无 HTTP） |
 
 <Warning>
@@ -63,9 +63,9 @@ BastionClaw 支持从 ClawHub 社区注册表搜索和安装技能。
 
 | 目录 | 信任级别 | 说明 |
 |------|----------|------|
-| `~/.bastionclaw/skills/` | Trusted | 全局技能，所有会话可用 |
+| `~/.t3claw/skills/` | Trusted | 全局技能，所有会话可用 |
 | `<workspace>/skills/` | Trusted | 工作区技能，仅当前仓库生效 |
-| `~/.bastionclaw/installed_skills/` | Installed | 从 ClawHub 安装的技能 |
+| `~/.t3claw/installed_skills/` | Installed | 从 ClawHub 安装的技能 |
 
 ---
 

@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use bastionclaw_engine::gate::{
+use t3claw_engine::gate::{
     ExecutionGate, ExecutionMode, GateContext, GateDecision, ResumeKind,
 };
 
@@ -310,9 +310,9 @@ impl ExecutionGate for RelayChannelGate {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bastionclaw_engine::gate::ExecutionMode;
-    use bastionclaw_engine::types::capability::{ActionDef, EffectType};
-    use bastionclaw_engine::types::thread::ThreadId;
+    use t3claw_engine::gate::ExecutionMode;
+    use t3claw_engine::types::capability::{ActionDef, EffectType};
+    use t3claw_engine::types::thread::ThreadId;
     use std::collections::HashSet;
 
     fn action_def(name: &str, requires_approval: bool) -> ActionDef {

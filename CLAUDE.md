@@ -1,6 +1,6 @@
-# BastionClaw Development Guide
+# T3Claw Development Guide
 
-**BastionClaw** is a secure personal AI assistant — user-first security, self-expanding tools, defense in depth, multi-channel access with proactive background execution.
+**T3Claw** is a secure personal AI assistant — user-first security, self-expanding tools, defense in depth, multi-channel access with proactive background execution.
 
 ## Build & Test
 
@@ -9,7 +9,7 @@ cargo fmt                                                    # format
 cargo clippy --all --benches --tests --examples --all-features  # lint (zero warnings)
 cargo test                                                   # unit tests
 cargo test --features integration                            # + PostgreSQL tests
-RUST_LOG=bastionclaw=debug cargo run                            # run with logging
+RUST_LOG=t3claw=debug cargo run                            # run with logging
 ```
 
 E2E tests: see `tests/e2e/CLAUDE.md`.
@@ -24,7 +24,7 @@ E2E tests: see `tests/e2e/CLAUDE.md`.
 - Prefer strong types over strings (enums, newtypes)
 - Keep functions focused, extract helpers when logic is reused
 - Comments for non-obvious logic only
-- **Prompt templates live in files, not Rust code**: Multi-line prompt strings (mission goals, system prompts, CodeAct preambles) go in `crates/bastionclaw_engine/prompts/*.md` and are loaded via `include_str!()`. Never inline large prompt templates as Rust string constants — they're hard to read, review, and iterate on. Single-line format strings are fine inline.
+- **Prompt templates live in files, not Rust code**: Multi-line prompt strings (mission goals, system prompts, CodeAct preambles) go in `crates/t3claw_engine/prompts/*.md` and are loaded via `include_str!()`. Never inline large prompt templates as Rust string constants — they're hard to read, review, and iterate on. Single-line format strings are fine inline.
 - **Logging levels matter for REPL/TUI**: `info!` and `warn!` output appears in the REPL and corrupts the terminal UI. Use `debug!` for internal diagnostics (trace analysis, reflection results, engine internals). Reserve `info!` for user-facing status that the REPL intentionally renders. Background tasks (reflection, trace analysis) must NEVER use `info!` — it breaks the interactive display.
 - **Test through the caller, not just the helper**: When a predicate/classifier/transform helper gates a side effect (HTTP, DB write, OAuth, UI mutation, tool execution) and has any wrapper or computed input between it and that side effect, a unit test on the helper alone is _not_ sufficient regression coverage. Add a test that drives the call site — typically a `*_handler`, `factory::create_*`, or `manager::*` — at the integration tier (`cargo test --features integration`) or higher. The same applies to test mocks: if you mock a multi-arg runtime API like `window.open(url, target, features)`, the mock must capture every argument the production caller passes. See `.claude/rules/testing.md` ("Test Through the Caller, Not Just the Helper") for the full rule and the bug examples that motivated it.
 
@@ -40,20 +40,20 @@ All I/O is async with tokio. Use `Arc<T>` for shared state, `RwLock` for concurr
 
 ## Extracted Crates
 
-Safety logic lives in `crates/bastionclaw_safety/`, skills in `crates/bastionclaw_skills/`. **Import directly from the extracted crate** (e.g. `use bastionclaw_safety::SafetyLayer`, `use bastionclaw_skills::SkillRegistry`). Do not use `crate::safety::` or `crate::skills::` for types that originate in extracted crates — `src/safety/mod.rs` and `src/skills/mod.rs` no longer glob-re-export. Local items defined in those modules (e.g. `crate::skills::attenuate_tools`) are fine.
+Safety logic lives in `crates/t3claw_safety/`, skills in `crates/t3claw_skills/`. **Import directly from the extracted crate** (e.g. `use t3claw_safety::SafetyLayer`, `use t3claw_skills::SkillRegistry`). Do not use `crate::safety::` or `crate::skills::` for types that originate in extracted crates — `src/safety/mod.rs` and `src/skills/mod.rs` no longer glob-re-export. Local items defined in those modules (e.g. `crate::skills::attenuate_tools`) are fine.
 
 ## Project Structure
 
 ```
 crates/
-└── bastionclaw_safety/    # Extracted: prompt injection, validation, leak detection, policy
+└── t3claw_safety/    # Extracted: prompt injection, validation, leak detection, policy
 
 src/
 ├── lib.rs              # Library root, module declarations
 ├── main.rs             # Entry point, CLI args, startup
 ├── app.rs              # App startup orchestration (channel wiring, DB init)
-├── bootstrap.rs        # Base directory resolution (~/.bastionclaw), early .env loading
-├── settings.rs         # User settings persistence (~/.bastionclaw/settings.json)
+├── bootstrap.rs        # Base directory resolution (~/.t3claw), early .env loading
+├── settings.rs         # User settings persistence (~/.t3claw/settings.json)
 ├── service.rs          # OS service management (launchd/systemd daemon install)
 ├── tracing_fmt.rs      # Custom tracing formatter
 ├── util.rs             # Shared utilities
@@ -116,7 +116,7 @@ src/
 │   ├── claude_bridge.rs # Claude Code bridge (spawns claude CLI)
 │   └── proxy_llm.rs    # LlmProvider that proxies through orchestrator
 │
-├── safety/             # Re-export shim for crates/bastionclaw_safety (see Extracted Crates)
+├── safety/             # Re-export shim for crates/t3claw_safety (see Extracted Crates)
 │
 ├── llm/                # Multi-provider LLM integration — see src/llm/CLAUDE.md
 │
@@ -196,7 +196,7 @@ When modifying a module with a spec, read the spec first. Code follows spec; spe
 | `src/setup/`                 | `src/setup/README.md`                 |
 | `src/tools/`                 | `src/tools/README.md`                 |
 | `src/workspace/`             | `src/workspace/README.md`             |
-| `crates/bastionclaw_engine/` | `crates/bastionclaw_engine/CLAUDE.md` |
+| `crates/t3claw_engine/` | `crates/t3claw_engine/CLAUDE.md` |
 | `tests/e2e/`                 | `tests/e2e/CLAUDE.md`                 |
 
 ## Job State Machine
@@ -212,7 +212,7 @@ Pending -> InProgress -> Completed -> Submitted -> Accepted
 
 SKILL.md files extend the agent's prompt with domain-specific instructions. See `.claude/rules/skills.md` for full details.
 
-- **Trust model**: Trusted (user-placed in `~/.bastionclaw/skills/` or workspace `skills/`, full tool access) vs Installed (registry, read-only tools)
+- **Trust model**: Trusted (user-placed in `~/.t3claw/skills/` or workspace `skills/`, full tool access) vs Installed (registry, read-only tools)
 - **Selection pipeline**: gating (check bin/env/config requirements) -> scoring (keywords/patterns/tags) -> budget (fit within `SKILLS_MAX_TOKENS`) -> attenuation (trust-based tool ceiling)
 - **Skill tools**: `skill_list`, `skill_search`, `skill_install`, `skill_remove`
 
@@ -262,9 +262,9 @@ Persistent memory with hybrid search (FTS + vector via RRF). Four tools: `memory
 ## Debugging
 
 ```bash
-RUST_LOG=bastionclaw=trace cargo run           # verbose
-RUST_LOG=bastionclaw::agent=debug cargo run    # agent module only
-RUST_LOG=bastionclaw=debug,tower_http=debug cargo run  # + HTTP request logging
+RUST_LOG=t3claw=trace cargo run           # verbose
+RUST_LOG=t3claw::agent=debug cargo run    # agent module only
+RUST_LOG=t3claw=debug,tower_http=debug cargo run  # + HTTP request logging
 ```
 
 ## Current Limitations

@@ -4,31 +4,31 @@ sidebarTitle: Docker Compose
 description: Production Docker Compose deployment with PostgreSQL and volumes
 ---
 
-This page covers a production Docker Compose setup for BastionClaw with PostgreSQL, named volumes, and health checks. Use this when you want a fully containerized, self-contained deployment that is easy to back up and migrate.
+This page covers a production Docker Compose setup for T3Claw with PostgreSQL, named volumes, and health checks. Use this when you want a fully containerized, self-contained deployment that is easy to back up and migrate.
 
 <Note>
-This is for running BastionClaw itself inside Docker Compose alongside PostgreSQL. This is separate from BastionClaw's Docker sandbox feature, which launches containers for job isolation. Both can coexist — see the Docker-in-Docker section below.
+This is for running T3Claw itself inside Docker Compose alongside PostgreSQL. This is separate from T3Claw's Docker sandbox feature, which launches containers for job isolation. Both can coexist — see the Docker-in-Docker section below.
 </Note>
 
 ---
 
 ## docker-compose.yml
 
-Save this as `docker-compose.yml` in your deployment directory (e.g., `/opt/bastionclaw/`):
+Save this as `docker-compose.yml` in your deployment directory (e.g., `/opt/t3claw/`):
 
 ```yaml
 version: "3.9"
 
 services:
-  bastionclaw:
-    image: nearai/bastionclaw:latest
-    container_name: bastionclaw
+  t3claw:
+    image: nearai/t3claw:latest
+    container_name: t3claw
     restart: unless-stopped
     env_file:
       - .env
     volumes:
-      # Persistent BastionClaw data (skills, installed extensions, workspace files)
-      - bastionclaw_data:/home/bastionclaw/.bastionclaw
+      # Persistent T3Claw data (skills, installed extensions, workspace files)
+      - t3claw_data:/home/t3claw/.t3claw
       # OPTIONAL: Docker socket for sandbox job execution (Docker-in-Docker sibling containers).
       # Enabling this grants the container control over the host Docker daemon; uncomment only if required.
       # - /var/run/docker.sock:/var/run/docker.sock
@@ -47,7 +47,7 @@ services:
       retries: 3
       start_period: 15s
     networks:
-      - bastionclaw_net
+      - t3claw_net
     logging:
       driver: "json-file"
       options:
@@ -56,11 +56,11 @@ services:
 
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: bastionclaw-postgres
+    container_name: t3claw-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: bastionclaw
-      POSTGRES_USER: bastionclaw
+      POSTGRES_DB: t3claw
+      POSTGRES_USER: t3claw
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
@@ -69,13 +69,13 @@ services:
       # Only expose to internal network — never bind to host
       - "5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bastionclaw -d bastionclaw"]
+      test: ["CMD-SHELL", "pg_isready -U t3claw -d t3claw"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     networks:
-      - bastionclaw_net
+      - t3claw_net
     logging:
       driver: "json-file"
       options:
@@ -83,13 +83,13 @@ services:
         max-file: "3"
 
 volumes:
-  bastionclaw_data:
+  t3claw_data:
     driver: local
   postgres_data:
     driver: local
 
 networks:
-  bastionclaw_net:
+  t3claw_net:
     driver: bridge
     internal: false  # Set to true if you want to block all external network access from containers
 ```
@@ -103,7 +103,7 @@ Create `.env` in the same directory as `docker-compose.yml`:
 ```bash
 # ─── Database ─────────────────────────────────────────────────────────────────
 DATABASE_BACKEND=postgres
-DATABASE_URL=postgres://bastionclaw:change_this_to_a_strong_password@postgres:5432/bastionclaw
+DATABASE_URL=postgres://t3claw:change_this_to_a_strong_password@postgres:5432/t3claw
 POSTGRES_PASSWORD=change_this_to_a_strong_password  # Must match password in DATABASE_URL
 
 # ─── LLM Provider ─────────────────────────────────────────────────────────────
@@ -132,7 +132,7 @@ EMBEDDING_MODEL=text-embedding-3-small
 
 # ─── Docker Sandbox ───────────────────────────────────────────────────────────
 SANDBOX_ENABLED=true
-SANDBOX_IMAGE=bastionclaw-worker:latest
+SANDBOX_IMAGE=t3claw-worker:latest
 SANDBOX_MEMORY_LIMIT_MB=512
 SANDBOX_TIMEOUT_SECS=1800
 SANDBOX_CPU_LIMIT=1.0
@@ -154,7 +154,7 @@ HEARTBEAT_INTERVAL_SECS=1800
 HEARTBEAT_NOTIFY_CHANNEL=web
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
-RUST_LOG=bastionclaw=info,tower_http=warn
+RUST_LOG=t3claw=info,tower_http=warn
 ```
 
 <Warning>
@@ -174,8 +174,8 @@ docker compose ps
 
 # Expected output:
 # NAME                STATUS          PORTS
-# bastionclaw            running         127.0.0.1:3000->3000/tcp
-# bastionclaw-postgres   running (healthy)
+# t3claw            running         127.0.0.1:3000->3000/tcp
+# t3claw-postgres   running (healthy)
 ```
 
 ---
@@ -186,14 +186,14 @@ docker compose ps
 # All services
 docker compose logs -f
 
-# BastionClaw only
-docker compose logs -f bastionclaw
+# T3Claw only
+docker compose logs -f t3claw
 
 # Postgres only
 docker compose logs -f postgres
 
 # Last 100 lines
-docker compose logs --tail=100 bastionclaw
+docker compose logs --tail=100 t3claw
 ```
 
 ---
@@ -204,8 +204,8 @@ docker compose logs --tail=100 bastionclaw
 # Pull latest images
 docker compose pull
 
-# Recreate containers with new images (zero-downtime for postgres; brief downtime for bastionclaw)
-docker compose up -d --no-deps bastionclaw
+# Recreate containers with new images (zero-downtime for postgres; brief downtime for t3claw)
+docker compose up -d --no-deps t3claw
 
 # Or restart everything
 docker compose up -d
@@ -220,16 +220,16 @@ docker compose up -d
 ```bash
 # Dump to file
 docker compose exec postgres pg_dump \
-  -U bastionclaw \
-  -d bastionclaw \
+  -U t3claw \
+  -d t3claw \
   --format=custom \
   --compress=9 \
   > backup-$(date +%Y%m%d-%H%M%S).dump
 
 # Restore from dump
 docker compose exec -T postgres pg_restore \
-  -U bastionclaw \
-  -d bastionclaw \
+  -U t3claw \
+  -d t3claw \
   --clean \
   --if-exists \
   < backup-20240101-120000.dump
@@ -238,31 +238,31 @@ docker compose exec -T postgres pg_restore \
 ### Volume Backup
 
 ```bash
-# Discover the bastionclaw_data volume name (project prefix may vary)
-# This picks the first volume whose name contains "bastionclaw_data"
+# Discover the t3claw_data volume name (project prefix may vary)
+# This picks the first volume whose name contains "t3claw_data"
 
-VOLUME_NAME=$(docker volume ls -q --filter name='bastionclaw_data' | head -n 1)
+VOLUME_NAME=$(docker volume ls -q --filter name='t3claw_data' | head -n 1)
 
-# Back up bastionclaw_data volume (workspace, skills, config)
+# Back up t3claw_data volume (workspace, skills, config)
 docker run --rm \
   -v "${VOLUME_NAME}":/source:ro \
   -v "$(pwd)"/backups:/dest \
-  alpine tar czf /dest/bastionclaw-data-$(date +%Y%m%d).tar.gz -C /source .
+  alpine tar czf /dest/t3claw-data-$(date +%Y%m%d).tar.gz -C /source .
   
 # Restore
 docker run --rm \
   -v "${VOLUME_NAME}":/dest \
   -v "$(pwd)"/backups:/source:ro \
-  alpine tar xzf /source/bastionclaw-data-20240101.tar.gz -C /dest
+  alpine tar xzf /source/t3claw-data-20240101.tar.gz -C /dest
 ```
 
 ---
 
 ## Docker-in-Docker for Sandbox
 
-BastionClaw can launch Docker sandbox containers even when running inside Docker itself. This works by mounting the host Docker socket (`/var/run/docker.sock`). The sandbox containers become siblings on the host, not children of the BastionClaw container.
+T3Claw can launch Docker sandbox containers even when running inside Docker itself. This works by mounting the host Docker socket (`/var/run/docker.sock`). The sandbox containers become siblings on the host, not children of the T3Claw container.
 
-To enable this, add the following mount to your `docker-compose.yml` (inside the BastionClaw service):
+To enable this, add the following mount to your `docker-compose.yml` (inside the T3Claw service):
 
 ```yaml
 volumes:
@@ -270,7 +270,7 @@ volumes:
 ```
 
 <Warning>
-Mounting the Docker socket gives BastionClaw the ability to create and manage containers on the host. This is equivalent to root access on the host system. Only mount the socket if you trust the BastionClaw process and have configured `SANDBOX_ENABLED=true` intentionally.
+Mounting the Docker socket gives T3Claw the ability to create and manage containers on the host. This is equivalent to root access on the host system. Only mount the socket if you trust the T3Claw process and have configured `SANDBOX_ENABLED=true` intentionally.
 </Warning>
 
 ---

@@ -411,7 +411,7 @@ mod tests {
             gateway: None,
             signal: None,
             tui: None,
-            wasm_channels_dir: std::env::temp_dir().join("bastionclaw-test-channels"),
+            wasm_channels_dir: std::env::temp_dir().join("t3claw-test-channels"),
             wasm_channels_enabled: false,
             wasm_channel_owner_ids: std::collections::HashMap::new(),
         }

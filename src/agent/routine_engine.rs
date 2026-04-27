@@ -41,7 +41,7 @@ use crate::tools::{
     prepare_tool_params,
 };
 use crate::workspace::Workspace;
-use bastionclaw_safety::SafetyLayer;
+use t3claw_safety::SafetyLayer;
 
 enum EventMatcher {
     Message { routine: Routine, regex: Regex },

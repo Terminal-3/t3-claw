@@ -4,7 +4,7 @@ sidebarTitle: Jobs
 description: Parallel job scheduling and the job state machine
 ---
 
-Every unit of work in BastionClaw is a **job**. Jobs run in parallel, each with isolated context, and each progressing through a defined state machine until they complete, fail, or get recovered.
+Every unit of work in T3Claw is a **job**. Jobs run in parallel, each with isolated context, and each progressing through a defined state machine until they complete, fail, or get recovered.
 
 ---
 
@@ -50,7 +50,7 @@ A job enters **Stuck** when the self-repair system detects it has been InProgres
 
 ## Parallel Execution
 
-BastionClaw runs multiple jobs concurrently. Each job has its own isolated context — memory, tool call history, and conversation state.
+T3Claw runs multiple jobs concurrently. Each job has its own isolated context — memory, tool call history, and conversation state.
 
 | Config Variable     | Default | Description                          |
 |---------------------|---------|--------------------------------------|

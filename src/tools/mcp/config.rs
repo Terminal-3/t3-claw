@@ -1,7 +1,7 @@
 //! MCP server configuration.
 //!
 //! Stores configuration for connecting to hosted MCP servers.
-//! Configuration is persisted at ~/.bastionclaw/mcp-servers.json.
+//! Configuration is persisted at ~/.t3claw/mcp-servers.json.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::tools::mcp::McpTool;
 use crate::tools::tool::ToolError;
 
@@ -701,7 +701,7 @@ pub async fn load_mcp_servers_ready(
 
 /// Get the default MCP servers configuration path.
 pub fn default_config_path() -> PathBuf {
-    bastionclaw_base_dir().join("mcp-servers.json")
+    t3claw_base_dir().join("mcp-servers.json")
 }
 
 /// Load MCP server configurations from the default location.
@@ -1691,7 +1691,7 @@ mod tests {
 
     // --- Regression: t3n-mcp auto-bootstrap from env ---
     //
-    // After `make wipe` (which deletes the bastionclaw_data volume and the
+    // After `make wipe` (which deletes the t3claw_data volume and the
     // Postgres settings row), the compose stack came back up with the
     // t3n-mcp-sidecar running but no client config pointing at its Unix
     // socket. The agent therefore never connected. These tests lock in the

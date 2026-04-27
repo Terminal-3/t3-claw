@@ -89,7 +89,7 @@ impl Tool for ToolSearchTool {
 
     fn description(&self) -> &str {
         "Search for available extensions to add new capabilities. Extensions include \
-         channels (Telegram, Slack, Discord — connect messaging platforms so BastionClaw can \
+         channels (Telegram, Slack, Discord — connect messaging platforms so T3Claw can \
          receive and reply there), tools, and MCP servers. Use `tool_install` and \
          `tool_activate` to install and enable channels; use the `message` tool for proactive \
          outbound sends. Use discover:true to search online if the built-in registry has no \
@@ -1080,8 +1080,8 @@ mod tests {
             Arc::new(ToolRegistry::new()),
             None,
             None,
-            std::env::temp_dir().join("bastionclaw-test-tools"),
-            std::env::temp_dir().join("bastionclaw-test-channels"),
+            std::env::temp_dir().join("t3claw-test-tools"),
+            std::env::temp_dir().join("t3claw-test-channels"),
             None,
             "test".to_string(),
             None,

@@ -13,8 +13,8 @@ mod attachment_tests {
     use crate::support::test_rig::TestRigBuilder;
     use crate::support::trace_llm::LlmTrace;
 
-    use bastionclaw::channels::{AttachmentKind, IncomingAttachment, IncomingMessage};
-    use bastionclaw::llm::ContentPart;
+    use t3claw::channels::{AttachmentKind, IncomingAttachment, IncomingMessage};
+    use t3claw::llm::ContentPart;
 
     const FIXTURES: &str = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -74,7 +74,7 @@ mod attachment_tests {
         let last_user_msg = last_request
             .iter()
             .rev()
-            .find(|m| matches!(m.role, bastionclaw::llm::Role::User))
+            .find(|m| matches!(m.role, t3claw::llm::Role::User))
             .expect("should have a user message");
 
         // The augmented text should contain the attachment tags and transcript
@@ -140,7 +140,7 @@ mod attachment_tests {
         let last_user_msg = last_request
             .iter()
             .rev()
-            .find(|m| matches!(m.role, bastionclaw::llm::Role::User))
+            .find(|m| matches!(m.role, t3claw::llm::Role::User))
             .expect("should have a user message");
 
         // Should have image content parts
@@ -191,7 +191,7 @@ mod attachment_tests {
         let last_user_msg = last_request
             .iter()
             .rev()
-            .find(|m| matches!(m.role, bastionclaw::llm::Role::User))
+            .find(|m| matches!(m.role, t3claw::llm::Role::User))
             .expect("should have a user message");
 
         // No attachments → no augmentation tags, no content parts

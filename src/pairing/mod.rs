@@ -2,7 +2,7 @@
 //!
 //! Gates DMs from unknown senders. Only approved senders can message the agent.
 //! Unknown senders receive a pairing code and can be claimed in the web UI or
-//! approved via `bastionclaw pairing approve`.
+//! approved via `t3claw pairing approve`.
 //!
 //! OpenClaw reference: src/pairing/pairing-store.ts
 

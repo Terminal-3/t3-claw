@@ -34,7 +34,7 @@ use serde::de::DeserializeOwned;
 use tokio::sync::RwLock;
 use tracing::debug;
 
-use bastionclaw_engine::{
+use t3claw_engine::{
     CapabilityLease, ConversationId, ConversationSurface, DocId, DocType, EngineError, LeaseId,
     MemoryDoc, Project, ProjectId, Step, Store, Thread, ThreadEvent, ThreadId, ThreadState,
     types::mission::{Mission, MissionId, MissionStatus},
@@ -1074,7 +1074,7 @@ fn compact_thread_summary(thread: &Thread) -> ThreadArchiveSummary {
         .messages
         .iter()
         .rev()
-        .find(|m| matches!(m.role, bastionclaw_engine::MessageRole::Assistant))
+        .find(|m| matches!(m.role, t3claw_engine::MessageRole::Assistant))
         .map(|m| truncate_for_readme(&m.content, 200))
         .unwrap_or_default();
 
@@ -1110,12 +1110,12 @@ fn thread_from_archive(summary: &ThreadArchiveSummary) -> Option<Thread> {
     Some(Thread {
         id: ThreadId(id),
         goal: summary.goal.clone(),
-        thread_type: bastionclaw_engine::ThreadType::Mission,
+        thread_type: t3claw_engine::ThreadType::Mission,
         state,
-        project_id: bastionclaw_engine::ProjectId(uuid::Uuid::nil()),
+        project_id: t3claw_engine::ProjectId(uuid::Uuid::nil()),
         user_id: "default".to_string(),
         parent_id: None,
-        config: bastionclaw_engine::ThreadConfig::default(),
+        config: t3claw_engine::ThreadConfig::default(),
         messages: Vec::new(),
         internal_messages: Vec::new(),
         events: Vec::new(),

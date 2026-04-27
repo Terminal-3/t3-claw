@@ -1,7 +1,7 @@
 //! Admin secrets provisioning handlers.
 //!
 //! Allows an admin (typically an application backend) to create, list, and
-//! delete secrets on behalf of individual users so their BastionClaw agent can
+//! delete secrets on behalf of individual users so their T3Claw agent can
 //! call back to external services with per-user credentials.
 
 use std::sync::Arc;

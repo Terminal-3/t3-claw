@@ -98,8 +98,8 @@ mod spot_tests {
 
     #[tokio::test]
     async fn spot_chain_write_read() {
-        let _cleanup = CleanupGuard::new().file("/tmp/bastionclaw_spot_test.txt");
-        let _ = std::fs::remove_file("/tmp/bastionclaw_spot_test.txt");
+        let _cleanup = CleanupGuard::new().file("/tmp/t3claw_spot_test.txt");
+        let _ = std::fs::remove_file("/tmp/t3claw_spot_test.txt");
 
         let trace = LlmTrace::from_file(format!("{FIXTURES}/chain_write_read.json")).unwrap();
         let rig = TestRigBuilder::new()
@@ -108,7 +108,7 @@ mod spot_tests {
             .await;
 
         rig.send_message(
-            "Write the text 'bastionclaw spot check' to /tmp/bastionclaw_spot_test.txt \
+            "Write the text 't3claw spot check' to /tmp/t3claw_spot_test.txt \
              using the write_file tool, then read it back using read_file.",
         )
         .await;
@@ -118,8 +118,8 @@ mod spot_tests {
 
         // Extra: verify file on disk (can't express in expects).
         let content =
-            std::fs::read_to_string("/tmp/bastionclaw_spot_test.txt").expect("file should exist");
-        assert_eq!(content, "bastionclaw spot check");
+            std::fs::read_to_string("/tmp/t3claw_spot_test.txt").expect("file should exist");
+        assert_eq!(content, "t3claw spot check");
 
         rig.shutdown();
     }

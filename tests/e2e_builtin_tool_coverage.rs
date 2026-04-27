@@ -10,8 +10,8 @@ mod support;
 mod tests {
     use std::time::Duration;
 
-    use bastionclaw::agent::routine::{RoutineAction, Trigger};
-    use bastionclaw::context::{JobContext, JobState};
+    use t3claw::agent::routine::{RoutineAction, Trigger};
+    use t3claw::context::{JobContext, JobState};
     use uuid::Uuid;
 
     use crate::support::test_rig::{TestRig, TestRigBuilder};
@@ -54,7 +54,7 @@ mod tests {
 
     async fn resolve_created_job_id(
         rig: &TestRig,
-        responses: &[bastionclaw::channels::OutgoingResponse],
+        responses: &[t3claw::channels::OutgoingResponse],
         expected_title: &str,
     ) -> Uuid {
         if let Some(job_id) = responses
@@ -105,7 +105,7 @@ mod tests {
         }
     }
 
-    fn requests_contain(requests: &[Vec<bastionclaw::llm::ChatMessage>], needle: &str) -> bool {
+    fn requests_contain(requests: &[Vec<t3claw::llm::ChatMessage>], needle: &str) -> bool {
         requests
             .iter()
             .flatten()
@@ -523,7 +523,7 @@ mod tests {
                 assert_eq!(event_type, "issue.opened");
                 assert_eq!(
                     filters.get("repository").map(String::as_str),
-                    Some("nearai/bastionclaw")
+                    Some("nearai/t3claw")
                 );
                 assert_eq!(filters.get("priority").map(String::as_str), Some("p1"));
             }
@@ -634,7 +634,7 @@ mod tests {
                 assert_eq!(event_type, "issue.opened");
                 assert_eq!(
                     filters.get("repository").map(String::as_str),
-                    Some("nearai/bastionclaw")
+                    Some("nearai/t3claw")
                 );
                 assert_eq!(filters.get("priority").map(String::as_str), Some("p1"));
             }

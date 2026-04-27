@@ -60,15 +60,15 @@ use crate::tools::wasm::credential_injector::{
 use crate::tools::wasm::{
     LogLevel, WasmResourceLimiter, reject_private_ip, ssrf_safe_client_builder,
 };
-use bastionclaw_safety::LeakDetector;
+use t3claw_safety::LeakDetector;
 
 #[cfg(any(test, debug_assertions))]
-const TEST_HTTP_REWRITE_MAP_ENV: &str = "BASTIONCLAW_TEST_HTTP_REWRITE_MAP";
+const TEST_HTTP_REWRITE_MAP_ENV: &str = "T3CLAW_TEST_HTTP_REWRITE_MAP";
 
 const WEBSOCKET_EVENT_QUEUE_RELATIVE_PATH: &str = "state/gateway_event_queue";
 const WEBSOCKET_EVENT_PROCESSING_QUEUE_RELATIVE_PATH: &str = "state/gateway_event_queue_processing";
 const WEBSOCKET_EVENT_QUEUE_MAX_ITEMS: usize = 100;
-const TELEGRAM_TEST_API_BASE_ENV: &str = "BASTIONCLAW_TEST_TELEGRAM_API_BASE_URL";
+const TELEGRAM_TEST_API_BASE_ENV: &str = "T3CLAW_TEST_TELEGRAM_API_BASE_URL";
 
 // Generate component model bindings from the WIT file
 wasmtime::component::bindgen!({
@@ -4101,7 +4101,7 @@ fn extract_host_from_url(url: &str) -> Option<String> {
 
 /// Rewrite outbound HTTP URLs for testing.
 ///
-/// `BASTIONCLAW_TEST_HTTP_REWRITE_MAP` is a JSON object mapping exact hostnames to
+/// `T3CLAW_TEST_HTTP_REWRITE_MAP` is a JSON object mapping exact hostnames to
 /// replacement base URLs. For example:
 /// `{"slack.com":"http://127.0.0.1:8080","files.slack.com":"http://127.0.0.1:8080"}`
 ///
@@ -4311,16 +4311,16 @@ fn read_attachments(paths: &[String]) -> Result<Vec<wit_channel::Attachment>, St
     let mut total_bytes: u64 = 0;
     let tmp_base = std::path::Path::new("/tmp");
     let home_base = dirs::home_dir()
-        .map(|h| h.join(".bastionclaw"))
+        .map(|h| h.join(".t3claw"))
         .unwrap_or_default();
 
     for path in paths {
-        // Validate paths are under /tmp/ or ~/.bastionclaw/ to prevent arbitrary file reads
+        // Validate paths are under /tmp/ or ~/.t3claw/ to prevent arbitrary file reads
         let validated = crate::tools::builtin::path_utils::validate_path(path, Some(tmp_base))
             .or_else(|_| crate::tools::builtin::path_utils::validate_path(path, Some(&home_base)));
         let validated = validated.map_err(|e| {
             format!(
-                "Invalid attachment path '{}': must be under /tmp/ or ~/.bastionclaw/: {}",
+                "Invalid attachment path '{}': must be under /tmp/ or ~/.t3claw/: {}",
                 path, e
             )
         })?;
@@ -4472,8 +4472,8 @@ mod tests {
                 "intents": 513,
                 "properties": {
                     "os": "linux",
-                    "browser": "bastionclaw",
-                    "device": "bastionclaw"
+                    "browser": "t3claw",
+                    "device": "t3claw"
                 }
             }
         }));
@@ -4496,8 +4496,8 @@ mod tests {
                 "intents": 513,
                 "properties": {
                     "os": "linux",
-                    "browser": "bastionclaw",
-                    "device": "bastionclaw"
+                    "browser": "t3claw",
+                    "device": "t3claw"
                 }
             }))
         );
@@ -4509,8 +4509,8 @@ mod tests {
             "intents": 513,
             "properties": {
                 "os": "linux",
-                "browser": "bastionclaw",
-                "device": "bastionclaw"
+                "browser": "t3claw",
+                "device": "t3claw"
             }
         });
 
@@ -4560,7 +4560,7 @@ mod tests {
             connect_on_start: true,
             identify: Some(serde_json::json!({
                 "intents": 513,
-                "properties": { "os": "linux", "browser": "bastionclaw", "device": "bastionclaw" }
+                "properties": { "os": "linux", "browser": "t3claw", "device": "t3claw" }
             })),
             identify_secret_name: Some("discord_bot_token".to_string()),
         };
@@ -6509,7 +6509,7 @@ mod tests {
         );
         assert_eq!(mime_from_extension("noext"), "application/octet-stream");
         assert_eq!(
-            mime_from_extension("/home/user/.bastionclaw/screenshot.png"),
+            mime_from_extension("/home/user/.t3claw/screenshot.png"),
             "image/png"
         );
     }

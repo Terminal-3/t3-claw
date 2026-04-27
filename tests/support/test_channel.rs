@@ -15,10 +15,10 @@ use futures::StreamExt;
 use tokio::sync::{Mutex, mpsc, oneshot};
 use tokio_stream::wrappers::ReceiverStream;
 
-use bastionclaw::channels::{
+use t3claw::channels::{
     Channel, IncomingMessage, MessageStream, OutgoingResponse, StatusUpdate,
 };
-use bastionclaw::error::ChannelError;
+use t3claw::error::ChannelError;
 
 /// Captured outbound event in the order it was emitted.
 #[derive(Clone, Debug)]

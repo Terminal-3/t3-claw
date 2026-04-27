@@ -131,7 +131,7 @@ impl McpRequest {
                     "sampling": {}
                 },
                 "clientInfo": {
-                    "name": "bastionclaw",
+                    "name": "t3claw",
                     "version": env!("CARGO_PKG_VERSION")
                 }
             })),
@@ -385,7 +385,7 @@ mod tests {
         assert!(params["capabilities"].is_object());
         assert!(params["capabilities"]["roots"].is_object());
         assert!(params["capabilities"]["sampling"].is_object());
-        assert_eq!(params["clientInfo"]["name"], "bastionclaw");
+        assert_eq!(params["clientInfo"]["name"], "t3claw");
         assert!(params["clientInfo"]["version"].is_string());
     }
 

@@ -38,7 +38,7 @@ pub fn init_worker_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("bastionclaw=info")),
+                .unwrap_or_else(|_| EnvFilter::new("t3claw=info")),
         )
         .init();
 }

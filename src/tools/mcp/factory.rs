@@ -137,7 +137,7 @@ mod tests {
         Arc::new(InMemorySecretsStore::new(crypto))
     }
 
-    /// Regression for nearai/bastionclaw#1948 — caller-level coverage.
+    /// Regression for nearai/t3claw#1948 — caller-level coverage.
     ///
     /// `requires_auth()` had a unit test for the custom-Authorization-header
     /// case, but nothing exercised the *caller* of that predicate. This test
@@ -181,11 +181,11 @@ mod tests {
             McpClientConstructor::WithTransport,
             "factory must take the non-auth construction path when the user has \
              supplied an Authorization header — taking the OAuth/auth path triggers \
-             unexpected DCR/refresh side effects (nearai/bastionclaw#1948)"
+             unexpected DCR/refresh side effects (nearai/t3claw#1948)"
         );
     }
 
-    /// Regression for nearai/bastionclaw#1948 — case-insensitive variant.
+    /// Regression for nearai/t3claw#1948 — case-insensitive variant.
     ///
     /// HTTP header names are case-insensitive (RFC 9110). The factory must
     /// honor a custom `AUTHORIZATION` header even when OAuth metadata is
@@ -220,7 +220,7 @@ mod tests {
             client.constructor_kind(),
             McpClientConstructor::WithTransport,
             "an explicit Authorization header must win over pre-configured OAuth \
-             metadata (nearai/bastionclaw#1948)"
+             metadata (nearai/t3claw#1948)"
         );
     }
 
@@ -254,7 +254,7 @@ mod tests {
             McpClientConstructor::Authenticated,
             "without an explicit Authorization header, the factory must enter \
              the auth construction path (otherwise the positive tests above \
-             prove nothing — see nearai/bastionclaw#1948)"
+             prove nothing — see nearai/t3claw#1948)"
         );
     }
 

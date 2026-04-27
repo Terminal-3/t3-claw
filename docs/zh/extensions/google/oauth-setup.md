@@ -1,6 +1,6 @@
 ---
 title: "Google OAuth 设置"
-description: "BastionClaw 中所有 Google 扩展的一次性 OAuth 配置"
+description: "T3Claw 中所有 Google 扩展的一次性 OAuth 配置"
 ---
 
 所有 Google 扩展共用同一套 OAuth 2.0 配置。完成一次后，您可以复用同一个 Google Cloud 项目和凭证。
@@ -14,7 +14,7 @@ description: "BastionClaw 中所有 Google 扩展的一次性 OAuth 配置"
 前往 [Google Cloud Console](https://console.cloud.google.com)，新建项目或选择已有项目。
 
 1. 点击 **Select a project** → **New Project**
-2. 输入项目名（例如 `bastionclaw`），点击 **Create**
+2. 输入项目名（例如 `t3claw`），点击 **Create**
 
 </Step>
 
@@ -24,7 +24,7 @@ description: "BastionClaw 中所有 Google 扩展的一次性 OAuth 配置"
 
 1. 点击 **Create client**
 2. 将 **Application type** 设置为 **Web application**
-3. 设置名称（例如 `bastionclaw`）
+3. 设置名称（例如 `t3claw`）
 4. 在 **Authorized redirect URIs** 中点击 **+ Add URI**，填写：
 
    ```
@@ -49,12 +49,12 @@ description: "BastionClaw 中所有 Google 扩展的一次性 OAuth 配置"
 
 <Step title="打开 SSH 隧道">
 
-为完成 OAuth 回调，需要让 Google 访问 BastionClaw 服务。由于 `9876` 端口仅在服务器内部可访问，您需要将本地端口转发到服务器。
+为完成 OAuth 回调，需要让 Google 访问 T3Claw 服务。由于 `9876` 端口仅在服务器内部可访问，您需要将本地端口转发到服务器。
 
 在新终端中执行：
 
 ```bash
-# ssh -p <SSH-PORT> -L 9876:127.0.0.1:9876 <user>@<bastionclaw-server-ip>
+# ssh -p <SSH-PORT> -L 9876:127.0.0.1:9876 <user>@<t3claw-server-ip>
 ssh -p 15222 -L 9876:127.0.0.1:9876 liquid-zebra@agent4.near.ai
 ```
 

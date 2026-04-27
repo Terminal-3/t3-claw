@@ -11,19 +11,19 @@
 use std::time::Duration;
 
 #[tokio::test]
-#[ignore] // Requires full bastionclaw binary and database setup
+#[ignore] // Requires full t3claw binary and database setup
 async fn test_sighup_config_reload_address_change() {
     // This is a placeholder integration test structure.
-    // It demonstrates the test approach and can be run against a live bastionclaw instance.
+    // It demonstrates the test approach and can be run against a live t3claw instance.
     //
     // To run this test manually:
-    // 1. Start bastionclaw with HTTP_PORT=19000 HTTP_WEBHOOK_SECRET=initial-secret
+    // 1. Start t3claw with HTTP_PORT=19000 HTTP_WEBHOOK_SECRET=initial-secret
     // 2. Run: cargo test --test sighup_reload_integration -- --ignored --nocapture
     //
     // The test will:
     // - Verify initial webhook responds on port 19000 with "initial-secret"
     // - Update environment/DB to use port 19001 and "new-secret"
-    // - Send SIGHUP to bastionclaw
+    // - Send SIGHUP to t3claw
     // - Verify old port 19000 stops responding
     // - Verify new port 19001 responds with "new-secret"
 
@@ -61,22 +61,22 @@ async fn test_sighup_config_reload_address_change() {
 
     // In a real test, we would:
     // 1. Update the database or environment variables for the new config
-    // 2. Send SIGHUP to the bastionclaw process
+    // 2. Send SIGHUP to the t3claw process
     // 3. Wait for reload to complete
     // 4. Verify new listener is active and old one is inactive
     // 5. Verify secret change took effect
 
     println!("SIGHUP reload test structure is in place.");
-    println!("This test requires a running bastionclaw instance to verify actual behavior.");
+    println!("This test requires a running t3claw instance to verify actual behavior.");
 }
 
 #[tokio::test]
-#[ignore] // Requires full bastionclaw binary
+#[ignore] // Requires full t3claw binary
 async fn test_sighup_secret_update_zero_downtime() {
     // Test that secret changes take effect immediately without restarting the listener.
     //
     // Setup:
-    // - Start bastionclaw with HTTP_PORT=19002 HTTP_WEBHOOK_SECRET=original-secret
+    // - Start t3claw with HTTP_PORT=19002 HTTP_WEBHOOK_SECRET=original-secret
     //
     // Test flow:
     // 1. Make request with "original-secret" → 200 OK
@@ -129,7 +129,7 @@ async fn test_sighup_rollback_on_address_bind_failure() {
     // and state is restored.
     //
     // Setup:
-    // - Start bastionclaw with HTTP_PORT=19003 HTTP_WEBHOOK_SECRET=test-secret
+    // - Start t3claw with HTTP_PORT=19003 HTTP_WEBHOOK_SECRET=test-secret
     //
     // Test flow:
     // 1. Make request to port 19003 → 200 OK

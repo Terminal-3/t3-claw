@@ -1,14 +1,14 @@
 ---
 title: DigitalOcean Droplet
-description: Host BastionClaw on a DigitalOcean Droplet
+description: Host T3Claw on a DigitalOcean Droplet
 ---
 
 DigitalOcean offers a simple and cost-effective way to run applications in the cloud thanks to its Droplets - virtual machines that can be set up in minutes. 
 
-In this guide we will setup a DigitalOcean Droplet and strengthen its security so you can safely run BastionClaw and expose it to the internet.
+In this guide we will setup a DigitalOcean Droplet and strengthen its security so you can safely run T3Claw and expose it to the internet.
 
 <Tip>
-Do not feel like setting up your own infrastructure? You can install BastionClaw with a few clicks on [agent.near.ai](https://agent.near.ai)
+Do not feel like setting up your own infrastructure? You can install T3Claw with a few clicks on [agent.near.ai](https://agent.near.ai)
 </Tip>
 
 ---
@@ -19,7 +19,7 @@ Register on [DigitalOcean](https://cloud.digitalocean.com) and navigate to the [
 
 ![droplets landing page](/images/infrastructure/droplets/droplets-landing.png)
 
-I recommend choosing Ubuntu as the operating system - particularly the latest LTS version - and the `Basic` plan with a `Regular` disk. This currently costs around $4/month and provides more than enough resources to run BastionClaw for most use cases.
+I recommend choosing Ubuntu as the operating system - particularly the latest LTS version - and the `Basic` plan with a `Regular` disk. This currently costs around $4/month and provides more than enough resources to run T3Claw for most use cases.
 
 ![droplets plan selection](/images/infrastructure/droplets/droplets-create.png)
 
@@ -68,32 +68,32 @@ apt update && apt upgrade -y
 
 ### Create a New User
 
-It is good practice to create a new user with sudo privileges instead of using `root` for daily operations. You can create a new user (for example, `bastionclaw`) and add it to the sudo group:
+It is good practice to create a new user with sudo privileges instead of using `root` for daily operations. You can create a new user (for example, `t3claw`) and add it to the sudo group:
 
 ```bash
-adduser bastionclaw
-usermod -aG sudo bastionclaw
+adduser t3claw
+usermod -aG sudo t3claw
 ```
 
 Since we will want to log in with this new user, we need to copy the SSH keys from `root` to the new user:
 
 ```bash
 # Create the .ssh directory for the user
-mkdir -p /home/bastionclaw/.ssh
+mkdir -p /home/t3claw/.ssh
 
 # Copy your current root authorized_keys (if you want the same key)
-cp ~/.ssh/authorized_keys /home/bastionclaw/.ssh/authorized_keys
+cp ~/.ssh/authorized_keys /home/t3claw/.ssh/authorized_keys
 
 # Set the correct permissions (critical — SSH will ignore the file otherwise)
-chown -R bastionclaw:bastionclaw /home/bastionclaw/
-chmod 700 /home/bastionclaw/.ssh
-chmod 600 /home/bastionclaw/.ssh/authorized_keys
+chown -R t3claw:t3claw /home/t3claw/
+chmod 700 /home/t3claw/.ssh
+chmod 600 /home/t3claw/.ssh/authorized_keys
 ```
 
 Open a new terminal window and try to log in with the new user to confirm everything is working:
 
 ```bash
-ssh bastionclaw@<IP_ADDRESS>
+ssh t3claw@<IP_ADDRESS>
 ```
 
 <Warning>
@@ -114,7 +114,7 @@ Port 2222                   # Change default port (optional but helps)
 Then reboot the Droplet to apply the changes, and try to log in again using the new port:
 
 ```bash
-ssh -p 2222 bastionclaw@<IP_ADDRESS>
+ssh -p 2222 t3claw@<IP_ADDRESS>
 ```
 
 If everything works, you can now disable root login by setting `PermitRootLogin no` in the SSH configuration and rebooting again.
@@ -145,30 +145,30 @@ sudo ufw enable
 
 ---
 
-## Install BastionClaw
+## Install T3Claw
 
-Now that we have set up and secured the Droplet, we can proceed with the BastionClaw installation. You can follow the installation instructions in the [Quickstart Guide](/quickstart) to get BastionClaw up and running.
-
-```
-# Install BastionClaw
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/bastionclaw/releases/latest/download/bastionclaw-installer.sh | sh
-```
-
-Now simply start BastionClaw and follow the instructions to complete the setup:
+Now that we have set up and secured the Droplet, we can proceed with the T3Claw installation. You can follow the installation instructions in the [Quickstart Guide](/quickstart) to get T3Claw up and running.
 
 ```
-bastionclaw
+# Install T3Claw
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/t3claw/releases/latest/download/t3claw-installer.sh | sh
+```
+
+Now simply start T3Claw and follow the instructions to complete the setup:
+
+```
+t3claw
 ```
 
 <Tip>
-We recommend using a session manager like `tmux` or `screen` so you can easily detach and reattach to your running BastionClaw instance between SSH sessions.
+We recommend using a session manager like `tmux` or `screen` so you can easily detach and reattach to your running T3Claw instance between SSH sessions.
 </Tip>
 
 ---
 
 ## Next Steps
 
-Follow our [Quickstart Guide](/quickstart) to create your first agent, connect it to Telegram, and start exploring BastionClaw's capabilities.
+Follow our [Quickstart Guide](/quickstart) to create your first agent, connect it to Telegram, and start exploring T3Claw's capabilities.
 
 Want to talk with your agent using a messaging app? Check out the [**Channels**](/channels/overview.mdx) documentation to learn how to connect.
 

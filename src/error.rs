@@ -1,4 +1,4 @@
-//! Error types for BastionClaw.
+//! Error types for T3Claw.
 
 use std::time::Duration;
 
@@ -377,7 +377,7 @@ pub enum WorkerError {
     #[error("Worker execution failed: {reason}")]
     ExecutionFailed { reason: String },
 
-    #[error("Missing worker token (BASTIONCLAW_WORKER_TOKEN not set)")]
+    #[error("Missing worker token (T3CLAW_WORKER_TOKEN not set)")]
     MissingToken,
 }
 

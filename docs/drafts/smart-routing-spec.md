@@ -1,4 +1,4 @@
-# Smart Model Routing for BastionClaw
+# Smart Model Routing for T3Claw
 
 **Status:** Implemented
 **Author:** Microwave

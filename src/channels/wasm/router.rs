@@ -620,7 +620,7 @@ async fn oauth_callback_handler(
              height: 100vh; margin: 0; background: #191919; color: white;\">\
              <div style=\"text-align: center;\">\
              <h1>Connected!</h1>\
-             <p>You can close this window and return to BastionClaw.</p>\
+             <p>You can close this window and return to T3Claw.</p>\
              </div></body></html>"
                 .to_string(),
         ),

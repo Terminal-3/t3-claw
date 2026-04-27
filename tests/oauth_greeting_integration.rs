@@ -12,21 +12,21 @@
 mod tests {
     use std::sync::Arc;
 
-    use bastionclaw::agent::SessionManager;
-    use bastionclaw::channels::web::auth::{MultiAuthState, UserIdentity};
-    use bastionclaw::channels::web::server::{
+    use t3claw::agent::SessionManager;
+    use t3claw::channels::web::auth::{MultiAuthState, UserIdentity};
+    use t3claw::channels::web::server::{
         GatewayState, PerUserRateLimiter, RateLimiter, start_server,
     };
-    use bastionclaw::channels::web::sse::SseManager;
-    use bastionclaw::channels::web::ws::WsConnectionTracker;
-    use bastionclaw::db::Database;
-    use bastionclaw::workspace::GREETING_SEED;
+    use t3claw::channels::web::sse::SseManager;
+    use t3claw::channels::web::ws::WsConnectionTracker;
+    use t3claw::db::Database;
+    use t3claw::workspace::GREETING_SEED;
 
     const ALICE_TOKEN: &str = "tok-alice-greeting-test";
     const BOB_TOKEN: &str = "tok-bob-greeting-test";
 
     async fn create_test_db() -> (Arc<dyn Database>, tempfile::TempDir) {
-        use bastionclaw::db::libsql::LibSqlBackend;
+        use t3claw::db::libsql::LibSqlBackend;
 
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let db_path = temp_dir.path().join("greeting_test.db");
@@ -118,7 +118,7 @@ mod tests {
 
     async fn create_user(db: &Arc<dyn Database>, user_id: &str) {
         let now = chrono::Utc::now();
-        db.create_user(&bastionclaw::db::UserRecord {
+        db.create_user(&t3claw::db::UserRecord {
             id: user_id.to_string(),
             email: Some(format!("{user_id}@example.com")),
             display_name: user_id.to_string(),
@@ -310,7 +310,7 @@ mod tests {
 
         let resp = c
             .get(format!("http://{addr}/api/chat/threads"))
-            .header("Cookie", format!("bastionclaw_session={ALICE_TOKEN}"))
+            .header("Cookie", format!("t3claw_session={ALICE_TOKEN}"))
             .send()
             .await
             .expect("cookie auth request");

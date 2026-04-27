@@ -1,4 +1,4 @@
--- Maps a channel-specific external identity to an BastionClaw owner.
+-- Maps a channel-specific external identity to an T3Claw owner.
 -- This is how inbound messages are resolved to the right user's resources.
 CREATE TABLE channel_identities (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

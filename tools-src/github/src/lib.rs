@@ -1,4 +1,4 @@
-//! GitHub WASM Tool for BastionClaw.
+//! GitHub WASM Tool for T3Claw.
 //!
 //! Provides GitHub integration for reading repos, managing issues,
 //! reviewing PRs, and triggering workflows.
@@ -6,7 +6,7 @@
 //! # Authentication
 //!
 //! Store your GitHub Personal Access Token:
-//! `bastionclaw secret set github_token <token>`
+//! `t3claw secret set github_token <token>`
 //!
 //! Token needs these permissions:
 //! - repo (for private repos)
@@ -756,7 +756,7 @@ fn get_github_token() -> Result<String, String> {
         return Ok("present".to_string());
     }
 
-    Err("GitHub token not found in secret store. Set it with: bastionclaw secret set github_token <token>. \
+    Err("GitHub token not found in secret store. Set it with: t3claw secret set github_token <token>. \
          Token needs 'repo', 'workflow', and 'read:org' scopes.".into())
 }
 
@@ -768,7 +768,7 @@ fn github_request(method: &str, path: &str, body: Option<String>) -> Result<Stri
     let headers = serde_json::json!({
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2026-03-10",
-        "User-Agent": "BastionClaw-GitHub-Tool"
+        "User-Agent": "T3Claw-GitHub-Tool"
     });
 
     let body_bytes = body.map(|b| b.into_bytes());
@@ -2444,7 +2444,7 @@ mod tests {
         let payload = serde_json::json!({
             "action": "created",
             "repository": {
-                "full_name": "nearai/bastionclaw",
+                "full_name": "nearai/t3claw",
                 "owner": { "login": "nearai" }
             },
             "sender": { "login": "maintainer1" },
@@ -2459,7 +2459,7 @@ mod tests {
             github_enriched_payload("issue_comment", &headers, &payload, "issue.comment.created");
         assert_eq!(
             enriched.get("repository_name").and_then(|v| v.as_str()),
-            Some("nearai/bastionclaw")
+            Some("nearai/t3claw")
         );
         // Original repository object is preserved
         assert!(enriched
@@ -2483,10 +2483,10 @@ mod tests {
             "action": "created",
             "issue": {
                 "number": 42,
-                "pull_request": { "url": "https://api.github.com/repos/nearai/bastionclaw/pulls/42" }
+                "pull_request": { "url": "https://api.github.com/repos/nearai/t3claw/pulls/42" }
             },
             "comment": { "body": "LGTM", "user": { "login": "reviewer" } },
-            "repository": { "full_name": "nearai/bastionclaw", "owner": { "login": "nearai" } },
+            "repository": { "full_name": "nearai/t3claw", "owner": { "login": "nearai" } },
             "sender": { "login": "reviewer" }
         });
 
@@ -2521,7 +2521,7 @@ mod tests {
             body_json: Some(serde_json::json!({
                 "action":"opened",
                 "issue":{"number":42},
-                "repository":{"full_name":"nearai/bastionclaw"},
+                "repository":{"full_name":"nearai/t3claw"},
                 "sender":{"login":"maintainer1"}
             })),
         })
@@ -2587,7 +2587,7 @@ mod tests {
     #[test]
     fn test_validate_commit_identity_enforces_length_limit() {
         let identity = GitCommitIdentity {
-            name: "BastionClaw Bot".to_string(),
+            name: "T3Claw Bot".to_string(),
             email: "bot@example.com".to_string(),
         };
         assert!(validate_commit_identity(&identity, "committer").is_ok());

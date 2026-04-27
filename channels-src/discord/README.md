@@ -1,4 +1,4 @@
-# Discord Channel for BastionClaw
+# Discord Channel for T3Claw
 
 WASM channel for Discord integration - handle slash commands and button interactions via webhooks.
 
@@ -13,12 +13,12 @@ WASM channel for Discord integration - handle slash commands and button interact
 
 1. Create a Discord Application at <https://discord.com/developers/applications>
 2. Create a Bot and get the token
-3. Set up Interactions URL to point to your BastionClaw instance
+3. Set up Interactions URL to point to your T3Claw instance
 4. Copy the Application ID and Public Key
-5. Store in BastionClaw secrets:
+5. Store in T3Claw secrets:
 
    ```bash
-   bastionclaw secret set discord_bot_token YOUR_BOT_TOKEN
+   t3claw secret set discord_bot_token YOUR_BOT_TOKEN
    ```
 
    **Note:** The `discord_bot_token` secret is used for Discord REST API calls.
@@ -51,7 +51,7 @@ curl -X POST \
 
 In your Discord app settings, set:
 
-- Interactions Endpoint URL: `https://your-bastionclaw.com/webhook/discord`
+- Interactions Endpoint URL: `https://your-t3claw.com/webhook/discord`
 
 ## Usage Examples
 
@@ -146,7 +146,7 @@ To send embeds, include an `embeds` array in the `metadata_json` field of the ag
 
 ### "401 Unauthorized"
 
-- Check that `discord_bot_token` is set correctly in BastionClaw secrets.
+- Check that `discord_bot_token` is set correctly in T3Claw secrets.
 - Ensure the bot is added to the server.
 
 ### "Interaction Failed"

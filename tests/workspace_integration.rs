@@ -2,15 +2,15 @@
 //! Integration tests for the workspace module.
 //!
 //! Requires a running PostgreSQL with pgvector extension.
-//! Set DATABASE_URL=postgres://localhost/bastionclaw_test
+//! Set DATABASE_URL=postgres://localhost/t3claw_test
 
 use std::sync::Arc;
 
-use bastionclaw::workspace::{MockEmbeddings, SearchConfig, Workspace, paths};
+use t3claw::workspace::{MockEmbeddings, SearchConfig, Workspace, paths};
 
 fn get_pool() -> deadpool_postgres::Pool {
     let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://localhost/bastionclaw_test".to_string());
+        .unwrap_or_else(|_| "postgres://localhost/t3claw_test".to_string());
 
     let config: tokio_postgres::Config = database_url.parse().expect("Invalid DATABASE_URL");
 

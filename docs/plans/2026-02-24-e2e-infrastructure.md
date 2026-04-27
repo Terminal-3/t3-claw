@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a Python + Playwright E2E testing framework that exercises the BastionClaw web gateway through a real browser against the real binary with a mock LLM backend.
+**Goal:** Build a Python + Playwright E2E testing framework that exercises the T3Claw web gateway through a real browser against the real binary with a mock LLM backend.
 
-**Architecture:** pytest session fixtures start a mock OpenAI-compat HTTP server and the bastionclaw binary (libSQL in-memory, gateway enabled), then per-test Playwright browser instances navigate to the gateway and make DOM assertions.
+**Architecture:** pytest session fixtures start a mock OpenAI-compat HTTP server and the t3claw binary (libSQL in-memory, gateway enabled), then per-test Playwright browser instances navigate to the gateway and make DOM assertions.
 
 **Tech Stack:** Python 3.11+, pytest, pytest-asyncio, playwright, aiohttp
 
@@ -22,7 +22,7 @@
 
 ```toml
 [project]
-name = "bastionclaw-e2e"
+name = "t3claw-e2e"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
@@ -78,7 +78,7 @@ The server must:
 - Handle `POST /v1/chat/completions` with both streaming and non-streaming modes
 - Handle `GET /v1/models` for health checks
 - Pattern-match the last user message to select canned responses
-- Support `stream: true` with proper SSE chunk format (critical for BastionClaw's streaming)
+- Support `stream: true` with proper SSE chunk format (critical for T3Claw's streaming)
 
 ```python
 """Mock OpenAI-compatible LLM server for E2E tests."""
@@ -340,7 +340,7 @@ git commit -m "feat: E2E helpers with DOM selectors and port discovery"
 **Step 1: Write the fixtures**
 
 Key details from codebase research:
-- BastionClaw logs `Web UI: http://{host}:{port}/` to stdout (main.rs:508) using the config port, not the bound port. So we must use a fixed port, not port 0.
+- T3Claw logs `Web UI: http://{host}:{port}/` to stdout (main.rs:508) using the config port, not the bound port. So we must use a fixed port, not port 0.
 - Health endpoint: `GET /api/health` (public, no auth required)
 - Auth via `?token=` query parameter for the frontend auto-auth flow
 - The frontend hides `#auth-screen` when token is valid and SSE connects
@@ -348,7 +348,7 @@ Key details from codebase research:
 ```python
 """pytest fixtures for E2E tests.
 
-Session-scoped: build binary, start mock LLM, start bastionclaw.
+Session-scoped: build binary, start mock LLM, start t3claw.
 Function-scoped: fresh Playwright browser page per test.
 """
 
@@ -372,11 +372,11 @@ GATEWAY_PORT = 18_200
 
 
 @pytest.fixture(scope="session")
-def bastionclaw_binary():
-    """Ensure bastionclaw binary is built. Returns the binary path."""
-    binary = ROOT / "target" / "debug" / "bastionclaw"
+def t3claw_binary():
+    """Ensure t3claw binary is built. Returns the binary path."""
+    binary = ROOT / "target" / "debug" / "t3claw"
     if not binary.exists():
-        print("Building bastionclaw (this may take a while)...")
+        print("Building t3claw (this may take a while)...")
         subprocess.run(
             ["cargo", "build", "--no-default-features", "--features", "libsql"],
             cwd=ROOT,
@@ -418,11 +418,11 @@ async def mock_llm_server():
 
 
 @pytest.fixture(scope="session")
-async def bastionclaw_server(bastionclaw_binary, mock_llm_server):
-    """Start the bastionclaw gateway. Yields the base URL."""
+async def t3claw_server(t3claw_binary, mock_llm_server):
+    """Start the t3claw gateway. Yields the base URL."""
     env = {
         **os.environ,
-        "RUST_LOG": "bastionclaw=info",
+        "RUST_LOG": "t3claw=info",
         "GATEWAY_ENABLED": "true",
         "GATEWAY_HOST": "127.0.0.1",
         "GATEWAY_PORT": str(GATEWAY_PORT),
@@ -443,7 +443,7 @@ async def bastionclaw_server(bastionclaw_binary, mock_llm_server):
         "ONBOARD_COMPLETED": "true",
     }
     proc = await asyncio.create_subprocess_exec(
-        bastionclaw_binary,
+        t3claw_binary,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         env=env,
@@ -461,7 +461,7 @@ async def bastionclaw_server(bastionclaw_binary, mock_llm_server):
 
 
 @pytest.fixture
-async def page(bastionclaw_server):
+async def page(t3claw_server):
     """Fresh Playwright browser page, navigated to the gateway with auth."""
     from playwright.async_api import async_playwright
 
@@ -469,7 +469,7 @@ async def page(bastionclaw_server):
         browser = await p.chromium.launch(headless=True)
         context = await browser.new_context(viewport={"width": 1280, "height": 720})
         pg = await context.new_page()
-        await pg.goto(f"{bastionclaw_server}/?token={AUTH_TOKEN}")
+        await pg.goto(f"{t3claw_server}/?token={AUTH_TOKEN}")
         # Wait for the app to initialize (auth screen hidden, SSE connected)
         await pg.wait_for_selector("#auth-screen", state="hidden", timeout=15000)
         yield pg
@@ -481,7 +481,7 @@ async def page(bastionclaw_server):
 
 ```bash
 git add tests/e2e/conftest.py
-git commit -m "feat: E2E conftest with session fixtures for mock LLM and bastionclaw"
+git commit -m "feat: E2E conftest with session fixtures for mock LLM and t3claw"
 ```
 
 ---
@@ -529,23 +529,23 @@ async def test_tab_navigation(page):
     await chat_input.wait_for(state="visible", timeout=5000)
 
 
-async def test_auth_rejection(page, bastionclaw_server):
+async def test_auth_rejection(page, t3claw_server):
     """Navigating without a token shows the auth screen."""
     # Open a new page without the token
     new_page = await page.context.new_page()
-    await new_page.goto(bastionclaw_server)
+    await new_page.goto(t3claw_server)
     auth_screen = new_page.locator(SEL["auth_screen"])
     await auth_screen.wait_for(state="visible", timeout=10000)
     await new_page.close()
 ```
 
-**Step 2: Verify test runs (may fail if bastionclaw isn't built yet -- that's OK)**
+**Step 2: Verify test runs (may fail if t3claw isn't built yet -- that's OK)**
 
 ```bash
 cd tests/e2e && python -m pytest scenarios/test_connection.py -v --timeout=120
 ```
 
-Expected: Tests pass if bastionclaw is built, or skip/fail gracefully if not.
+Expected: Tests pass if t3claw is built, or skip/fail gracefully if not.
 
 **Step 3: Commit**
 
@@ -789,7 +789,7 @@ jobs:
             ~/.cargo/registry
           key: e2e-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
-      - name: Build bastionclaw (libsql)
+      - name: Build t3claw (libsql)
         run: cargo build --no-default-features --features libsql
 
       - uses: actions/setup-python@v5
@@ -831,14 +831,14 @@ git commit -m "ci: add weekly E2E test workflow with Playwright"
 **Step 1: Write the README**
 
 ```markdown
-# BastionClaw E2E Tests
+# T3Claw E2E Tests
 
-Browser-level end-to-end tests for the BastionClaw web gateway using Python + Playwright.
+Browser-level end-to-end tests for the T3Claw web gateway using Python + Playwright.
 
 ## Prerequisites
 
 - Python 3.11+
-- Rust toolchain (for building bastionclaw)
+- Rust toolchain (for building t3claw)
 - Chromium (installed via Playwright)
 
 ## Setup
@@ -849,9 +849,9 @@ pip install -e .
 playwright install chromium
 ```
 
-## Build bastionclaw
+## Build t3claw
 
-The tests need the bastionclaw binary built with libsql support:
+The tests need the t3claw binary built with libsql support:
 
 ```bash
 cargo build --no-default-features --features libsql
@@ -874,7 +874,7 @@ HEADED=1 pytest tests/e2e/scenarios/test_connection.py -v
 
 Tests start two subprocesses:
 1. **Mock LLM** (`mock_llm.py`) -- fake OpenAI-compat server with canned responses
-2. **BastionClaw** -- the real binary with gateway enabled, pointing to the mock LLM
+2. **T3Claw** -- the real binary with gateway enabled, pointing to the mock LLM
 
 Then Playwright drives a headless Chromium browser against the gateway, making DOM assertions.
 
@@ -905,7 +905,7 @@ git commit -m "docs: E2E test README with setup and usage instructions"
 
 ### Task 10: Integration test -- run all scenarios end-to-end
 
-**Step 1: Build bastionclaw**
+**Step 1: Build t3claw**
 
 ```bash
 cargo build --no-default-features --features libsql

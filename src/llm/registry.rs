@@ -5,7 +5,7 @@
 //!
 //! ```text
 //!   ┌─────────────────────┐    ┌──────────────────────────┐
-//!   │  providers.json     │    │ ~/.bastionclaw/providers.json│
+//!   │  providers.json     │    │ ~/.t3claw/providers.json│
 //!   │  (built-in, embed)  │    │ (user overrides/extras)  │
 //!   └────────┬────────────┘    └────────────┬─────────────┘
 //!            │                              │
@@ -192,7 +192,7 @@ pub struct ProviderDefinition {
 /// Registry of known LLM providers.
 ///
 /// Built from compiled-in `providers.json` plus optional user overrides
-/// from `~/.bastionclaw/providers.json`.
+/// from `~/.t3claw/providers.json`.
 pub struct ProviderRegistry {
     providers: Vec<ProviderDefinition>,
     /// Lowercase id/alias → index into `providers`.
@@ -216,7 +216,7 @@ impl ProviderRegistry {
 
     /// Load the default registry: built-in providers + user overrides.
     ///
-    /// User providers from `~/.bastionclaw/providers.json` are appended,
+    /// User providers from `~/.t3claw/providers.json` are appended,
     /// with later entries overriding earlier ones by ID/alias.
     pub fn load() -> Self {
         let builtins: Vec<ProviderDefinition> =
@@ -320,7 +320,7 @@ impl ProviderRegistry {
 }
 
 fn user_providers_path() -> Option<std::path::PathBuf> {
-    Some(crate::bootstrap::bastionclaw_base_dir().join("providers.json"))
+    Some(crate::bootstrap::t3claw_base_dir().join("providers.json"))
 }
 
 #[cfg(test)]

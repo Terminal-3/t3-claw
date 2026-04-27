@@ -63,14 +63,14 @@
 //! # Example Usage
 //!
 //! ```ignore
-//! use bastionclaw::channels::wasm::{WasmChannelLoader, WasmChannelRuntime};
+//! use t3claw::channels::wasm::{WasmChannelLoader, WasmChannelRuntime};
 //!
 //! // Create runtime (can share engine with tool runtime)
 //! let runtime = WasmChannelRuntime::new(config)?;
 //!
 //! // Load channels from directory
 //! let loader = WasmChannelLoader::new(runtime, pairing_store, settings_store, owner_scope_id);
-//! let channels = loader.load_from_dir(Path::new("~/.bastionclaw/channels/")).await?;
+//! let channels = loader.load_from_dir(Path::new("~/.t3claw/channels/")).await?;
 //!
 //! // Add to channel manager
 //! for channel in channels {

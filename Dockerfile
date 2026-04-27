@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for the BastionClaw agent (cloud deployment).
+# Multi-stage Dockerfile for the T3Claw agent (cloud deployment).
 #
 # Uses cargo-chef for dependency caching — only rebuilds deps when
 # Cargo.toml/Cargo.lock change, not on every source edit.
@@ -8,10 +8,10 @@
 # database reopen), so we use glibc.
 #
 # Build:
-#   docker build --platform linux/amd64 -t bastionclaw:latest .
+#   docker build --platform linux/amd64 -t t3claw:latest .
 #
 # Run:
-#   docker run --env-file .env -p 3000:3000 bastionclaw:latest
+#   docker run --env-file .env -p 3000:3000 t3claw:latest
 
 # Stage 1: Install cargo-chef
 FROM rust:1.92-bookworm AS chef
@@ -49,7 +49,7 @@ ENV CARGO_PROFILE_DIST_PANIC=abort \
 COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --profile dist --recipe-path recipe.json
 
-# Stage 4: Build the actual binary (only recompiles bastionclaw source)
+# Stage 4: Build the actual binary (only recompiles t3claw source)
 FROM deps AS builder
 
 COPY Cargo.toml Cargo.lock ./
@@ -65,7 +65,7 @@ COPY wit/ wit/
 COPY providers.json providers.json
 COPY profiles/ profiles/
 
-RUN cargo build --profile dist --bin bastionclaw
+RUN cargo build --profile dist --bin t3claw
 
 # Stage 4b: Build all WASM extensions from source (only used by runtime-staging)
 FROM builder AS wasm-builder
@@ -131,28 +131,28 @@ RUN sed -i 's|URIs: http://|URIs: https://|g' /etc/apt/sources.list.d/debian.sou
 # /var/run/docker.sock is mounted from the host at runtime.
 COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
 
-COPY --from=builder /app/target/dist/bastionclaw /usr/local/bin/bastionclaw
+COPY --from=builder /app/target/dist/t3claw /usr/local/bin/t3claw
 COPY --from=builder /app/migrations /app/migrations
 
 # Non-root user
-ENV HOME=/home/bastionclaw
-RUN useradd -m -d /home/bastionclaw -u 1000 bastionclaw \
-    && mkdir -p /home/bastionclaw/.bastionclaw \
-    && chown -R bastionclaw:bastionclaw /home/bastionclaw
-WORKDIR /home/bastionclaw
+ENV HOME=/home/t3claw
+RUN useradd -m -d /home/t3claw -u 1000 t3claw \
+    && mkdir -p /home/t3claw/.t3claw \
+    && chown -R t3claw:t3claw /home/t3claw
+WORKDIR /home/t3claw
 
 EXPOSE 3000
 
-ENV RUST_LOG=bastionclaw=info
+ENV RUST_LOG=t3claw=info
 
-ENTRYPOINT ["bastionclaw"]
+ENTRYPOINT ["t3claw"]
 
 # Stage 5b: Staging runtime (with pre-built WASM extensions)
 FROM runtime-base AS runtime-staging
-COPY --from=wasm-builder --chown=bastionclaw:bastionclaw /app/wasm-bundles/tools/ /home/bastionclaw/.bastionclaw/tools/
-COPY --from=wasm-builder --chown=bastionclaw:bastionclaw /app/wasm-bundles/channels/ /home/bastionclaw/.bastionclaw/channels/
-USER bastionclaw
+COPY --from=wasm-builder --chown=t3claw:t3claw /app/wasm-bundles/tools/ /home/t3claw/.t3claw/tools/
+COPY --from=wasm-builder --chown=t3claw:t3claw /app/wasm-bundles/channels/ /home/t3claw/.t3claw/channels/
+USER t3claw
 
 # Stage 5c: Production runtime (default — no pre-bundled extensions)
 FROM runtime-base AS runtime
-USER bastionclaw
+USER t3claw

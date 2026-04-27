@@ -34,8 +34,8 @@ use crate::worker::autonomous_recovery::{
     AutonomousRecoveryAction, AutonomousRecoveryState, EMPTY_TOOL_COMPLETION_FAILURE,
     EMPTY_TOOL_COMPLETION_NUDGE, FORCE_TEXT_RECOVERY_PROMPT,
 };
-use bastionclaw_common::AppEvent;
-use bastionclaw_safety::SafetyLayer;
+use t3claw_common::AppEvent;
+use t3claw_safety::SafetyLayer;
 
 /// Shared dependencies for worker execution.
 ///
@@ -325,7 +325,7 @@ Report when the job is complete or if you encounter issues you cannot resolve."#
             .ok()
             .and_then(|ctx| ctx.metadata.get("max_iterations").and_then(|v| v.as_u64()))
             .unwrap_or(50) as usize;
-        let max_iterations = max_iterations.min(bastionclaw_common::MAX_WORKER_ITERATIONS as usize);
+        let max_iterations = max_iterations.min(t3claw_common::MAX_WORKER_ITERATIONS as usize);
 
         // Initial tool definitions for planning (will be refreshed in loop)
         reason_ctx.available_tools = self.tools().tool_definitions().await;
@@ -1836,7 +1836,7 @@ mod tests {
     use crate::testing::{BroadcastCapture, RecordingBroadcastChannel};
     use crate::tools::builtin::MessageTool;
     use crate::tools::{Tool, ToolError as ToolExecError, ToolOutput};
-    use bastionclaw_safety::SafetyLayer;
+    use t3claw_safety::SafetyLayer;
 
     /// A test tool that sleeps for a configurable duration before returning.
     struct SlowTool {

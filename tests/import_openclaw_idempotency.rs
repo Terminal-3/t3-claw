@@ -13,8 +13,8 @@ mod idempotency_tests {
     use tempfile::TempDir;
     use uuid::Uuid;
 
-    use bastionclaw::import::openclaw::reader::OpenClawReader;
-    use bastionclaw::import::{ImportOptions, ImportStats};
+    use t3claw::import::openclaw::reader::OpenClawReader;
+    use t3claw::import::{ImportOptions, ImportStats};
 
     /// Helper: Create minimal test OpenClaw
     async fn create_minimal_openclaw() -> Result<(TempDir, PathBuf), Box<dyn std::error::Error>> {

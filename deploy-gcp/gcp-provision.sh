@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# GCP infrastructure provisioning for BastionClaw staging.
+# GCP infrastructure provisioning for T3Claw staging.
 #
 # Run once from your workstation with gcloud authenticated:
 #   gcloud auth login
 #   bash deploy-gcp/gcp-provision.sh
 #
 # What this script creates:
-#   - Artifact Registry repo "bastionclaw" (us-central1)
+#   - Artifact Registry repo "t3claw" (us-central1)
 #   - Builds and pushes agent + worker Docker images
 #   - IAM service account for the VM with AR read access
 #   - Firewall rule for LB health checks on port 3000
@@ -22,10 +22,10 @@ set -euo pipefail
 PROJECT="${PROJECT:-gen-lang-client-0263867259}"
 REGION="${REGION:-us-central1}"
 ZONE="${ZONE:-asia-southeast1-a}"
-REPO="bastionclaw"
+REPO="t3claw"
 IMAGE_PREFIX="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
-VM_NAME="bastionclaw-staging"
-SA_NAME="bastionclaw-vm"
+VM_NAME="t3claw-staging"
+SA_NAME="t3claw-vm"
 SA_EMAIL="${SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
 DNS_ZONE="claw-dns-staging"
 DNS_NAME="t3claw.agent.staging.gc.terminal3.io"
@@ -75,7 +75,7 @@ if gcloud iam service-accounts describe "${SA_EMAIL}" \
   echo "     service account already exists, skipping create"
 else
   gcloud iam service-accounts create "${SA_NAME}" \
-    --display-name="BastionClaw VM" \
+    --display-name="T3Claw VM" \
     --project="${PROJECT}"
 fi
 
@@ -87,15 +87,15 @@ gcloud projects add-iam-policy-binding "${PROJECT}" \
 
 # Firewall: allow LB health check IP ranges to reach port 3000 on tagged VMs.
 # Google health check source ranges: 130.211.0.0/22, 35.191.0.0/16
-if gcloud compute firewall-rules describe allow-bastionclaw-lb \
+if gcloud compute firewall-rules describe allow-t3claw-lb \
     --project="${PROJECT}" &>/dev/null; then
   echo "     firewall rule already exists, skipping create"
 else
-  gcloud compute firewall-rules create allow-bastionclaw-lb \
+  gcloud compute firewall-rules create allow-t3claw-lb \
     --network=default \
     --allow=tcp:3000 \
     --source-ranges=130.211.0.0/22,35.191.0.0/16 \
-    --target-tags=bastionclaw \
+    --target-tags=t3claw \
     --project="${PROJECT}"
 fi
 
@@ -112,7 +112,7 @@ else
     --boot-disk-size=30GB \
     --service-account="${SA_EMAIL}" \
     --scopes=cloud-platform \
-    --tags=bastionclaw
+    --tags=t3claw
 fi
 
 # ── Phase 3: Copy files + bootstrap VM ────────────────────────────────────────
@@ -124,34 +124,34 @@ echo "       gcloud compute scp --recurse deploy-gcp/ ${VM_NAME}:/tmp/deploy --z
 echo "       gcloud compute scp docker-compose.yml ${VM_NAME}:/tmp/docker-compose.yml --zone=${ZONE} --project=${PROJECT}"
 echo "       gcloud compute ssh ${VM_NAME} --zone=${ZONE} --project=${PROJECT} -- sudo bash /tmp/deploy/vm-setup.sh"
 echo ""
-echo "     Then create /opt/bastionclaw/.env on the VM (see deploy-gcp/env.example),"
+echo "     Then create /opt/t3claw/.env on the VM (see deploy-gcp/env.example),"
 echo "     and start the service:"
 echo ""
 echo "       gcloud compute ssh ${VM_NAME} --zone=${ZONE} --project=${PROJECT} -- \\"
-echo "         'sudo systemctl enable bastionclaw && sudo systemctl start bastionclaw'"
+echo "         'sudo systemctl enable t3claw && sudo systemctl start t3claw'"
 echo ""
 read -rp "     Press Enter once the VM is bootstrapped and .env is in place, or Ctrl-C to stop here..."
 
 # ── Phase 4: Load Balancer ─────────────────────────────────────────────────────
 echo "==> [4/5] HTTPS load balancer"
 
-if gcloud compute addresses describe bastionclaw-staging-ip \
+if gcloud compute addresses describe t3claw-staging-ip \
     --global --project="${PROJECT}" &>/dev/null; then
   echo "     static IP already reserved"
 else
-  gcloud compute addresses create bastionclaw-staging-ip \
+  gcloud compute addresses create t3claw-staging-ip \
     --global --project="${PROJECT}"
 fi
 
-LB_IP=$(gcloud compute addresses describe bastionclaw-staging-ip \
+LB_IP=$(gcloud compute addresses describe t3claw-staging-ip \
   --global --project="${PROJECT}" --format="value(address)")
 echo "     LB static IP: ${LB_IP}"
 
-if gcloud compute health-checks describe bastionclaw-health \
+if gcloud compute health-checks describe t3claw-health \
     --project="${PROJECT}" &>/dev/null; then
   echo "     health check already exists"
 else
-  gcloud compute health-checks create http bastionclaw-health \
+  gcloud compute health-checks create http t3claw-health \
     --port=3000 \
     --request-path=/api/health \
     --check-interval=10s \
@@ -161,72 +161,72 @@ else
     --project="${PROJECT}"
 fi
 
-if gcloud compute instance-groups unmanaged describe bastionclaw-staging-ig \
+if gcloud compute instance-groups unmanaged describe t3claw-staging-ig \
     --zone="${ZONE}" --project="${PROJECT}" &>/dev/null; then
   echo "     instance group already exists"
 else
-  gcloud compute instance-groups unmanaged create bastionclaw-staging-ig \
+  gcloud compute instance-groups unmanaged create t3claw-staging-ig \
     --zone="${ZONE}" --project="${PROJECT}"
-  gcloud compute instance-groups unmanaged add-instances bastionclaw-staging-ig \
+  gcloud compute instance-groups unmanaged add-instances t3claw-staging-ig \
     --instances="${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}"
-  gcloud compute instance-groups set-named-ports bastionclaw-staging-ig \
+  gcloud compute instance-groups set-named-ports t3claw-staging-ig \
     --named-ports=http:3000 \
     --zone="${ZONE}" --project="${PROJECT}"
 fi
 
-if gcloud compute backend-services describe bastionclaw-backend \
+if gcloud compute backend-services describe t3claw-backend \
     --global --project="${PROJECT}" &>/dev/null; then
   echo "     backend service already exists"
 else
-  gcloud compute backend-services create bastionclaw-backend \
+  gcloud compute backend-services create t3claw-backend \
     --global \
     --protocol=HTTP \
     --port-name=http \
-    --health-checks=bastionclaw-health \
+    --health-checks=t3claw-health \
     --project="${PROJECT}"
-  gcloud compute backend-services add-backend bastionclaw-backend \
+  gcloud compute backend-services add-backend t3claw-backend \
     --global \
-    --instance-group=bastionclaw-staging-ig \
+    --instance-group=t3claw-staging-ig \
     --instance-group-zone="${ZONE}" \
     --project="${PROJECT}"
 fi
 
-if gcloud compute url-maps describe bastionclaw-urlmap \
+if gcloud compute url-maps describe t3claw-urlmap \
     --project="${PROJECT}" &>/dev/null; then
   echo "     URL map already exists"
 else
-  gcloud compute url-maps create bastionclaw-urlmap \
-    --default-service=bastionclaw-backend \
+  gcloud compute url-maps create t3claw-urlmap \
+    --default-service=t3claw-backend \
     --project="${PROJECT}"
 fi
 
-if gcloud compute ssl-certificates describe bastionclaw-cert \
+if gcloud compute ssl-certificates describe t3claw-cert \
     --project="${PROJECT}" &>/dev/null; then
   echo "     SSL cert already exists"
 else
-  gcloud compute ssl-certificates create bastionclaw-cert \
+  gcloud compute ssl-certificates create t3claw-cert \
     --domains="${DNS_NAME}" --project="${PROJECT}"
 fi
 
-if gcloud compute target-https-proxies describe bastionclaw-https-proxy \
+if gcloud compute target-https-proxies describe t3claw-https-proxy \
     --project="${PROJECT}" &>/dev/null; then
   echo "     HTTPS proxy already exists"
 else
-  gcloud compute target-https-proxies create bastionclaw-https-proxy \
-    --url-map=bastionclaw-urlmap \
-    --ssl-certificates=bastionclaw-cert \
+  gcloud compute target-https-proxies create t3claw-https-proxy \
+    --url-map=t3claw-urlmap \
+    --ssl-certificates=t3claw-cert \
     --project="${PROJECT}"
 fi
 
-if gcloud compute forwarding-rules describe bastionclaw-https-rule \
+if gcloud compute forwarding-rules describe t3claw-https-rule \
     --global --project="${PROJECT}" &>/dev/null; then
   echo "     forwarding rule already exists"
 else
-  gcloud compute forwarding-rules create bastionclaw-https-rule \
+  gcloud compute forwarding-rules create t3claw-https-rule \
     --global \
-    --target-https-proxy=bastionclaw-https-proxy \
-    --address=bastionclaw-staging-ip \
+    --target-https-proxy=t3claw-https-proxy \
+    --address=t3claw-staging-ip \
     --ports=443 \
     --project="${PROJECT}"
 fi
@@ -261,4 +261,4 @@ echo "    HTTPS  : https://${DNS_NAME}"
 echo ""
 echo "    Google-managed SSL cert will provision once DNS propagates (~15 min)."
 echo "    Check cert status:"
-echo "      gcloud compute ssl-certificates describe bastionclaw-cert --project=${PROJECT}"
+echo "      gcloud compute ssl-certificates describe t3claw-cert --project=${PROJECT}"

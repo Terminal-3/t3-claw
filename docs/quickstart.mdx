@@ -4,7 +4,7 @@ description: Create your first Agent in minutes
 icon: rocket
 ---
 
-This guide will get you from zero to a running BastionClaw instance in under 10 minutes
+This guide will get you from zero to a running T3Claw instance in under 10 minutes
 
 ---
 
@@ -12,11 +12,11 @@ This guide will get you from zero to a running BastionClaw instance in under 10 
 
 <Steps>
 
-<Step title="Get BastionClaw">
+<Step title="Get T3Claw">
 
 <Tabs>
   <Tab title="Agent Hub">
-  Go to https://agent.near.ai/ and login with your preferred method, then create an BastionClaw agent in a private instance.
+  Go to https://agent.near.ai/ and login with your preferred method, then create an T3Claw agent in a private instance.
 
   Once your private instance is ready, you can connect to your agent's private instance through `SSH` using the address provided in the [Agent Dashboard](https://agent.near.ai/):
 
@@ -26,7 +26,7 @@ This guide will get you from zero to a running BastionClaw instance in under 10 
 
   <Accordion title="SSH Key">
 
-  To use BastionClaw, you will need to provide an SSH key. If you don't have one, you can generate it using the following command in your terminal:
+  To use T3Claw, you will need to provide an SSH key. If you don't have one, you can generate it using the following command in your terminal:
 
   ```bash
   ssh-keygen -t rsa -b 4096 -C "you@example.com"
@@ -49,8 +49,8 @@ This guide will get you from zero to a running BastionClaw instance in under 10 
     Best for personal use on your own machine. Uses libSQL (embedded SQLite) — no separate database server required.
 
     ```bash
-    # Install BastionClaw
-    curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/bastionclaw/releases/latest/download/bastionclaw-installer.sh | sh
+    # Install T3Claw
+    curl --proto '=https' --tlsv1.2 -LsSf https://github.com/nearai/t3claw/releases/latest/download/t3claw-installer.sh | sh
     ```
   </Tab>
 </Tabs>
@@ -62,19 +62,19 @@ This guide will get you from zero to a running BastionClaw instance in under 10 
 Start your agent for the first time:
 
 ```bash
-bastionclaw
+t3claw
 ```
 
-<Accordion title="⚠️ Error: Another BastionClaw instance is already running">
+<Accordion title="⚠️ Error: Another T3Claw instance is already running">
 
-If you get the error `Error: Another BastionClaw instance is already running (PID 38). If this is incorrect, remove the stale PID file: /home/agent/.bastionclaw/bastionclaw.pid`, simply run the following command to remove the stale PID file and try starting the agent again:
+If you get the error `Error: Another T3Claw instance is already running (PID 38). If this is incorrect, remove the stale PID file: /home/agent/.t3claw/t3claw.pid`, simply run the following command to remove the stale PID file and try starting the agent again:
 
 ```
 # Remove the stale PID file
-rm /home/agent/.bastionclaw/bastionclaw.pid
+rm /home/agent/.t3claw/t3claw.pid
 
 # Then start the agent again
-bastionclaw
+t3claw
 ```
 
 </Accordion>
@@ -96,7 +96,7 @@ If you encounter the error `Error: Channel webhook_server failed to start: Faile
 export HTTP_PORT=8081
 
 # Then start the agent again
-bastionclaw
+t3claw
 ```
 
 </Accordion>
@@ -112,12 +112,12 @@ Once your agent is up and running, you can start interacting with it through the
 
 </Step>
 
-<Step title="Update BastionClaw">
+<Step title="Update T3Claw">
 
-Finally, make sure to regularly update BastionClaw to get the latest features and improvements. You can update BastionClaw by running the following command in your terminal:
+Finally, make sure to regularly update T3Claw to get the latest features and improvements. You can update T3Claw by running the following command in your terminal:
 
 ```bash
-bastionclaw-update
+t3claw-update
 ```
 
 </Step>

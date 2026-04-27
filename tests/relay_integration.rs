@@ -7,7 +7,7 @@ use axum::{
     extract::Query,
     routing::{get, post},
 };
-use bastionclaw::channels::relay::client::{ChannelEvent, RelayClient};
+use t3claw::channels::relay::client::{ChannelEvent, RelayClient};
 use secrecy::SecretString;
 use serde::Deserialize;
 use tokio::net::TcpListener;

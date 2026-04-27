@@ -1,6 +1,6 @@
 //! HTTP client for worker-to-orchestrator communication.
 //!
-//! Every request includes a bearer token from `BASTIONCLAW_WORKER_TOKEN` env var.
+//! Every request includes a bearer token from `T3CLAW_WORKER_TOKEN` env var.
 //! The orchestrator validates this token is scoped to the correct job.
 
 use serde::{Deserialize, Serialize};
@@ -117,10 +117,10 @@ pub struct CredentialResponse {
 impl WorkerHttpClient {
     /// Create a new client from environment.
     ///
-    /// Reads `BASTIONCLAW_WORKER_TOKEN` from the environment.
+    /// Reads `T3CLAW_WORKER_TOKEN` from the environment.
     pub fn from_env(orchestrator_url: String, job_id: Uuid) -> Result<Self, WorkerError> {
         let token =
-            std::env::var("BASTIONCLAW_WORKER_TOKEN").map_err(|_| WorkerError::MissingToken)?;
+            std::env::var("T3CLAW_WORKER_TOKEN").map_err(|_| WorkerError::MissingToken)?;
 
         Ok(Self {
             client: reqwest::Client::new(),

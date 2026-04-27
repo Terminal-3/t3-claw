@@ -4,14 +4,14 @@ sidebarTitle: Troubleshooting
 description: Common issues and solutions
 ---
 
-Solutions for common BastionClaw issues.
+Solutions for common T3Claw issues.
 
 ## Diagnostic Tool
 
 Run diagnostics first:
 
 ```bash
-bastionclaw doctor
+t3claw doctor
 ```
 
 This checks:
@@ -42,10 +42,10 @@ This checks:
     **Solution:**
     ```bash
     # Fix ownership
-    sudo chown -R $USER:$USER ~/.local/bin/bastionclaw
+    sudo chown -R $USER:$USER ~/.local/bin/t3claw
 
     # Or move to system path
-    sudo mv ~/.local/bin/bastionclaw /usr/local/bin/
+    sudo mv ~/.local/bin/t3claw /usr/local/bin/
     ```
   </Accordion>
 </AccordionGroup>
@@ -60,16 +60,16 @@ This checks:
     sudo systemctl status postgresql
 
     # Verify connection
-    psql postgres://user:pass@localhost/bastionclaw
+    psql postgres://user:pass@localhost/t3claw
     ```
 
     **libSQL:**
     ```bash
     # Check permissions
-    ls -la ~/.bastionclaw/
+    ls -la ~/.t3claw/
 
     # Fix ownership
-    chmod 755 ~/.bastionclaw
+    chmod 755 ~/.t3claw
     ```
   </Accordion>
 
@@ -80,7 +80,7 @@ This checks:
     sudo apt install postgresql-15-pgvector
 
     # Enable extension
-    sudo -u postgres psql -d bastionclaw -c "CREATE EXTENSION IF NOT EXISTS vector;"
+    sudo -u postgres psql -d t3claw -c "CREATE EXTENSION IF NOT EXISTS vector;"
     ```
   </Accordion>
 
@@ -88,7 +88,7 @@ This checks:
     **Solution:**
     ```bash
     # Find and kill process
-    lsof ~/.bastionclaw/bastionclaw.db
+    lsof ~/.t3claw/t3claw.db
     kill -9 <pid>
 
     # Or wait for process to exit
@@ -107,7 +107,7 @@ This checks:
 
     ```bash
     # Set callback URL for remote servers
-    export BASTIONCLAW_OAUTH_CALLBACK_URL=https://your-server:9876
+    export T3CLAW_OAUTH_CALLBACK_URL=https://your-server:9876
     ```
   </Accordion>
 
@@ -122,7 +122,7 @@ This checks:
     **Solution:**
     ```bash
     # Re-authenticate
-    bastionclaw onboard --skip-auth
+    t3claw onboard --skip-auth
     # Select NEAR AI → re-authenticate
     ```
   </Accordion>
@@ -149,8 +149,8 @@ This checks:
   <Accordion title="Web Gateway not accessible" icon="globe">
     **Solutions:**
     ```bash
-    # Check BastionClaw is running
-    bastionclaw status
+    # Check T3Claw is running
+    t3claw status
 
     # Verify port
     sudo ss -tlnp | grep 3000
@@ -165,7 +165,7 @@ This checks:
     **Solution:**
     ```bash
     # View logs
-    RUST_LOG=bastionclaw=info bastionclaw run 2>&1 | grep "Gateway auth token"
+    RUST_LOG=t3claw=info t3claw run 2>&1 | grep "Gateway auth token"
 
     # Or set persistent token
     export GATEWAY_AUTH_TOKEN=your-token
@@ -190,7 +190,7 @@ This checks:
   <Accordion title="Owner binding timeout" icon="clock">
     **Solutions:**
     1. Send `/start` to your bot in Telegram
-    2. Re-run `bastionclaw onboard --channels-only`
+    2. Re-run `t3claw onboard --channels-only`
     3. Wait 120 seconds for first message
   </Accordion>
 </AccordionGroup>
@@ -260,7 +260,7 @@ This checks:
   <Accordion title="macOS Keychain dialogs" icon="apple">
     **Expected:** Two dialogs on first access:
     1. "Enter your password to unlock the keychain"
-    2. "Allow bastionclaw to access this keychain item"
+    2. "Allow t3claw to access this keychain item"
 
     **Solution:** Click "Always Allow" to prevent repeated prompts.
   </Accordion>
@@ -279,27 +279,27 @@ Enable verbose logging:
 
 ```bash
 # All modules
-RUST_LOG=debug bastionclaw run
+RUST_LOG=debug t3claw run
 
-# Just BastionClaw
-RUST_LOG=bastionclaw=debug bastionclaw run
+# Just T3Claw
+RUST_LOG=t3claw=debug t3claw run
 
 # Specific module
-RUST_LOG=bastionclaw::agent=debug bastionclaw run
+RUST_LOG=t3claw::agent=debug t3claw run
 
 # With HTTP requests
-RUST_LOG=bastionclaw=debug,tower_http=debug bastionclaw run
+RUST_LOG=t3claw=debug,tower_http=debug t3claw run
 ```
 
 ## Getting Help
 
 If your issue isn't listed:
 
-1. Run `bastionclaw doctor --json`
+1. Run `t3claw doctor --json`
 2. Check logs with `RUST_LOG=debug`
-3. Search [GitHub Issues](https://github.com/bastionclaw-ai/bastionclaw/issues)
+3. Search [GitHub Issues](https://github.com/t3claw-ai/t3claw/issues)
 4. Create a new issue with:
-   - BastionClaw version
+   - T3Claw version
    - Operating system
    - Full error message
    - Steps to reproduce

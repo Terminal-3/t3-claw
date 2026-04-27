@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use crate::channels::web::sse::SseManager;
 use crate::context::JobContext;
 use crate::tools::tool::{Tool, ToolError, ToolOutput, require_str};
-use bastionclaw_common::{AppEvent, PlanStepDto};
+use t3claw_common::{AppEvent, PlanStepDto};
 
 /// Tool for emitting structured plan progress updates via SSE.
 #[derive(Default)]

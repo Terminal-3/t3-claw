@@ -69,8 +69,8 @@ impl PrivacyClassifier for PatternPrivacyClassifier {
 /// cause false positives, add domain-specific patterns).
 ///
 /// ```
-/// use bastionclaw::workspace::privacy::ConfigurablePrivacyClassifier;
-/// use bastionclaw::workspace::privacy::PrivacyClassifier;
+/// use t3claw::workspace::privacy::ConfigurablePrivacyClassifier;
+/// use t3claw::workspace::privacy::PrivacyClassifier;
 ///
 /// let classifier = ConfigurablePrivacyClassifier::new(vec![
 ///     r"\b\d{3}-\d{2}-\d{4}\b".into(),  // SSN only

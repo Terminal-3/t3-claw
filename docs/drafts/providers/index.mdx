@@ -4,7 +4,7 @@ sidebarTitle: Overview
 description: Choose your AI model provider
 ---
 
-BastionClaw supports multiple LLM backends. Choose the provider that best fits your needs.
+T3Claw supports multiple LLM backends. Choose the provider that best fits your needs.
 
 ## Provider Comparison
 
@@ -87,18 +87,18 @@ BastionClaw supports multiple LLM backends. Choose the provider that best fits y
 Change providers by updating environment variables and restarting:
 
 ```bash
-# Edit ~/.bastionclaw/.env
+# Edit ~/.t3claw/.env
 export LLM_BACKEND=anthropic
 export ANTHROPIC_API_KEY=sk-ant-...
 
-# Restart BastionClaw
-bastionclaw run
+# Restart T3Claw
+t3claw run
 ```
 
 Or re-run the wizard:
 
 ```bash
-bastionclaw onboard --skip-auth
+t3claw onboard --skip-auth
 ```
 
 ## Configuration
@@ -106,7 +106,7 @@ bastionclaw onboard --skip-auth
 All providers are configured via environment variables:
 
 ```bash
-# In ~/.bastionclaw/.env
+# In ~/.t3claw/.env
 LLM_BACKEND=anthropic
 ANTHROPIC_API_KEY=sk-ant-...
 ANTHROPIC_BASE_URL=https://api.anthropic.com  # optional

@@ -224,7 +224,7 @@ pub const DEFAULT_DOMAIN_KEYWORDS: &[&str] = &[
     "multisig",
     "treasury",
     "openclaw",
-    "bastionclaw",
+    "t3claw",
 ];
 
 /// Configuration for the complexity scorer.

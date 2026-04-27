@@ -59,7 +59,7 @@ use crate::db::Database;
 
 /// Cookie name for OAuth browser sessions. Shared between the auth middleware
 /// (cookie extraction) and the auth handlers (cookie set/clear).
-pub const SESSION_COOKIE_NAME: &str = "bastionclaw_session";
+pub const SESSION_COOKIE_NAME: &str = "t3claw_session";
 
 // ── User identity ────────────────────────────────────────────────────────
 
@@ -1155,7 +1155,7 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert(
             axum::http::header::COOKIE,
-            HeaderValue::from_static("other=\"quoted;value\"; bastionclaw_session=abc123"),
+            HeaderValue::from_static("other=\"quoted;value\"; t3claw_session=abc123"),
         );
 
         assert_eq!(
@@ -1388,7 +1388,7 @@ mod tests {
             .uri("/api/chat/history")
             .header(
                 "Cookie",
-                format!("bastionclaw_session={TEST_AUTH_SECRET_TOKEN}"),
+                format!("t3claw_session={TEST_AUTH_SECRET_TOKEN}"),
             )
             .body(Body::empty())
             .unwrap();
@@ -1403,7 +1403,7 @@ mod tests {
         let req = Request::builder()
             .uri("/api/chat/history")
             .header("Authorization", format!("Bearer {TEST_AUTH_SECRET_TOKEN}"))
-            .header("Cookie", "bastionclaw_session=wrong-token")
+            .header("Cookie", "t3claw_session=wrong-token")
             .body(Body::empty())
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
@@ -1415,7 +1415,7 @@ mod tests {
         let app = test_app(TEST_AUTH_SECRET_TOKEN);
         let req = Request::builder()
             .uri("/api/chat/history")
-            .header("Cookie", "bastionclaw_session=")
+            .header("Cookie", "t3claw_session=")
             .body(Body::empty())
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
@@ -1429,7 +1429,7 @@ mod tests {
             .uri("/api/chat/history")
             .header(
                 "Cookie",
-                format!("other=foo; bastionclaw_session={TEST_AUTH_SECRET_TOKEN}; bar=baz"),
+                format!("other=foo; t3claw_session={TEST_AUTH_SECRET_TOKEN}; bar=baz"),
             )
             .body(Body::empty())
             .unwrap();

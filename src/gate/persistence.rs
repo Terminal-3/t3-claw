@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use fs4::FileExt;
 use serde::{Deserialize, Serialize};
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 
 use super::pending::{PendingGate, PendingGateKey};
 use super::store::{GatePersistence, GateStoreError};
@@ -19,7 +19,7 @@ struct PendingGateFile {
     gates: Vec<PendingGate>,
 }
 
-/// JSON-file persistence for pending gates under `~/.bastionclaw/`.
+/// JSON-file persistence for pending gates under `~/.t3claw/`.
 #[derive(Debug, Clone)]
 pub struct FileGatePersistence {
     path: PathBuf,
@@ -31,7 +31,7 @@ impl FileGatePersistence {
     }
 
     pub fn default_path() -> PathBuf {
-        bastionclaw_base_dir().join("pending-gates.json")
+        t3claw_base_dir().join("pending-gates.json")
     }
 
     pub fn with_default_path() -> Self {
@@ -136,7 +136,7 @@ impl GatePersistence for FileGatePersistence {
 
 #[cfg(test)]
 mod tests {
-    use bastionclaw_engine::{ConversationId, ResumeKind, ThreadId};
+    use t3claw_engine::{ConversationId, ResumeKind, ThreadId};
     use chrono::{Duration, Utc};
 
     use super::*;

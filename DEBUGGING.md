@@ -1,4 +1,4 @@
-# Debugging BastionClaw
+# Debugging T3Claw
 
 Practical commands for "what is actually happening inside this stack right
 now". Scoped to the docker-compose deployment (`make up` / `make rebuild`).
@@ -7,7 +7,7 @@ container-specific commands don't.
 
 Service names used below (from `docker-compose.yml`):
 
-- `bastionclaw` — the agent itself
+- `t3claw` — the agent itself
 - `t3n-mcp-sidecar` — Trinity MCP server (stdio → Unix socket bridge)
 - `postgres` — main database
 
@@ -18,17 +18,17 @@ Service names used below (from `docker-compose.yml`):
 ```bash
 # Follow agent logs live (ctrl-C to stop)
 make logs
-# same as: docker compose --profile app logs -f bastionclaw
+# same as: docker compose --profile app logs -f t3claw
 
 # Follow sidecar logs
 docker compose --profile app logs -f t3n-mcp-sidecar
 
 # Last 200 lines, no follow
-docker compose --profile app logs --tail=200 bastionclaw
+docker compose --profile app logs --tail=200 t3claw
 
 # Everything since a time point
-docker compose --profile app logs --since=5m bastionclaw
-docker compose --profile app logs --since=2026-04-23T10:00:00 bastionclaw
+docker compose --profile app logs --since=5m t3claw
+docker compose --profile app logs --since=2026-04-23T10:00:00 t3claw
 
 # All services at once (timestamps help correlate)
 docker compose --profile app logs -f --timestamps
@@ -43,27 +43,27 @@ without that prefix is coming from the Trinity MCP child process itself
 ## Increasing agent log verbosity
 
 The agent reads `RUST_LOG` from the environment. Default is roughly
-`bastionclaw=info`. To get more detail, set it in `.env` and restart:
+`t3claw=info`. To get more detail, set it in `.env` and restart:
 
 ```bash
-# Everything in bastionclaw at debug level
-RUST_LOG=bastionclaw=debug
+# Everything in t3claw at debug level
+RUST_LOG=t3claw=debug
 
 # Just the agent loop
-RUST_LOG=bastionclaw::agent=debug
+RUST_LOG=t3claw::agent=debug
 
 # Agent + HTTP request traces from tower
-RUST_LOG=bastionclaw=debug,tower_http=debug
+RUST_LOG=t3claw=debug,tower_http=debug
 
 # Absolutely everything (very noisy)
-RUST_LOG=bastionclaw=trace
+RUST_LOG=t3claw=trace
 ```
 
 Apply with:
 
 ```bash
 # Edit .env, then
-make restart   # restarts only bastionclaw, keeps postgres + sidecar up
+make restart   # restarts only t3claw, keeps postgres + sidecar up
 ```
 
 Note: inside the REPL/TUI, `info!` and `warn!` corrupt the terminal UI. If
@@ -75,18 +75,18 @@ traces (see CLAUDE.md "Logging levels matter for REPL/TUI").
 ## Shell into a container
 
 ```bash
-# Interactive shell in bastionclaw
+# Interactive shell in t3claw
 make shell
-# same as: docker exec -it bastion-claw-bastionclaw-1 sh
+# same as: docker exec -it t3-claw-t3claw-1 sh
 
-# One-off command in bastionclaw
-docker compose --profile app exec bastionclaw bastionclaw mcp list
+# One-off command in t3claw
+docker compose --profile app exec t3claw t3claw mcp list
 
 # Shell in the sidecar (root, since docker-compose.yml sets user: "0:0")
-docker exec -it bastion-claw-t3n-mcp-sidecar-1 sh
+docker exec -it t3-claw-t3n-mcp-sidecar-1 sh
 
 # Shell in postgres (use psql directly below — this rarely needed)
-docker exec -it bastion-claw-postgres-1 sh
+docker exec -it t3-claw-postgres-1 sh
 ```
 
 ---
@@ -99,7 +99,7 @@ trail — inputs, raw outputs, sanitised outputs, duration, success flag.
 
 ```bash
 # Open a psql shell against the main DB
-docker compose exec postgres psql -U bastionclaw -d bastionclaw
+docker compose exec postgres psql -U t3claw -d t3claw
 ```
 
 Useful queries once you're in psql:
@@ -147,7 +147,7 @@ reading them interactively, or `->>` / `->` for projection.
 One-liner variant when you don't want the psql prompt:
 
 ```bash
-docker compose exec -T postgres psql -U bastionclaw -d bastionclaw \
+docker compose exec -T postgres psql -U t3claw -d t3claw \
   -c "SELECT created_at, tool_name, success FROM job_actions ORDER BY created_at DESC LIMIT 10;"
 ```
 
@@ -159,30 +159,30 @@ docker compose exec -T postgres psql -U bastionclaw -d bastionclaw \
 
 ```bash
 # All registered MCP servers for the default user
-docker compose exec bastionclaw bastionclaw mcp list
+docker compose exec t3claw t3claw mcp list
 
 # Verbose — shows transport, auth state, cached tool list
-docker compose exec bastionclaw bastionclaw mcp list --verbose
+docker compose exec t3claw t3claw mcp list --verbose
 ```
 
 ### Ping / handshake test
 
 ```bash
-docker compose exec bastionclaw bastionclaw mcp test t3n-mcp
+docker compose exec t3claw t3claw mcp test t3n-mcp
 ```
 
 If this fails, the agent cannot reach the MCP — debug in that order:
 
 1. Sidecar logs (`docker compose logs t3n-mcp-sidecar`) — is the bridge
    listening? Is the child process exiting on start-up?
-2. Socket existence from inside bastionclaw:
+2. Socket existence from inside t3claw:
    ```bash
-   docker compose exec bastionclaw ls -la /var/run/t3n-mcp/
+   docker compose exec t3claw ls -la /var/run/t3n-mcp/
    ```
    Should show `t3n-mcp.sock` with permissive perms.
-3. Raw connectivity from inside bastionclaw:
+3. Raw connectivity from inside t3claw:
    ```bash
-   docker compose exec bastionclaw sh -c \
+   docker compose exec t3claw sh -c \
      'echo "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{}}}" | nc -U /var/run/t3n-mcp/t3n-mcp.sock'
    ```
    (Install `nc` in the image first if needed, or use `socat`.)
@@ -197,7 +197,7 @@ so if the persisted config has an out-of-date shape (e.g. leftover
 it on next start:
 
 ```bash
-docker compose exec bastionclaw bastionclaw mcp remove t3n-mcp
+docker compose exec t3claw t3claw mcp remove t3n-mcp
 make restart
 ```
 
@@ -212,7 +212,7 @@ error is downstream (module resolution, missing file, bad config). Run
 tsx directly against the source to see the real stack:
 
 ```bash
-docker exec bastion-claw-t3n-mcp-sidecar-1 sh -c 'cd /app && npx tsx src/index.ts'
+docker exec t3-claw-t3n-mcp-sidecar-1 sh -c 'cd /app && npx tsx src/index.ts'
 ```
 
 Hit Ctrl-C after you see the error line.
@@ -258,11 +258,11 @@ docker compose --profile app build --no-cache t3n-mcp-sidecar && make up
 - **Sidecar log spams `Failed to spawn Trinity MCP child {error:"spawn npx ENOENT"}`** —
   misleading error. Usually means tsx crashed on module resolution because
   trinity's `.dockerignore` stripped a file from the build context. Check
-  which files actually made it into the image with `docker exec bastion-claw-t3n-mcp-sidecar-1 find /app/src -type f | sort` and diff against the host. Fix by narrowing the build context to a subdirectory that doesn't have the offending `.dockerignore` (see `docker-compose.yml`'s `additional_contexts`).
+  which files actually made it into the image with `docker exec t3-claw-t3n-mcp-sidecar-1 find /app/src -type f | sort` and diff against the host. Fix by narrowing the build context to a subdirectory that doesn't have the offending `.dockerignore` (see `docker-compose.yml`'s `additional_contexts`).
 
 - **MCP activation returns `awaiting_token` with Trinity sign-in instructions** —
   there's a stale MCP entry in the DB with `local_auth` attached.
-  `bastionclaw mcp remove t3n-mcp` + `make restart` to re-bootstrap clean.
+  `t3claw mcp remove t3n-mcp` + `make restart` to re-bootstrap clean.
 
 - **`make rebuild` doesn't pick up a change you're sure you made** —
   Docker layer cache. Use `docker compose --profile app build --no-cache <service>`

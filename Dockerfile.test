@@ -1,12 +1,12 @@
-# Lightweight test Dockerfile for BastionClaw web gateway testing.
+# Lightweight test Dockerfile for T3Claw web gateway testing.
 #
 # Build:
-#   docker build --platform linux/amd64 -f Dockerfile.test -t bastionclaw-test .
+#   docker build --platform linux/amd64 -f Dockerfile.test -t t3claw-test .
 #
 # Run (each on a different port):
-#   docker run --rm -p 3003:3003 bastionclaw-test
-#   docker run --rm -p 3004:3003 bastionclaw-test
-#   docker run --rm -p 3005:3003 bastionclaw-test
+#   docker run --rm -p 3003:3003 t3claw-test
+#   docker run --rm -p 3004:3003 t3claw-test
+#   docker run --rm -p 3005:3003 t3claw-test
 
 # Stage 1: Build (libsql only — no PostgreSQL dependency)
 FROM rust:1.92-slim-bookworm AS builder
@@ -29,7 +29,7 @@ COPY registry/ registry/
 COPY channels-src/ channels-src/
 COPY wit/ wit/
 
-RUN cargo build --release --no-default-features --features libsql --bin bastionclaw
+RUN cargo build --release --no-default-features --features libsql --bin t3claw
 
 # Stage 2: Runtime
 FROM debian:bookworm-slim
@@ -38,21 +38,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/bastionclaw /usr/local/bin/bastionclaw
+COPY --from=builder /app/target/release/t3claw /usr/local/bin/t3claw
 
-RUN useradd -m -u 1000 -s /bin/bash bastionclaw
-USER bastionclaw
-WORKDIR /home/bastionclaw
+RUN useradd -m -u 1000 -s /bin/bash t3claw
+USER t3claw
+WORKDIR /home/t3claw
 
 EXPOSE 3003
 
-ENV RUST_LOG=bastionclaw=info \
+ENV RUST_LOG=t3claw=info \
     GATEWAY_ENABLED=true \
     GATEWAY_HOST=0.0.0.0 \
     GATEWAY_PORT=3003 \
     GATEWAY_AUTH_TOKEN=test \
     DATABASE_BACKEND=libsql \
-    LIBSQL_PATH=/home/bastionclaw/test.db \
+    LIBSQL_PATH=/home/t3claw/test.db \
     SANDBOX_ENABLED=false
 
-ENTRYPOINT ["bastionclaw", "--no-onboard"]
+ENTRYPOINT ["t3claw", "--no-onboard"]

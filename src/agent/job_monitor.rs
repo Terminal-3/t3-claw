@@ -22,7 +22,7 @@ use uuid::Uuid;
 
 use crate::channels::IncomingMessage;
 use crate::context::{ContextManager, JobState};
-use bastionclaw_common::AppEvent;
+use t3claw_common::AppEvent;
 
 /// Route context for forwarding job monitor events back to the user's channel.
 #[derive(Debug, Clone)]

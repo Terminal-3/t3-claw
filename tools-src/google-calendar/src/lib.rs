@@ -1,4 +1,4 @@
-//! Google Calendar WASM Tool for BastionClaw.
+//! Google Calendar WASM Tool for T3Claw.
 //!
 //! Provides Google Calendar integration for viewing, creating, updating,
 //! and deleting calendar events.
@@ -68,7 +68,7 @@ impl exports::near::agent::tool::Guest for GoogleCalendarTool {
 fn execute_inner(params: &str) -> Result<String, String> {
     if !crate::near::agent::host::secret_exists("google_oauth_token") {
         return Err(
-            "Google OAuth token not configured. Run `bastionclaw tool auth google-calendar` \
+            "Google OAuth token not configured. Run `t3claw tool auth google-calendar` \
              to set up OAuth, or set the GOOGLE_OAUTH_TOKEN environment variable."
                 .to_string(),
         );

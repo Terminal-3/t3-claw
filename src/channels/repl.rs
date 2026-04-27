@@ -42,7 +42,7 @@ use tokio_stream::wrappers::ReceiverStream;
 use uuid::Uuid;
 
 use crate::agent::truncate_for_preview;
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::channels::{Channel, IncomingMessage, MessageStream, OutgoingResponse, StatusUpdate};
 use crate::cli::fmt;
 use crate::error::ChannelError;
@@ -356,7 +356,7 @@ fn print_help() {
     let hi = fmt::hint();
 
     println!();
-    println!("  {h}BastionClaw REPL{r}");
+    println!("  {h}T3Claw REPL{r}");
     println!();
     println!("  {h}Quick start{r}");
     println!("    {c}/new{r}         {hi}Start a new thread{r}");
@@ -376,9 +376,9 @@ fn print_help() {
     println!();
 }
 
-/// Get the history file path (~/.bastionclaw/history).
+/// Get the history file path (~/.t3claw/history).
 fn history_path() -> std::path::PathBuf {
-    bastionclaw_base_dir().join("history")
+    t3claw_base_dir().join("history")
 }
 
 #[async_trait]
@@ -451,7 +451,7 @@ impl Channel for ReplChannel {
 
             if !suppress_banner.load(Ordering::Relaxed) {
                 println!(
-                    "{}BastionClaw{}  /help for commands, /quit to exit",
+                    "{}T3Claw{}  /help for commands, /quit to exit",
                     fmt::bold(),
                     fmt::reset()
                 );

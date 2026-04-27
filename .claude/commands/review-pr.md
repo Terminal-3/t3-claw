@@ -49,9 +49,9 @@ If the PR touches more than 20 files, still read all of them, but process in thi
 
 Go through the changes with each of these lenses. For every finding, note the file, line range, severity, and a concrete description.
 
-### BastionClaw-specific checks
+### T3Claw-specific checks
 
-In addition to the general lenses below, check BastionClaw conventions (see CLAUDE.md):
+In addition to the general lenses below, check T3Claw conventions (see CLAUDE.md):
 - No `.unwrap()` or `.expect()` in production code (tests are fine)
 - Use `crate::` imports, not `super::`
 - Error types use `thiserror` in `error.rs`

@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Self-contained GCP startup script for BastionClaw staging VM.
+# Self-contained GCP startup script for T3Claw staging VM.
 # Injected via: gcloud compute instances add-metadata ... --metadata-from-file startup-script=...
 # Triggered by: gcloud compute instances reset ...
 #
-# Runs as root automatically on VM boot. Logs to /var/log/bastionclaw-startup.log
+# Runs as root automatically on VM boot. Logs to /var/log/t3claw-startup.log
 # and to the serial port (visible via: gcloud compute instances get-serial-port-output).
 
 set -euo pipefail
-exec > >(tee /var/log/bastionclaw-startup.log | logger -t bastionclaw-startup) 2>&1
+exec > >(tee /var/log/t3claw-startup.log | logger -t t3claw-startup) 2>&1
 
 PROJECT="gen-lang-client-0263867259"
 REGION="us-central1"
-REPO="bastionclaw"
+REPO="t3claw"
 IMAGE_PREFIX="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
 
 echo "==> [1/5] Installing Docker (official repo)"
@@ -33,32 +33,32 @@ systemctl start docker
 echo "==> [2/5] Configuring Artifact Registry auth"
 gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
-echo "==> [3/5] Setting up /opt/bastionclaw"
-mkdir -p /opt/bastionclaw
-chmod 700 /opt/bastionclaw
+echo "==> [3/5] Setting up /opt/t3claw"
+mkdir -p /opt/t3claw
+chmod 700 /opt/t3claw
 
 # Write docker-compose.yml — uses AR images, no local build needed
-cat > /opt/bastionclaw/docker-compose.yml << 'COMPOSE'
+cat > /opt/t3claw/docker-compose.yml << 'COMPOSE'
 services:
   postgres:
     image: pgvector/pgvector:pg16
     ports:
       - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_DB: bastionclaw
-      POSTGRES_USER: bastionclaw
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bastionclaw}
+      POSTGRES_DB: t3claw
+      POSTGRES_USER: t3claw
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-t3claw}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bastionclaw"]
+      test: ["CMD-SHELL", "pg_isready -U t3claw"]
       interval: 5s
       timeout: 3s
       retries: 5
 
-  bastionclaw:
+  t3claw:
     profiles: ["app"]
-    image: us-central1-docker.pkg.dev/gen-lang-client-0263867259/bastionclaw/agent:latest
+    image: us-central1-docker.pkg.dev/gen-lang-client-0263867259/t3claw/agent:latest
     restart: unless-stopped
     depends_on:
       postgres:
@@ -68,22 +68,22 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgres://bastionclaw:${POSTGRES_PASSWORD:-bastionclaw}@postgres:5432/bastionclaw
+      DATABASE_URL: postgres://t3claw:${POSTGRES_PASSWORD:-t3claw}@postgres:5432/t3claw
       GATEWAY_ENABLED: "true"
       GATEWAY_HOST: "0.0.0.0"
       GATEWAY_PORT: "3000"
       CLI_ENABLED: "false"
       ONBOARD_COMPLETED: "true"
-      BASTIONCLAW_IN_DOCKER: "true"
+      T3CLAW_IN_DOCKER: "true"
       SANDBOX_ENABLED: "false"
     volumes:
-      - bastionclaw_data:/home/bastionclaw/.bastionclaw
+      - t3claw_data:/home/t3claw/.t3claw
       - t3n_mcp_socket:/var/run/t3n-mcp
 
   t3n-mcp-sidecar:
     profiles: ["app"]
     user: "0:0"
-    image: us-central1-docker.pkg.dev/gen-lang-client-0263867259/bastionclaw/t3n-mcp-sidecar:latest
+    image: us-central1-docker.pkg.dev/gen-lang-client-0263867259/t3claw/t3n-mcp-sidecar:latest
     restart: unless-stopped
     environment:
       T3N_SDK_ENV: ${T3N_MCP_ENV:-staging}
@@ -97,21 +97,21 @@ services:
 
 volumes:
   pgdata:
-  bastionclaw_data:
+  t3claw_data:
   t3n_mcp_socket:
 COMPOSE
 
-echo "==> [4/5] Installing bastionclaw.service"
-cat > /etc/systemd/system/bastionclaw.service << 'SERVICE'
+echo "==> [4/5] Installing t3claw.service"
+cat > /etc/systemd/system/t3claw.service << 'SERVICE'
 [Unit]
-Description=BastionClaw AI Assistant
+Description=T3Claw AI Assistant
 After=docker.service network-online.target
 Requires=docker.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/bastionclaw
+WorkingDirectory=/opt/t3claw
 ExecStartPre=/usr/bin/docker compose --profile app pull
 ExecStart=/usr/bin/docker compose --profile app up --remove-orphans
 ExecStop=/usr/bin/docker compose --profile app down
@@ -119,7 +119,7 @@ Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=bastionclaw
+SyslogIdentifier=t3claw
 
 [Install]
 WantedBy=multi-user.target
@@ -127,12 +127,12 @@ SERVICE
 systemctl daemon-reload
 
 echo "==> [5/6] Seeding t3n-mcp server config"
-mkdir -p /home/bastionclaw/.bastionclaw 2>/dev/null || true
+mkdir -p /home/t3claw/.t3claw 2>/dev/null || true
 # Pre-register t3n-mcp as a Unix socket MCP server so it appears in the UI on
-# first boot without a manual `bastionclaw mcp add` step.
-# The file lives inside the bastionclaw_data volume; write it there now so it's
+# first boot without a manual `t3claw mcp add` step.
+# The file lives inside the t3claw_data volume; write it there now so it's
 # present before the agent container starts.
-VOLUME_PATH=$(docker volume inspect bastionclaw_bastionclaw_data --format '{{.Mountpoint}}' 2>/dev/null || true)
+VOLUME_PATH=$(docker volume inspect t3claw_t3claw_data --format '{{.Mountpoint}}' 2>/dev/null || true)
 if [ -n "$VOLUME_PATH" ]; then
   cat > "${VOLUME_PATH}/mcp-servers.json" << 'MCP'
 {
@@ -150,7 +150,7 @@ if [ -n "$VOLUME_PATH" ]; then
 MCP
   echo "     wrote mcp-servers.json to volume"
 else
-  echo "     WARNING: bastionclaw_data volume not found yet, skipping mcp seed (run after first compose up)"
+  echo "     WARNING: t3claw_data volume not found yet, skipping mcp seed (run after first compose up)"
 fi
 
 echo "==> [6/6] Pre-pulling images"
@@ -159,5 +159,5 @@ docker pull "${IMAGE_PREFIX}/t3n-mcp-sidecar:latest"
 
 echo ""
 echo "==> Bootstrap complete."
-echo "    Create /opt/bastionclaw/.env then run:"
-echo "      systemctl enable bastionclaw && systemctl start bastionclaw"
+echo "    Create /opt/t3claw/.env then run:"
+echo "      systemctl enable t3claw && systemctl start t3claw"

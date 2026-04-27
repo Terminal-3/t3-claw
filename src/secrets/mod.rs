@@ -38,7 +38,7 @@
 //! # Example
 //!
 //! ```ignore
-//! use bastionclaw::secrets::{SecretsStore, PostgresSecretsStore, SecretsCrypto, CreateSecretParams};
+//! use t3claw::secrets::{SecretsStore, PostgresSecretsStore, SecretsCrypto, CreateSecretParams};
 //! use secrecy::SecretString;
 //!
 //! // Initialize crypto with master key from environment

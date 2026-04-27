@@ -13,13 +13,13 @@ mod tests {
     use chrono::{Duration, Utc};
     use uuid::Uuid;
 
-    use bastionclaw::agent::routine::{
+    use t3claw::agent::routine::{
         Routine, RoutineAction, RoutineGuardrails, RoutineRun, RunStatus, Trigger,
     };
-    use bastionclaw::db::Database;
+    use t3claw::db::Database;
 
     async fn create_test_db() -> (Arc<dyn Database>, tempfile::TempDir) {
-        use bastionclaw::db::libsql::LibSqlBackend;
+        use t3claw::db::libsql::LibSqlBackend;
 
         let temp_dir = tempfile::tempdir().expect("tempdir");
         let db_path = temp_dir.path().join("test.db");

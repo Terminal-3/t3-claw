@@ -208,7 +208,7 @@ impl GitHubProvider {
             client_id,
             client_secret,
             http: reqwest::Client::builder()
-                .user_agent("BastionClaw")
+                .user_agent("T3Claw")
                 .build()
                 .unwrap_or_else(|_| reqwest::Client::new()),
         }

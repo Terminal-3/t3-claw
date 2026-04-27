@@ -1,4 +1,4 @@
-# Automated QA Plan for BastionClaw
+# Automated QA Plan for T3Claw
 
 **Date:** 2026-02-24
 **Status:** Draft
@@ -8,7 +8,7 @@
 
 ## Motivation
 
-A review of all closed issues and merged bug-fix PRs reveals that most BastionClaw bugs fall into a few recurring categories:
+A review of all closed issues and merged bug-fix PRs reveals that most T3Claw bugs fall into a few recurring categories:
 
 | Category | Examples | Root Cause |
 |----------|----------|------------|
@@ -54,7 +54,7 @@ fn all_tool_schemas_are_openai_strict_valid() {
 }
 ```
 
-Add the same validation for WASM tools (loaded from `~/.bastionclaw/tools/`) and MCP tools (mock a simple MCP manifest and validate the schema it produces).
+Add the same validation for WASM tools (loaded from `~/.t3claw/tools/`) and MCP tools (mock a simple MCP manifest and validate the schema it produces).
 
 **Files:** New `src/tools/schema_validator.rs` (validation logic), test in `tests/tool_schema_validation.rs`
 
@@ -124,7 +124,7 @@ docker-build:
   steps:
     - uses: actions/checkout@v6
     - name: Build Docker image
-      run: docker build -t bastionclaw-test:ci .
+      run: docker build -t t3claw-test:ci .
 ```
 
 **Files:** Modify `.github/workflows/test.yml`
@@ -318,7 +318,7 @@ async fn context_length_exceeded_triggers_compaction() {
 
 ## Tier 3: Computer-Use E2E Testing
 
-**Cost:** High (requires Anthropic computer use API, headless browser, bastionclaw running)
+**Cost:** High (requires Anthropic computer use API, headless browser, t3claw running)
 **Timeline:** ~2 weeks for infrastructure, then incremental scenario additions
 **Bugs this would have caught:** #307, #306, #263, all manual web-ui-test checklist items
 
@@ -326,7 +326,7 @@ async fn context_length_exceeded_triggers_compaction() {
 
 ```
 +------------------+     +-----------------+     +------------------+
-|  Test Runner     |     |  Headless       |     |  BastionClaw        |
+|  Test Runner     |     |  Headless       |     |  T3Claw        |
 |  (Python/TS)     |---->|  Chromium        |---->|  (cargo run)     |
 |                  |     |  (Playwright)   |     |  GATEWAY=true    |
 |  Orchestrates    |     |                 |     |  port 3001       |
@@ -345,7 +345,7 @@ async fn context_length_exceeded_triggers_compaction() {
 
 **Components:**
 
-1. **Test runner** -- Python or TypeScript script that orchestrates the flow. Starts bastionclaw, waits for readiness, launches Playwright browser, runs scenarios.
+1. **Test runner** -- Python or TypeScript script that orchestrates the flow. Starts t3claw, waits for readiness, launches Playwright browser, runs scenarios.
 
 2. **Playwright browser** -- Headless Chromium. Takes screenshots, executes click/type actions as directed by the computer use agent. Also provides DOM access for structural assertions (element exists, text content matches, no error toasts).
 
@@ -362,7 +362,7 @@ async fn context_length_exceeded_triggers_compaction() {
 ```
 tests/
   e2e/
-    conftest.py             # pytest fixtures: start bastionclaw, browser
+    conftest.py             # pytest fixtures: start t3claw, browser
     computer_use.py         # Claude computer use client wrapper
     assertions.py           # DOM + visual assertion helpers
     scenarios/
@@ -374,15 +374,15 @@ tests/
       test_html_injection.py
       test_tool_approval.py
     screenshots/            # Reference screenshots (gitignored)
-    Dockerfile.test         # Container for CI: bastionclaw + chromium
+    Dockerfile.test         # Container for CI: t3claw + chromium
 ```
 
-**Fixture: start bastionclaw**
+**Fixture: start t3claw**
 
 ```python
 @pytest.fixture(scope="session")
-async def bastionclaw_server():
-    """Start bastionclaw with gateway enabled, return base URL."""
+async def t3claw_server():
+    """Start t3claw with gateway enabled, return base URL."""
     env = {
         "CLI_ENABLED": "false",
         "GATEWAY_ENABLED": "true",
@@ -409,12 +409,12 @@ async def bastionclaw_server():
 
 ```python
 @pytest.fixture
-async def browser_agent(bastionclaw_server):
+async def browser_agent(t3claw_server):
     """Playwright browser + Claude computer use agent."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page(viewport={"width": 1280, "height": 720})
-        await page.goto(f"{bastionclaw_server}/?token=test-token-e2e")
+        await page.goto(f"{t3claw_server}/?token=test-token-e2e")
         agent = ComputerUseAgent(page)
         yield agent
         await browser.close()
@@ -533,7 +533,7 @@ async def test_chat_sends_and_receives(browser_agent):
 #### Scenario 3: SSE Reconnect
 
 ```python
-async def test_sse_reconnect_preserves_history(browser_agent, bastionclaw_server):
+async def test_sse_reconnect_preserves_history(browser_agent, t3claw_server):
     """Bug: #307 (no re-sync on SSE reconnect after server restart)"""
     page = browser_agent.page
 
@@ -546,7 +546,7 @@ async def test_sse_reconnect_preserves_history(browser_agent, bastionclaw_server
 
     # Step 2: Kill and restart the server
     # (test fixture provides a restart helper)
-    await restart_bastionclaw(bastionclaw_server)
+    await restart_t3claw(t3claw_server)
 
     # Step 3: Wait for reconnect
     await page.wait_for_selector(".connection-status.connected", timeout=30000)
@@ -623,20 +623,20 @@ async def test_tool_approval_overlay(browser_agent):
 #### Scenario 7: Onboarding Wizard (Full Flow)
 
 ```python
-async def test_onboarding_wizard_completes(tmp_bastionclaw_home):
+async def test_onboarding_wizard_completes(tmp_t3claw_home):
     """Bugs: #187, #174, #129, #185 (wizard persistence and re-trigger)"""
-    # Start bastionclaw with a fresh home directory (no prior config)
+    # Start t3claw with a fresh home directory (no prior config)
     # The wizard runs in TUI mode, so we need a PTY or use the web wizard
     # if/when one exists. For now, test the CLI wizard via expect-style automation.
 
     proc = pexpect.spawn(
         "cargo run",
-        env={"BASTIONCLAW_HOME": str(tmp_bastionclaw_home), **base_env},
+        env={"T3CLAW_HOME": str(tmp_t3claw_home), **base_env},
         timeout=60,
     )
 
     # Step through wizard
-    proc.expect("Welcome to BastionClaw")
+    proc.expect("Welcome to T3Claw")
     proc.expect("LLM Backend")
     proc.sendline("1")  # Select first option
     # ... continue through all 7 steps ...
@@ -646,12 +646,12 @@ async def test_onboarding_wizard_completes(tmp_bastionclaw_home):
     # Restart and verify wizard does NOT re-trigger
     proc2 = pexpect.spawn(
         "cargo run",
-        env={"BASTIONCLAW_HOME": str(tmp_bastionclaw_home), **base_env},
+        env={"T3CLAW_HOME": str(tmp_t3claw_home), **base_env},
         timeout=30,
     )
-    proc2.expect("Agent bastionclaw ready")  # Should skip wizard
-    # Must NOT see "Welcome to BastionClaw" again
-    assert not proc2.match_any(["Welcome to BastionClaw"], timeout=5)
+    proc2.expect("Agent t3claw ready")  # Should skip wizard
+    # Must NOT see "Welcome to T3Claw" again
+    assert not proc2.match_any(["Welcome to T3Claw"], timeout=5)
     proc2.close()
 ```
 
@@ -687,7 +687,7 @@ jobs:
         image: ollama/ollama:latest
     steps:
       - uses: actions/checkout@v6
-      - name: Build bastionclaw
+      - name: Build t3claw
         run: cargo build --features libsql
       - name: Install Playwright
         run: pip install playwright pytest-playwright && playwright install chromium

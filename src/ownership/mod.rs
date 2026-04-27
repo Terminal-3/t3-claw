@@ -1,4 +1,4 @@
-//! Centralized ownership types for BastionClaw.
+//! Centralized ownership types for T3Claw.
 //!
 //! `Identity` is the single struct that flows from the channel boundary through
 //! every scope constructor and authorization check. The [`Owned`] trait provides

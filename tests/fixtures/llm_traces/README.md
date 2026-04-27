@@ -436,21 +436,21 @@ Instead of hand-writing traces, you can record them from a real LLM session usin
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `BASTIONCLAW_RECORD_TRACE` | yes | — | Set to any non-empty value to enable recording. |
-| `BASTIONCLAW_TRACE_OUTPUT` | no | `./trace_{timestamp}.json` | Output file path for the recorded trace. |
-| `BASTIONCLAW_TRACE_MODEL_NAME` | no | `recorded-{model}` | The `model_name` field in the trace JSON. |
+| `T3CLAW_RECORD_TRACE` | yes | — | Set to any non-empty value to enable recording. |
+| `T3CLAW_TRACE_OUTPUT` | no | `./trace_{timestamp}.json` | Output file path for the recorded trace. |
+| `T3CLAW_TRACE_MODEL_NAME` | no | `recorded-{model}` | The `model_name` field in the trace JSON. |
 
 ### Usage
 
 ```bash
 # Record a trace (writes to ./trace_20260304T120000.json)
-BASTIONCLAW_RECORD_TRACE=1 cargo run
+T3CLAW_RECORD_TRACE=1 cargo run
 
 # Custom output path
-BASTIONCLAW_RECORD_TRACE=1 BASTIONCLAW_TRACE_OUTPUT=my_trace.json cargo run
+T3CLAW_RECORD_TRACE=1 T3CLAW_TRACE_OUTPUT=my_trace.json cargo run
 
 # Custom model name
-BASTIONCLAW_RECORD_TRACE=1 BASTIONCLAW_TRACE_MODEL_NAME=regression-auth-flow cargo run
+T3CLAW_RECORD_TRACE=1 T3CLAW_TRACE_MODEL_NAME=regression-auth-flow cargo run
 ```
 
 Run the agent normally, interact with it, then quit. The trace file is written on shutdown.

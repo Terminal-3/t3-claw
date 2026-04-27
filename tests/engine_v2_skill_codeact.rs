@@ -14,8 +14,8 @@ use std::time::Duration;
 
 use tokio::sync::RwLock;
 
-use bastionclaw_engine::types::capability::{EffectType, LeaseId};
-use bastionclaw_engine::{
+use t3claw_engine::types::capability::{EffectType, LeaseId};
+use t3claw_engine::{
     ActionDef, ActionResult, Capability, CapabilityLease, CapabilityRegistry, DocId, DocType,
     EffectExecutor, EngineError, LeaseManager, LlmBackend, LlmCallConfig, LlmOutput, LlmResponse,
     MemoryDoc, Mission, MissionId, MissionStatus, PolicyEngine, Project, ProjectId, Step, Store,
@@ -23,8 +23,8 @@ use bastionclaw_engine::{
     ThreadState, ThreadType, TokenUsage,
 };
 
-use bastionclaw_skills::types::ActivationCriteria;
-use bastionclaw_skills::v2::{CodeSnippet, SkillMetrics, V2SkillMetadata, V2SkillSource};
+use t3claw_skills::types::ActivationCriteria;
+use t3claw_skills::v2::{CodeSnippet, SkillMetrics, V2SkillMetadata, V2SkillSource};
 
 // ── Scripted LLM ─────────────────────────────────────────────
 
@@ -96,7 +96,7 @@ impl EffectExecutor for HttpMockEffects {
         action_name: &str,
         parameters: serde_json::Value,
         _lease: &CapabilityLease,
-        _context: &bastionclaw_engine::ThreadExecutionContext,
+        _context: &t3claw_engine::ThreadExecutionContext,
     ) -> Result<ActionResult, EngineError> {
         self.calls
             .write()
@@ -335,7 +335,7 @@ fn make_github_skill_doc(project_id: ProjectId) -> MemoryDoc {
             ..Default::default()
         },
         source: V2SkillSource::Authored,
-        trust: bastionclaw_skills::SkillTrust::Trusted,
+        trust: t3claw_skills::SkillTrust::Trusted,
         code_snippets: vec![CodeSnippet {
             name: "list_github_issues".into(),
             code: r#"def list_github_issues(owner, repo, state="open"):

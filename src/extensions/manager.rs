@@ -262,7 +262,7 @@ struct TelegramUser {
     is_bot: bool,
 }
 
-const TELEGRAM_TEST_API_BASE_ENV: &str = "BASTIONCLAW_TEST_TELEGRAM_API_BASE_URL";
+const TELEGRAM_TEST_API_BASE_ENV: &str = "T3CLAW_TEST_TELEGRAM_API_BASE_URL";
 const TELEGRAM_DEFAULT_API_BASE: &str = "https://api.telegram.org";
 
 fn telegram_api_base_url() -> String {
@@ -311,7 +311,7 @@ fn channel_auth_instructions(
 ) -> String {
     if channel_name == TELEGRAM_CHANNEL_NAME && secret.name == "telegram_bot_token" {
         return format!(
-            "{} After you submit it, BastionClaw will show a one-time verification code. Send `/start CODE` to your bot in Telegram and BastionClaw will finish setup automatically.",
+            "{} After you submit it, T3Claw will show a one-time verification code. Send `/start CODE` to your bot in Telegram and T3Claw will finish setup automatically.",
             secret.prompt
         );
     }
@@ -339,12 +339,12 @@ impl TelegramVerificationFlow {
     fn instructions(bot_username: Option<&str>, code: &str) -> String {
         if let Some(username) = bot_username.filter(|username| !username.trim().is_empty()) {
             return format!(
-                "Send `/start {code}` to @{username} in Telegram. BastionClaw will finish setup automatically."
+                "Send `/start {code}` to @{username} in Telegram. T3Claw will finish setup automatically."
             );
         }
 
         format!(
-            "Send `/start {code}` to your Telegram bot. BastionClaw will finish setup automatically."
+            "Send `/start {code}` to your Telegram bot. T3Claw will finish setup automatically."
         )
     }
 }
@@ -497,7 +497,7 @@ pub struct ExtensionManager {
     /// `/oauth/callback` handler.
     pending_oauth_flows: crate::auth::oauth::PendingOAuthRegistry,
     /// OAuth proxy auth token for authenticating with the hosted token exchange proxy.
-    /// Resolved once at construction from `BASTIONCLAW_OAUTH_PROXY_AUTH_TOKEN`,
+    /// Resolved once at construction from `T3CLAW_OAUTH_PROXY_AUTH_TOKEN`,
     /// then `GATEWAY_AUTH_TOKEN` as a backward-compatible fallback.
     oauth_proxy_auth_token: Option<String>,
     /// Relay config captured at startup. Used by `auth_channel_relay` and
@@ -710,7 +710,7 @@ impl ExtensionManager {
     /// instead of calling `open::that()` on the server.
     ///
     /// `base_url` is the gateway's own public URL (e.g. `https://my-gateway.example.com`),
-    /// used to build OAuth redirect URIs when `BASTIONCLAW_OAUTH_CALLBACK_URL` is not set.
+    /// used to build OAuth redirect URIs when `T3CLAW_OAUTH_CALLBACK_URL` is not set.
     pub async fn enable_gateway_mode(&self, base_url: String) {
         self.gateway_mode
             .store(true, std::sync::atomic::Ordering::Release);
@@ -722,7 +722,7 @@ impl ExtensionManager {
     ///
     /// Gateway mode is active when any of:
     /// - `enable_gateway_mode()` was called (web gateway is running), OR
-    /// - `BASTIONCLAW_OAUTH_CALLBACK_URL` is set to a non-loopback URL, OR
+    /// - `T3CLAW_OAUTH_CALLBACK_URL` is set to a non-loopback URL, OR
     /// - `self.tunnel_url` is set to a non-loopback URL
     pub fn should_use_gateway_mode(&self) -> bool {
         if self.gateway_mode.load(std::sync::atomic::Ordering::Acquire) {
@@ -743,7 +743,7 @@ impl ExtensionManager {
     /// Returns the OAuth redirect URI for gateway mode, or `None` for local mode.
     ///
     /// Priority:
-    /// 1. `BASTIONCLAW_OAUTH_CALLBACK_URL` env var (via `callback_url()`)
+    /// 1. `T3CLAW_OAUTH_CALLBACK_URL` env var (via `callback_url()`)
     /// 2. `gateway_base_url` (set by `enable_gateway_mode()`)
     /// 3. `tunnel_url` (from config)
     /// 4. `None` (local/CLI mode)
@@ -974,7 +974,7 @@ impl ExtensionManager {
     /// `activation_status` instead of relying on `ext.active` as a proxy.
     ///
     /// Returns false if no DB-backed pairing store is available — the noop
-    /// pairing store cannot have rows. See nearai/bastionclaw#1921.
+    /// pairing store cannot have rows. See nearai/t3claw#1921.
     pub async fn has_wasm_channel_pairing(&self, name: &str) -> bool {
         let rt_guard = self.channel_runtime.read().await;
         let Some(ref rt) = *rt_guard else {
@@ -1407,7 +1407,7 @@ impl ExtensionManager {
     /// Broadcast an extension status change to the web UI via SSE.
     async fn broadcast_extension_status(&self, name: &str, status: &str, message: Option<&str>) {
         if let Some(ref sse) = *self.sse_manager.read().await {
-            sse.broadcast(bastionclaw_common::AppEvent::ExtensionStatus {
+            sse.broadcast(t3claw_common::AppEvent::ExtensionStatus {
                 extension_name: name.to_string(),
                 status: status.to_string(),
                 message: message.map(|m| m.to_string()),
@@ -1481,7 +1481,7 @@ impl ExtensionManager {
                     ))
                 }
                 ExtensionKind::AcpAgent => Err(ExtensionError::InstallFailed(
-                    "ACP agents are configured via 'bastionclaw acp add', not the extension manager"
+                    "ACP agents are configured via 't3claw acp add', not the extension manager"
                         .to_string(),
                 )),
             }
@@ -1544,7 +1544,7 @@ impl ExtensionManager {
                 kind: ExtensionKind::AcpAgent,
                 tools_loaded: Vec::new(),
                 message: format!(
-                    "ACP agent '{}' is managed via 'bastionclaw acp' commands",
+                    "ACP agent '{}' is managed via 't3claw acp' commands",
                     name
                 ),
             }),
@@ -2273,7 +2273,7 @@ impl ExtensionManager {
                     .await;
 
                 Ok(format!(
-                    "Removed channel '{}'. Restart BastionClaw for the change to take effect.",
+                    "Removed channel '{}'. Restart T3Claw for the change to take effect.",
                     name
                 ))
             }
@@ -2351,9 +2351,9 @@ impl ExtensionManager {
                 Ok(format!("Removed channel relay '{}'", name))
             }
             ExtensionKind::AcpAgent => {
-                // ACP agents are managed via `bastionclaw acp remove`
+                // ACP agents are managed via `t3claw acp remove`
                 Ok(format!(
-                    "ACP agent '{}' should be removed via 'bastionclaw acp remove {}'",
+                    "ACP agent '{}' should be removed via 't3claw acp remove {}'",
                     name, name
                 ))
             }
@@ -2988,7 +2988,7 @@ impl ExtensionManager {
                 })
             }
             ExtensionKind::AcpAgent => Err(ExtensionError::InstallFailed(
-                "ACP agents are configured via 'bastionclaw acp add', not the registry".to_string(),
+                "ACP agents are configured via 't3claw acp add', not the registry".to_string(),
             )),
         }
     }
@@ -3418,7 +3418,7 @@ impl ExtensionManager {
                 ExtensionError::InstallFailed(format!(
                     "'{}' requires building from source. Build artifact not found. \
                          Run `cargo component build --release` in {} first, \
-                         or use `bastionclaw registry install {}`.",
+                         or use `t3claw registry install {}`.",
                     name,
                     resolved_dir.display(),
                     name,
@@ -4876,7 +4876,7 @@ impl ExtensionManager {
                 }
 
                 if let Some(ref sse) = sse_manager {
-                    sse.broadcast(bastionclaw_common::AppEvent::AuthCompleted {
+                    sse.broadcast(t3claw_common::AppEvent::AuthCompleted {
                         extension_name: ext_name,
                         success,
                         message,
@@ -6018,7 +6018,7 @@ impl ExtensionManager {
             ExtensionError::Config(e.to_string())
         })?;
 
-        // Generate CSRF nonce — BastionClaw validates this on the callback to ensure
+        // Generate CSRF nonce — T3Claw validates this on the callback to ensure
         // the OAuth completion is legitimate. Channel-relay embeds it in the signed
         // state and appends it to the post-OAuth redirect URL.
         let state_nonce = uuid::Uuid::new_v4().to_string();
@@ -8218,7 +8218,7 @@ mod tests {
     #[tokio::test]
     #[allow(clippy::await_holding_lock)]
     async fn ensure_extension_ready_reports_needs_auth_for_wasm_channel() {
-        // Serialize against tests that mutate BASTIONCLAW_OAUTH_CALLBACK_URL
+        // Serialize against tests that mutate T3CLAW_OAUTH_CALLBACK_URL
         // (e.g. `auth_wasm_channel_status_uses_persisted_secret_oauth_descriptor`):
         // without the env lock the auth path nondeterministically returns
         // "awaiting_authorization" instead of "awaiting_token".
@@ -8330,7 +8330,7 @@ mod tests {
         let _env_guard = crate::config::helpers::lock_env();
         unsafe {
             std::env::set_var(
-                "BASTIONCLAW_OAUTH_CALLBACK_URL",
+                "T3CLAW_OAUTH_CALLBACK_URL",
                 "https://example.com/oauth/callback",
             );
         }
@@ -8394,7 +8394,7 @@ mod tests {
         );
 
         unsafe {
-            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("T3CLAW_OAUTH_CALLBACK_URL");
         }
     }
 
@@ -8488,7 +8488,7 @@ mod tests {
         );
     }
 
-    /// Regression for nearai/bastionclaw#1921's sibling: registry-backed wasm
+    /// Regression for nearai/t3claw#1921's sibling: registry-backed wasm
     /// tools that are not yet installed should appear as latent provider
     /// actions so the agent can request them by name and trigger
     /// auto-install. This pins the registry-discovery half of
@@ -9786,7 +9786,7 @@ mod tests {
                 Ok(TelegramBindingResult::Pending(VerificationChallenge {
                     code: "iclaw-7qk2m9".to_string(),
                     instructions:
-                        "Send `/start iclaw-7qk2m9` to @test_hot_bot in Telegram. BastionClaw will finish setup automatically."
+                        "Send `/start iclaw-7qk2m9` to @test_hot_bot in Telegram. T3Claw will finish setup automatically."
                             .to_string(),
                     deep_link: Some("https://t.me/test_hot_bot?start=iclaw-7qk2m9".to_string()),
                 }))
@@ -9911,7 +9911,7 @@ mod tests {
         Ok(())
     }
 
-    /// Regression for nearai/bastionclaw#1921 — caller-level coverage.
+    /// Regression for nearai/t3claw#1921 — caller-level coverage.
     ///
     /// The web extensions list handler used to derive
     /// `activation_status` from `derive_activation_status(ext, has_owner_binding)`,
@@ -11332,7 +11332,7 @@ mod tests {
     // Regression tests for a bug where MCP OAuth called `open::that()` on the
     // server machine instead of returning an auth URL to the gateway frontend.
     // The root cause was that `should_use_gateway_mode()` only checked the
-    // `BASTIONCLAW_OAUTH_CALLBACK_URL` env var, ignoring `self.tunnel_url`.
+    // `T3CLAW_OAUTH_CALLBACK_URL` env var, ignoring `self.tunnel_url`.
 
     /// Build a minimal ExtensionManager with a custom tunnel_url.
     fn make_manager_with_tunnel(tunnel_url: Option<String>) -> ExtensionManager {
@@ -11346,7 +11346,7 @@ mod tests {
             Arc::new(InMemorySecretsStore::new(crypto));
         let tools = Arc::new(crate::tools::ToolRegistry::new());
         let mcp = Arc::new(McpSessionManager::new());
-        let dir = std::env::temp_dir().join("bastionclaw-test-gateway-mode");
+        let dir = std::env::temp_dir().join("t3claw-test-gateway-mode");
 
         ExtensionManager::new(
             mcp,
@@ -11367,10 +11367,10 @@ mod tests {
     #[test]
     fn should_use_gateway_mode_true_for_tunnel_url() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("T3CLAW_OAUTH_CALLBACK_URL").ok();
         // SAFETY: Under ENV_MUTEX, no concurrent env access.
         unsafe {
-            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("T3CLAW_OAUTH_CALLBACK_URL");
         }
 
         let mgr = make_manager_with_tunnel(Some("https://my-gateway.example.com".into()));
@@ -11381,7 +11381,7 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("T3CLAW_OAUTH_CALLBACK_URL", val);
             }
         }
     }
@@ -11389,9 +11389,9 @@ mod tests {
     #[test]
     fn should_use_gateway_mode_false_without_tunnel() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("T3CLAW_OAUTH_CALLBACK_URL").ok();
         unsafe {
-            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("T3CLAW_OAUTH_CALLBACK_URL");
         }
 
         let mgr = make_manager_with_tunnel(None);
@@ -11402,7 +11402,7 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("T3CLAW_OAUTH_CALLBACK_URL", val);
             }
         }
     }
@@ -11410,9 +11410,9 @@ mod tests {
     #[test]
     fn should_use_gateway_mode_false_for_loopback_tunnel() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("T3CLAW_OAUTH_CALLBACK_URL").ok();
         unsafe {
-            std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
+            std::env::remove_var("T3CLAW_OAUTH_CALLBACK_URL");
         }
 
         let mgr = make_manager_with_tunnel(Some("http://127.0.0.1:3001".into()));
@@ -11423,13 +11423,13 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("T3CLAW_OAUTH_CALLBACK_URL", val);
             }
         }
     }
 
     /// Helper to run an async test body while holding the env mutex.
-    /// Clears `BASTIONCLAW_OAUTH_CALLBACK_URL` for the duration, restoring on drop.
+    /// Clears `T3CLAW_OAUTH_CALLBACK_URL` for the duration, restoring on drop.
     struct EnvGuard {
         original: Option<String>,
         _mutex: std::sync::MutexGuard<'static, ()>,
@@ -11438,10 +11438,10 @@ mod tests {
     impl EnvGuard {
         fn new() -> Self {
             let guard = crate::config::helpers::lock_env();
-            let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
+            let original = std::env::var("T3CLAW_OAUTH_CALLBACK_URL").ok();
             // SAFETY: Under ENV_MUTEX, no concurrent env access.
             unsafe {
-                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("T3CLAW_OAUTH_CALLBACK_URL");
             }
             Self {
                 original,
@@ -11455,9 +11455,9 @@ mod tests {
             // SAFETY: Under ENV_MUTEX (still held by _mutex), no concurrent env access.
             unsafe {
                 if let Some(ref val) = self.original {
-                    std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
+                    std::env::set_var("T3CLAW_OAUTH_CALLBACK_URL", val);
                 } else {
-                    std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
+                    std::env::remove_var("T3CLAW_OAUTH_CALLBACK_URL");
                 }
             }
         }
@@ -11531,10 +11531,10 @@ mod tests {
     #[test]
     fn gateway_callback_redirect_uri_does_not_duplicate_callback_path_from_env() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("T3CLAW_OAUTH_CALLBACK_URL").ok();
         unsafe {
             std::env::set_var(
-                "BASTIONCLAW_OAUTH_CALLBACK_URL",
+                "T3CLAW_OAUTH_CALLBACK_URL",
                 "https://oauth.test.example/oauth/callback",
             );
         }
@@ -11547,9 +11547,9 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("T3CLAW_OAUTH_CALLBACK_URL", val);
             } else {
-                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("T3CLAW_OAUTH_CALLBACK_URL");
             }
         }
     }
@@ -11557,10 +11557,10 @@ mod tests {
     #[test]
     fn gateway_callback_redirect_uri_trims_trailing_slash_from_env_callback() {
         let _guard = crate::config::helpers::lock_env();
-        let original = std::env::var("BASTIONCLAW_OAUTH_CALLBACK_URL").ok();
+        let original = std::env::var("T3CLAW_OAUTH_CALLBACK_URL").ok();
         unsafe {
             std::env::set_var(
-                "BASTIONCLAW_OAUTH_CALLBACK_URL",
+                "T3CLAW_OAUTH_CALLBACK_URL",
                 "https://oauth.test.example/oauth/callback/",
             );
         }
@@ -11573,9 +11573,9 @@ mod tests {
 
         unsafe {
             if let Some(val) = original {
-                std::env::set_var("BASTIONCLAW_OAUTH_CALLBACK_URL", val);
+                std::env::set_var("T3CLAW_OAUTH_CALLBACK_URL", val);
             } else {
-                std::env::remove_var("BASTIONCLAW_OAUTH_CALLBACK_URL");
+                std::env::remove_var("T3CLAW_OAUTH_CALLBACK_URL");
             }
         }
     }
@@ -12346,7 +12346,7 @@ mod tests {
     #[test]
     fn test_telegram_token_colon_preserved_in_validation_url() {
         // ScopedEnvVar holds ENV_MUTEX for the test's lifetime, preventing
-        // a concurrent test from setting BASTIONCLAW_TEST_TELEGRAM_API_BASE_URL.
+        // a concurrent test from setting T3CLAW_TEST_TELEGRAM_API_BASE_URL.
         // Setting to "" is equivalent to unset — telegram_api_base_url()
         // filters empty values. ScopedEnvVar restores the previous value on drop.
         let _env = ScopedEnvVar::set(TELEGRAM_TEST_API_BASE_ENV, "");

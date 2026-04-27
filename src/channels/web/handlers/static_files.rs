@@ -11,7 +11,7 @@ use axum::{
     response::IntoResponse,
 };
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::channels::web::auth::AuthenticatedUser;
 use crate::channels::web::types::*;
 
@@ -46,7 +46,7 @@ pub async fn project_file_handler(
     serve_project_file(&project_id, &path).await
 }
 
-/// Shared logic: resolve the file inside `~/.bastionclaw/projects/{project_id}/`,
+/// Shared logic: resolve the file inside `~/.t3claw/projects/{project_id}/`,
 /// guard against path traversal, and stream the content with the right MIME type.
 async fn serve_project_file(project_id: &str, path: &str) -> axum::response::Response {
     // Reject project_id values that could escape the projects directory.
@@ -58,7 +58,7 @@ async fn serve_project_file(project_id: &str, path: &str) -> axum::response::Res
         return (StatusCode::BAD_REQUEST, "Invalid project ID").into_response();
     }
 
-    let base = bastionclaw_base_dir().join("projects").join(project_id);
+    let base = t3claw_base_dir().join("projects").join(project_id);
 
     let file_path = base.join(path);
 

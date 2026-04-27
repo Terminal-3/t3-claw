@@ -1,10 +1,10 @@
 ---
 title: MCP 服务器
 sidebarTitle: MCP 服务器
-description: 连接 Model Context Protocol 服务器扩展 BastionClaw
+description: 连接 Model Context Protocol 服务器扩展 T3Claw
 ---
 
-BastionClaw 可连接任意 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 服务器，并把其工具暴露给代理。MCP 是开放标准，生态中已有大量数据库、API、云服务连接器。
+T3Claw 可连接任意 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 服务器，并把其工具暴露给代理。MCP 是开放标准，生态中已有大量数据库、API、云服务连接器。
 
 <Info>
 当前通过 **HTTP 传输**（JSON-RPC 2.0）连接 MCP。`stdio` 传输暂不支持。
@@ -17,7 +17,7 @@ BastionClaw 可连接任意 [Model Context Protocol (MCP)](https://modelcontextp
 可直接要求代理使用 MCP，或通过 CLI 添加：
 
 ```bash
-bastionclaw mcp add <server_name> <server_url>
+t3claw mcp add <server_name> <server_url>
 ```
 
 ---
@@ -27,7 +27,7 @@ bastionclaw mcp add <server_name> <server_url>
 如果服务器需要认证：
 
 ```bash
-bastionclaw mcp auth <server_name>
+t3claw mcp auth <server_name>
 ```
 
 ---
@@ -35,7 +35,7 @@ bastionclaw mcp auth <server_name>
 ## 查看已连接服务器
 
 ```bash
-bastionclaw mcp list
+t3claw mcp list
 ```
 
 连接成功后，MCP 工具会出现在代理工具列表中。
@@ -45,7 +45,7 @@ bastionclaw mcp list
 ## 移除服务器
 
 ```bash
-bastionclaw mcp remove <server_name>
+t3claw mcp remove <server_name>
 ```
 
 ---

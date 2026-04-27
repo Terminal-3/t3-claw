@@ -19,18 +19,18 @@ use axum::middleware;
 use axum::routing::{get, post};
 use tower::ServiceExt;
 
-use bastionclaw::channels::IncomingMessage;
-use bastionclaw::channels::web::auth::{
+use t3claw::channels::IncomingMessage;
+use t3claw::channels::web::auth::{
     AuthenticatedUser, MultiAuthState, UserIdentity, auth_middleware,
 };
-use bastionclaw::channels::web::server::{
+use t3claw::channels::web::server::{
     GatewayState, PerUserRateLimiter, RateLimiter, start_server,
 };
-use bastionclaw::channels::web::sse::SseManager;
-use bastionclaw::channels::web::test_helpers::TestGatewayBuilder;
-use bastionclaw::channels::web::ws::WsConnectionTracker;
-use bastionclaw::context::JobContext;
-use bastionclaw::db::Database;
+use t3claw::channels::web::sse::SseManager;
+use t3claw::channels::web::test_helpers::TestGatewayBuilder;
+use t3claw::channels::web::ws::WsConnectionTracker;
+use t3claw::context::JobContext;
+use t3claw::db::Database;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -80,7 +80,7 @@ fn user_echo_app(auth: MultiAuthState) -> Router {
         .route("/api/action", post(echo_user))
         .route("/api/chat/events", get(echo_user)) // SSE endpoint (allows query token)
         .layer(middleware::from_fn_with_state(
-            bastionclaw::channels::web::auth::CombinedAuthState::from(auth),
+            t3claw::channels::web::auth::CombinedAuthState::from(auth),
             auth_middleware,
         ))
 }
@@ -310,7 +310,7 @@ fn per_user_rate_limiter_single_user_mode() {
 
 #[tokio::test]
 async fn sse_scoped_event_only_delivered_to_target_user() {
-    use bastionclaw_common::AppEvent;
+    use t3claw_common::AppEvent;
     use tokio_stream::StreamExt;
 
     let manager = SseManager::new();
@@ -355,7 +355,7 @@ async fn sse_scoped_event_only_delivered_to_target_user() {
 
 #[tokio::test]
 async fn sse_global_event_delivered_to_all_users() {
-    use bastionclaw_common::AppEvent;
+    use t3claw_common::AppEvent;
     use tokio_stream::StreamExt;
 
     let manager = SseManager::new();
@@ -388,7 +388,7 @@ async fn sse_global_event_delivered_to_all_users() {
 
 #[tokio::test]
 async fn sse_user_b_event_not_visible_to_user_a() {
-    use bastionclaw_common::AppEvent;
+    use t3claw_common::AppEvent;
     use tokio_stream::StreamExt;
 
     let manager = SseManager::new();
@@ -421,7 +421,7 @@ async fn sse_user_b_event_not_visible_to_user_a() {
 
 #[tokio::test]
 async fn sse_unscoped_subscriber_receives_all_events() {
-    use bastionclaw_common::AppEvent;
+    use t3claw_common::AppEvent;
     use tokio_stream::StreamExt;
 
     let manager = SseManager::new();
@@ -910,7 +910,7 @@ async fn full_server_jobs_endpoint_rejected_without_auth() {
 
 #[tokio::test]
 async fn full_server_ws_multi_user_event_isolation() {
-    use bastionclaw_common::AppEvent;
+    use t3claw_common::AppEvent;
     use futures::StreamExt;
     use tokio_tungstenite::tungstenite::Message;
     use tokio_tungstenite::tungstenite::client::IntoClientRequest;
@@ -1006,7 +1006,7 @@ async fn start_multi_user_server_with_db() -> (
 ) {
     let temp_dir = tempfile::tempdir().expect("failed to create temp dir");
     let path = temp_dir.path().join("test.db");
-    let backend = bastionclaw::db::libsql::LibSqlBackend::new_local(&path)
+    let backend = t3claw::db::libsql::LibSqlBackend::new_local(&path)
         .await
         .expect("failed to create test DB");
     backend
@@ -1063,7 +1063,7 @@ async fn start_multi_user_server_with_db() -> (
     });
 
     let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
-    let bound = bastionclaw::channels::web::server::start_server(addr, state.clone(), auth.into())
+    let bound = t3claw::channels::web::server::start_server(addr, state.clone(), auth.into())
         .await
         .expect("Failed to start server with DB");
 

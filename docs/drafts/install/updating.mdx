@@ -1,16 +1,16 @@
 ---
-title: Updating BastionClaw
+title: Updating T3Claw
 sidebarTitle: Updating
-description: How to update BastionClaw to the latest version
+description: How to update T3Claw to the latest version
 ---
 
-Keep BastionClaw up to date for the latest features and security patches.
+Keep T3Claw up to date for the latest features and security patches.
 
 ## Check Current Version
 
 ```bash
-bastionclaw --version
-# bastionclaw 0.13.0
+t3claw --version
+# t3claw 0.13.0
 ```
 
 ## Update by Installation Method
@@ -19,36 +19,36 @@ bastionclaw --version
   <Tab title="Linux (Shell Script)">
     ```bash
     # Re-run the install script (updates in place)
-    curl -fsSL https://install.bastionclaw.ai | bash
+    curl -fsSL https://install.t3claw.ai | bash
 
     # Verify update
-    bastionclaw --version
+    t3claw --version
     ```
   </Tab>
 
   <Tab title="Ubuntu/Debian (APT)">
     ```bash
     sudo apt update
-    sudo apt upgrade bastionclaw
+    sudo apt upgrade t3claw
     ```
   </Tab>
 
   <Tab title="macOS (Homebrew)">
     ```bash
     brew update
-    brew upgrade bastionclaw
+    brew upgrade t3claw
     ```
   </Tab>
 
   <Tab title="Docker">
     ```bash
     # Pull latest image
-    docker pull nearai/bastionclaw:latest
+    docker pull nearai/t3claw:latest
 
     # Recreate container
-    docker stop bastionclaw
-    docker rm bastionclaw
-    docker run -d --name bastionclaw ...
+    docker stop t3claw
+    docker rm t3claw
+    docker run -d --name t3claw ...
 
     # Or with docker compose
     docker compose pull
@@ -58,10 +58,10 @@ bastionclaw --version
 
   <Tab title="From Source">
     ```bash
-    cd /path/to/bastionclaw
+    cd /path/to/t3claw
     git pull origin main
     cargo build --release
-    sudo cp target/release/bastionclaw /usr/local/bin/
+    sudo cp target/release/t3claw /usr/local/bin/
     ```
   </Tab>
 </Tabs>
@@ -74,10 +74,10 @@ Check what changed in the new version:
 
 ```bash
 # View changelog (if installed from source)
-cat /usr/local/share/bastionclaw/CHANGELOG.md
+cat /usr/local/share/t3claw/CHANGELOG.md
 
 # Or online
-open https://github.com/nearai/bastionclaw/releases
+open https://github.com/nearai/t3claw/releases
 ```
 
 ### 2. Run Migrations
@@ -85,7 +85,7 @@ open https://github.com/nearai/bastionclaw/releases
 Database migrations run automatically on startup, but verify:
 
 ```bash
-bastionclaw run
+t3claw run
 # Look for: "Running migrations..." in logs
 ```
 
@@ -95,14 +95,14 @@ If running as a service:
 
 ```bash
 # systemd (Linux)
-sudo systemctl restart bastionclaw
+sudo systemctl restart t3claw
 
 # launchd (macOS)
-launchctl unload ~/Library/LaunchAgents/ai.bastionclaw.service.plist
-launchctl load ~/Library/LaunchAgents/ai.bastionclaw.service.plist
+launchctl unload ~/Library/LaunchAgents/ai.t3claw.service.plist
+launchctl load ~/Library/LaunchAgents/ai.t3claw.service.plist
 
 # Homebrew
-brew services restart bastionclaw
+brew services restart t3claw
 ```
 
 ## Downgrading
@@ -112,10 +112,10 @@ If you need to rollback:
 ```bash
 # Linux/macOS shell script
 # Download specific version
-curl -fsSL https://install.bastionclaw.ai | bash -s -- --version 0.12.0
+curl -fsSL https://install.t3claw.ai | bash -s -- --version 0.12.0
 
 # Docker
-docker pull nearai/bastionclaw:v0.12.0
+docker pull nearai/t3claw:v0.12.0
 ```
 
 <Warning>
@@ -127,18 +127,18 @@ Downgrading may require manual database rollback if migrations were applied. Alw
 ### systemd Timer (Linux)
 
 ```bash
-sudo tee /etc/systemd/system/bastionclaw-update.service <<EOF
+sudo tee /etc/systemd/system/t3claw-update.service <<EOF
 [Unit]
-Description=BastionClaw Update Check
+Description=T3Claw Update Check
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'curl -fsSL https://install.bastionclaw.ai | bash'
+ExecStart=/bin/bash -c 'curl -fsSL https://install.t3claw.ai | bash'
 EOF
 
-sudo tee /etc/systemd/system/bastionclaw-update.timer <<EOF
+sudo tee /etc/systemd/system/t3claw-update.timer <<EOF
 [Unit]
-Description=Run BastionClaw update check daily
+Description=Run T3Claw update check daily
 
 [Timer]
 OnCalendar=daily
@@ -148,7 +148,7 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-sudo systemctl enable --now bastionclaw-update.timer
+sudo systemctl enable --now t3claw-update.timer
 ```
 
 ## Troubleshooting Updates
@@ -157,31 +157,31 @@ sudo systemctl enable --now bastionclaw-update.timer
   <Accordion title="Update fails with permission denied" icon="lock">
     ```bash
     # Fix permissions
-    sudo chown -R $USER:$USER ~/.local/bin/bastionclaw
+    sudo chown -R $USER:$USER ~/.local/bin/t3claw
 
     # Or update with sudo
-    sudo curl -fsSL https://install.bastionclaw.ai | bash
+    sudo curl -fsSL https://install.t3claw.ai | bash
     ```
   </Accordion>
 
   <Accordion title="Database migration fails" icon="database">
-    1. Stop BastionClaw
+    1. Stop T3Claw
     2. Backup database
-    3. Run with debug logging: `RUST_LOG=debug bastionclaw run`
+    3. Run with debug logging: `RUST_LOG=debug t3claw run`
     4. Check specific migration error
   </Accordion>
 
   <Accordion title="Service won't start after update" icon="x-circle">
     ```bash
     # Check logs
-    sudo journalctl -u bastionclaw -n 50
+    sudo journalctl -u t3claw -n 50
 
     # Verify binary
-    which bastionclaw
-    bastionclaw --version
+    which t3claw
+    t3claw --version
 
     # Reinstall if corrupted
-    curl -fsSL https://install.bastionclaw.ai | bash
+    curl -fsSL https://install.t3claw.ai | bash
     ```
   </Accordion>
 </AccordionGroup>

@@ -1,6 +1,6 @@
 //! DB-backed pairing store.
 //!
-//! Replaces the file-based `~/.bastionclaw/{channel}-pairing.json` store.
+//! Replaces the file-based `~/.t3claw/{channel}-pairing.json` store.
 //! Delegates to the `ChannelPairingStore` DB sub-trait. `remove` evicts from
 //! `OwnershipCache` immediately (write-through); `approve` populates the cache
 //! lazily on the next `resolve_identity` call because the channel/external_id

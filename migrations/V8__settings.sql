@@ -1,6 +1,6 @@
 -- Settings table: key-value store for all user configuration.
 --
--- Replaces ~/.bastionclaw/settings.json, session.json, and mcp-servers.json.
+-- Replaces ~/.t3claw/settings.json, session.json, and mcp-servers.json.
 -- Keys use dotted paths matching the existing Settings.get()/set() convention
 -- (e.g., "agent.name", "sandbox.enabled", "mcp_servers").
 -- One row per setting so individual values can be updated atomically.

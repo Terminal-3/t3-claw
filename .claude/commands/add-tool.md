@@ -5,7 +5,7 @@ argument-hint: <tool_name> [description]
 model: opus
 ---
 
-Scaffold a new tool called `$ARGUMENTS` for the BastionClaw agent. First, determine the tool type and then follow the appropriate path.
+Scaffold a new tool called `$ARGUMENTS` for the T3Claw agent. First, determine the tool type and then follow the appropriate path.
 
 ## Step 0: Determine tool type
 
@@ -43,7 +43,7 @@ Follow this exact pattern (adjust name and description):
 name = "<name>-tool"
 version = "0.1.0"
 edition = "2021"
-description = "<Description> tool for BastionClaw (WASM component)"
+description = "<Description> tool for T3Claw (WASM component)"
 license = "MIT OR Apache-2.0"
 publish = false
 

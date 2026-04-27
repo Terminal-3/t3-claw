@@ -13,7 +13,7 @@ use crate::settings::Settings;
 pub enum ConfigCommand {
     /// Generate a default config.toml file
     Init {
-        /// Output path (default: ~/.bastionclaw/config.toml)
+        /// Output path (default: ~/.t3claw/config.toml)
         #[arg(short, long)]
         output: Option<std::path::PathBuf>,
 
@@ -246,14 +246,14 @@ fn show_path(has_db: bool) -> anyhow::Result<()> {
     }
     println!(
         "Env config:         {}",
-        crate::bootstrap::bastionclaw_env_path().display()
+        crate::bootstrap::t3claw_env_path().display()
     );
 
     let toml_path = Settings::default_toml_path();
     let toml_status = if toml_path.exists() {
         "found"
     } else {
-        "not found (run `bastionclaw config init` to create)"
+        "not found (run `t3claw config init` to create)"
     };
     println!(
         "TOML config:        {} ({})",
@@ -289,7 +289,7 @@ mod tests {
 
         // Reset to default
         settings.reset("agent.name").unwrap();
-        assert_eq!(settings.agent.name, "bastionclaw");
+        assert_eq!(settings.agent.name, "t3claw");
     }
 
     #[tokio::test]

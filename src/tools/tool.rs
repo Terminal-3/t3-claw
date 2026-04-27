@@ -537,8 +537,8 @@ pub fn require_param<'a>(
 /// # Example
 ///
 /// ```rust,ignore
-/// # use bastionclaw::context::JobContext;
-/// # use bastionclaw::tools::{Tool, ToolError, ToolOutput, check_approval_in_context};
+/// # use t3claw::context::JobContext;
+/// # use t3claw::tools::{Tool, ToolError, ToolOutput, check_approval_in_context};
 /// # use serde_json::Value;
 /// async fn execute(&self, params: Value, ctx: &JobContext) -> Result<ToolOutput, ToolError> {
 ///     // If this tool executes sub-tools, check their approval first

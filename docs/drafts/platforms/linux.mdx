@@ -1,20 +1,20 @@
 ---
 title: Linux
 sidebarTitle: Linux
-description: Running BastionClaw on Linux with systemd, GNOME Keyring, and UFW
+description: Running T3Claw on Linux with systemd, GNOME Keyring, and UFW
 ---
 
-BastionClaw runs natively on Linux with full support for systemd service management, GNOME Keyring for secure key storage, and UFW/fail2ban for host hardening.
+T3Claw runs natively on Linux with full support for systemd service management, GNOME Keyring for secure key storage, and UFW/fail2ban for host hardening.
 
 ## Installation
 
 ### Shell Script (Recommended)
 
 ```bash
-curl -fsSL https://install.bastionclaw.ai | bash
+curl -fsSL https://install.t3claw.ai | bash
 ```
 
-Installs to `~/.local/bin/bastionclaw`. Add to PATH if not already present:
+Installs to `~/.local/bin/t3claw`. Add to PATH if not already present:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
@@ -25,17 +25,17 @@ source ~/.bashrc
 ### Package Manager (Ubuntu / Debian)
 
 ```bash
-curl -fsSL https://repo.bastionclaw.ai/gpg | sudo gpg --dearmor -o /usr/share/keyrings/bastionclaw.gpg
-echo "deb [signed-by=/usr/share/keyrings/bastionclaw.gpg] https://repo.bastionclaw.ai stable main" \
-  | sudo tee /etc/apt/sources.list.d/bastionclaw.list
+curl -fsSL https://repo.t3claw.ai/gpg | sudo gpg --dearmor -o /usr/share/keyrings/t3claw.gpg
+echo "deb [signed-by=/usr/share/keyrings/t3claw.gpg] https://repo.t3claw.ai stable main" \
+  | sudo tee /etc/apt/sources.list.d/t3claw.list
 
-sudo apt update && sudo apt install bastionclaw
+sudo apt update && sudo apt install t3claw
 ```
 
 ### Cargo (Build from Source)
 
 ```bash
-cargo install bastionclaw
+cargo install t3claw
 ```
 
 Requires Rust 1.78+. Install Rust via [rustup.rs](https://rustup.rs).
@@ -44,25 +44,25 @@ Requires Rust 1.78+. Install Rust via [rustup.rs](https://rustup.rs).
 
 ## systemd Service
 
-Run BastionClaw as a managed background service that restarts on failure and launches on boot.
+Run T3Claw as a managed background service that restarts on failure and launches on boot.
 
 ### Unit File
 
-Create `/etc/systemd/system/bastionclaw.service`:
+Create `/etc/systemd/system/t3claw.service`:
 
 ```ini
 [Unit]
-Description=BastionClaw AI Assistant
-Documentation=https://docs.bastionclaw.ai
+Description=T3Claw AI Assistant
+Documentation=https://docs.t3claw.ai
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=bastionclaw
-Group=bastionclaw
-EnvironmentFile=/etc/bastionclaw/bastionclaw.env
-ExecStart=/usr/local/bin/bastionclaw run
+User=t3claw
+Group=t3claw
+EnvironmentFile=/etc/t3claw/t3claw.env
+ExecStart=/usr/local/bin/t3claw run
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 RestartSec=5s
@@ -73,12 +73,12 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/var/lib/bastionclaw /home/bastionclaw/.bastionclaw
+ReadWritePaths=/var/lib/t3claw /home/t3claw/.t3claw
 
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=bastionclaw
+SyslogIdentifier=t3claw
 
 [Install]
 WantedBy=multi-user.target
@@ -86,13 +86,13 @@ WantedBy=multi-user.target
 
 ### Environment File
 
-Create `/etc/bastionclaw/bastionclaw.env` (mode 640, owned by root:bastionclaw):
+Create `/etc/t3claw/t3claw.env` (mode 640, owned by root:t3claw):
 
 ```bash
-sudo mkdir -p /etc/bastionclaw
-sudo touch /etc/bastionclaw/bastionclaw.env
-sudo chmod 640 /etc/bastionclaw/bastionclaw.env
-sudo chown root:bastionclaw /etc/bastionclaw/bastionclaw.env
+sudo mkdir -p /etc/t3claw
+sudo touch /etc/t3claw/t3claw.env
+sudo chmod 640 /etc/t3claw/t3claw.env
+sudo chown root:t3claw /etc/t3claw/t3claw.env
 ```
 
 Example contents:
@@ -105,24 +105,24 @@ GATEWAY_ENABLED=true
 GATEWAY_HOST=127.0.0.1
 GATEWAY_PORT=3000
 GATEWAY_AUTH_TOKEN=change_this_to_a_random_secret
-RUST_LOG=bastionclaw=info
+RUST_LOG=t3claw=info
 ```
 
 ### Enable and Start
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now bastionclaw
+sudo systemctl enable --now t3claw
 
 # Verify
-sudo systemctl status bastionclaw
+sudo systemctl status t3claw
 ```
 
 ---
 
 ## GNOME Keyring Integration
 
-BastionClaw uses the system keyring to store the encryption master key for secrets. On GNOME-based desktops, this is GNOME Keyring.
+T3Claw uses the system keyring to store the encryption master key for secrets. On GNOME-based desktops, this is GNOME Keyring.
 
 ### Install libsecret
 
@@ -139,19 +139,19 @@ sudo pacman -S gnome-keyring libsecret
 
 ### Store the Master Key Manually (optional)
 
-BastionClaw handles this automatically on first run, but you can pre-seed the key:
+T3Claw handles this automatically on first run, but you can pre-seed the key:
 
 ```bash
 secret-tool store \
-  --label="BastionClaw Master Key" \
-  application bastionclaw \
+  --label="T3Claw Master Key" \
+  application t3claw \
   key master
 ```
 
 Retrieve it later:
 
 ```bash
-secret-tool lookup application bastionclaw key master
+secret-tool lookup application t3claw key master
 ```
 
 ### Headless / Server Environments
@@ -159,7 +159,7 @@ secret-tool lookup application bastionclaw key master
 GNOME Keyring requires a D-Bus session. On headless servers, use the environment variable fallback instead:
 
 ```bash
-BASTIONCLAW_MASTER_KEY=<base64-encoded-32-byte-key>
+T3CLAW_MASTER_KEY=<base64-encoded-32-byte-key>
 ```
 
 Generate a secure key:
@@ -194,7 +194,7 @@ sudo ufw status verbose
 ```
 
 <Note>
-If you expose BastionClaw via a reverse proxy (Caddy, nginx), the proxy listens on 443 and forwards to 127.0.0.1:3000 internally. Port 3000 never needs to be public-facing. See [VPS Hardening](/platforms/vps) for the full reverse proxy setup.
+If you expose T3Claw via a reverse proxy (Caddy, nginx), the proxy listens on 443 and forwards to 127.0.0.1:3000 internally. Port 3000 never needs to be public-facing. See [VPS Hardening](/platforms/vps) for the full reverse proxy setup.
 </Note>
 
 ---
@@ -203,7 +203,7 @@ If you expose BastionClaw via a reverse proxy (Caddy, nginx), the proxy listens 
 
 Protect against repeated authentication failures against the Web Gateway.
 
-Create `/etc/fail2ban/filter.d/bastionclaw.conf`:
+Create `/etc/fail2ban/filter.d/t3claw.conf`:
 
 ```ini
 [Definition]
@@ -212,14 +212,14 @@ failregex = ^.*401 Unauthorized.*from <HOST>.*$
 ignoreregex =
 ```
 
-Create `/etc/fail2ban/jail.d/bastionclaw.conf`:
+Create `/etc/fail2ban/jail.d/t3claw.conf`:
 
 ```ini
-[bastionclaw]
+[t3claw]
 enabled  = true
 port     = 3000
-filter   = bastionclaw
-logpath  = /var/log/bastionclaw/access.log
+filter   = t3claw
+logpath  = /var/log/t3claw/access.log
 maxretry = 5
 bantime  = 3600
 findtime = 600
@@ -230,7 +230,7 @@ Reload fail2ban:
 
 ```bash
 sudo systemctl reload fail2ban
-sudo fail2ban-client status bastionclaw
+sudo fail2ban-client status t3claw
 ```
 
 ---
@@ -239,43 +239,43 @@ sudo fail2ban-client status bastionclaw
 
 ```bash
 # Follow live logs
-journalctl -u bastionclaw -f
+journalctl -u t3claw -f
 
 # Last 100 lines
-journalctl -u bastionclaw -n 100
+journalctl -u t3claw -n 100
 
 # Logs from the past hour
-journalctl -u bastionclaw --since "1 hour ago"
+journalctl -u t3claw --since "1 hour ago"
 
-# With debug output (set RUST_LOG=bastionclaw=debug in env file first)
-journalctl -u bastionclaw -f --output=short-precise
+# With debug output (set RUST_LOG=t3claw=debug in env file first)
+journalctl -u t3claw -f --output=short-precise
 
 # Export to file
-journalctl -u bastionclaw --since today > bastionclaw-today.log
+journalctl -u t3claw --since today > t3claw-today.log
 ```
 
 ---
 
 ## AppArmor Profile (Optional)
 
-An AppArmor profile can constrain BastionClaw's filesystem and network access at the kernel level.
+An AppArmor profile can constrain T3Claw's filesystem and network access at the kernel level.
 
-Create `/etc/apparmor.d/usr.local.bin.bastionclaw`:
+Create `/etc/apparmor.d/usr.local.bin.t3claw`:
 
 ```
 #include <tunables/global>
 
-/usr/local/bin/bastionclaw {
+/usr/local/bin/t3claw {
   #include <abstractions/base>
   #include <abstractions/nameservice>
 
   # Binary
-  /usr/local/bin/bastionclaw mr,
+  /usr/local/bin/t3claw mr,
 
   # Config and data
-  /home/bastionclaw/.bastionclaw/** rw,
-  /var/lib/bastionclaw/** rw,
-  /etc/bastionclaw/bastionclaw.env r,
+  /home/t3claw/.t3claw/** rw,
+  /var/lib/t3claw/** rw,
+  /etc/t3claw/t3claw.env r,
 
   # Keyring
   /run/user/*/keyring/** rw,
@@ -296,12 +296,12 @@ Create `/etc/apparmor.d/usr.local.bin.bastionclaw`:
 Load the profile:
 
 ```bash
-sudo apparmor_parser -r /etc/apparmor.d/usr.local.bin.bastionclaw
-sudo aa-status | grep bastionclaw
+sudo apparmor_parser -r /etc/apparmor.d/usr.local.bin.t3claw
+sudo aa-status | grep t3claw
 ```
 
 <Note>
-The AppArmor profile is optional. BastionClaw's own sandbox (Docker containers with dropped capabilities) provides defense-in-depth regardless of whether AppArmor is configured.
+The AppArmor profile is optional. T3Claw's own sandbox (Docker containers with dropped capabilities) provides defense-in-depth regardless of whether AppArmor is configured.
 </Note>
 
 ---

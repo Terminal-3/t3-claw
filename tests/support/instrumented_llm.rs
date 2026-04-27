@@ -12,8 +12,8 @@ use async_trait::async_trait;
 use rust_decimal::Decimal;
 use tokio::sync::Mutex;
 
-use bastionclaw::error::LlmError;
-use bastionclaw::llm::{
+use t3claw::error::LlmError;
+use t3claw::llm::{
     CompletionRequest, CompletionResponse, LlmProvider, ModelMetadata, ToolCompletionRequest,
     ToolCompletionResponse,
 };

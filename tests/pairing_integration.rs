@@ -7,11 +7,11 @@
 mod tests {
     use std::sync::Arc;
 
-    use bastionclaw::cli::{PairingCommand, run_pairing_command_with_store};
-    use bastionclaw::db::libsql::LibSqlBackend;
-    use bastionclaw::db::{Database, UserRecord};
-    use bastionclaw::ownership::{OwnerId, OwnershipCache};
-    use bastionclaw::pairing::PairingStore;
+    use t3claw::cli::{PairingCommand, run_pairing_command_with_store};
+    use t3claw::db::libsql::LibSqlBackend;
+    use t3claw::db::{Database, UserRecord};
+    use t3claw::ownership::{OwnerId, OwnershipCache};
+    use t3claw::pairing::PairingStore;
 
     async fn setup_db() -> (Arc<dyn Database>, tempfile::TempDir) {
         let dir = tempfile::tempdir().unwrap();

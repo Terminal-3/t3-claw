@@ -159,7 +159,7 @@ fn builtin_local_auth_defaults(name: &str, transport: &str) -> Option<LocalMcpAu
             LocalMcpAuthConfig::new(T3N_LOCAL_AUTH_INSTRUCTIONS)
                 .with_auth_url(T3N_LOGIN_URL)
                 .with_completion_message(
-                    "Trinity setup confirmed. BastionClaw can now use this MCP server.",
+                    "Trinity setup confirmed. T3Claw can now use this MCP server.",
                 ),
         )
     } else {
@@ -254,7 +254,7 @@ async fn add_server(args: McpAddArgs) -> anyhow::Result<()> {
     let local_auth = if local_auth_url.is_some() || local_auth_instructions.is_some() {
         let instructions = local_auth_instructions.unwrap_or_else(|| {
             format!(
-                "Complete the required setup for '{}' before BastionClaw uses this MCP server.",
+                "Complete the required setup for '{}' before T3Claw uses this MCP server.",
                 name
             )
         });
@@ -331,12 +331,12 @@ async fn add_server(args: McpAddArgs) -> anyhow::Result<()> {
 
     if requires_auth && !has_custom_auth_header {
         println!();
-        println!("  Run 'bastionclaw mcp auth {}' to authenticate.", name);
+        println!("  Run 't3claw mcp auth {}' to authenticate.", name);
     }
     if has_local_auth {
         println!();
         println!(
-            "  This server has a one-time local setup step. BastionClaw will direct users to the configured page when access is needed."
+            "  This server has a one-time local setup step. T3Claw will direct users to the configured page when access is needed."
         );
     }
 
@@ -371,7 +371,7 @@ async fn list_servers(verbose: bool) -> anyhow::Result<()> {
         println!("  No MCP servers configured.");
         println!();
         println!("  Add a server with:");
-        println!("    bastionclaw mcp add <name> <url> [--client-id <id>]");
+        println!("    t3claw mcp add <name> <url> [--client-id <id>]");
         println!();
         return Ok(());
     }
@@ -479,7 +479,7 @@ async fn auth_server(name: String, user_id: String) -> anyhow::Result<()> {
     if server.has_custom_auth_header() {
         println!();
         println!(
-            "  Server '{}' is configured with an Authorization header, so 'bastionclaw mcp auth' is not used for this configuration.",
+            "  Server '{}' is configured with an Authorization header, so 't3claw mcp auth' is not used for this configuration.",
             name
         );
         println!("  Update or remove that header if you want to switch auth methods.");
@@ -530,7 +530,7 @@ async fn auth_server(name: String, user_id: String) -> anyhow::Result<()> {
                 "done" | "ready" | "complete" | "completed" | "authorised" | "authorized"
             ) {
                 anyhow::bail!(
-                    "Setup not confirmed. Complete the external step, then run 'bastionclaw mcp auth {}' again.",
+                    "Setup not confirmed. Complete the external step, then run 't3claw mcp auth {}' again.",
                     name
                 );
             }
@@ -551,7 +551,7 @@ async fn auth_server(name: String, user_id: String) -> anyhow::Result<()> {
                 local_auth
                     .completion_message
                     .as_deref()
-                    .unwrap_or("Setup confirmed. BastionClaw can now use this MCP server.")
+                    .unwrap_or("Setup confirmed. T3Claw can now use this MCP server.")
             );
             println!();
             return Ok(());
@@ -608,9 +608,9 @@ async fn auth_server(name: String, user_id: String) -> anyhow::Result<()> {
             println!("  The server may require a different authentication method,");
             println!("  or you may need to configure OAuth manually:");
             println!();
-            println!("    bastionclaw mcp remove {}", name);
+            println!("    t3claw mcp remove {}", name);
             println!(
-                "    bastionclaw mcp add {} {} --client-id YOUR_CLIENT_ID",
+                "    t3claw mcp add {} {} --client-id YOUR_CLIENT_ID",
                 name, server.url
             );
             println!();
@@ -664,7 +664,7 @@ async fn test_server(name: String, user_id: String) -> anyhow::Result<()> {
         // OAuth configured but no tokens - need to authenticate
         println!();
         println!(
-            "  ✗ Not authenticated. Run 'bastionclaw mcp auth {}' first.",
+            "  ✗ Not authenticated. Run 't3claw mcp auth {}' first.",
             name
         );
         println!();
@@ -725,7 +725,7 @@ async fn test_server(name: String, user_id: String) -> anyhow::Result<()> {
                     println!(
                         "  ✗ Authentication failed (token may be expired). Try re-authenticating:"
                     );
-                    println!("    bastionclaw mcp auth {}", name);
+                    println!("    t3claw mcp auth {}", name);
                 } else if server.has_custom_auth_header() {
                     println!("  ✗ Authentication failed.");
                     println!();
@@ -736,7 +736,7 @@ async fn test_server(name: String, user_id: String) -> anyhow::Result<()> {
                     // No tokens - server requires auth
                     println!("  ✗ Server requires authentication.");
                     println!();
-                    println!("  Run 'bastionclaw mcp auth {}' to authenticate.", name);
+                    println!("  Run 't3claw mcp auth {}' to authenticate.", name);
                 }
             } else {
                 println!("  ✗ Connection failed: {}", e);
@@ -891,7 +891,7 @@ mod tests {
         );
         assert_eq!(
             local_auth.completion_message.as_deref(),
-            Some("Trinity setup confirmed. BastionClaw can now use this MCP server.")
+            Some("Trinity setup confirmed. T3Claw can now use this MCP server.")
         );
     }
 

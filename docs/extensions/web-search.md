@@ -29,17 +29,17 @@ As of the time of writing, Brave Search API offers 5$ of free credits per month 
 To install the Web Search extension, run the following command in your terminal:
 
 ```bash
-bastionclaw registry install web-search
+t3claw registry install web-search
 ```
 
 </Step>
 
 <Step title="Configure the API Key">
 
-After installing the extension, you need to configure your Brave Search API key in BastionClaw. You can do this by running:
+After installing the extension, you need to configure your Brave Search API key in T3Claw. You can do this by running:
 
 ```bash
-bastionclaw tool auth web-search
+t3claw tool auth web-search
 ```
 
 Then follow the prompts to enter your API key.

@@ -30,7 +30,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::workspace::{DocumentMetadata, IDENTITY_PATHS, Workspace, is_config_path, paths};
 
 /// Global guard preventing concurrent hygiene passes.
@@ -46,7 +46,7 @@ pub struct HygieneConfig {
     pub version_keep_count: u32,
     /// Minimum hours between hygiene passes.
     pub cadence_hours: u32,
-    /// Directory to store state file (default: `~/.bastionclaw`).
+    /// Directory to store state file (default: `~/.t3claw`).
     pub state_dir: PathBuf,
 }
 
@@ -56,7 +56,7 @@ impl Default for HygieneConfig {
             enabled: true,
             version_keep_count: 50,
             cadence_hours: 12,
-            state_dir: bastionclaw_base_dir(),
+            state_dir: t3claw_base_dir(),
         }
     }
 }

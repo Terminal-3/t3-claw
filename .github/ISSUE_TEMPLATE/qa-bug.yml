@@ -11,7 +11,7 @@ body:
       options:
         - hosted-staging (crab shack)
         - hosted-production
-        - local (cloned bastionclaw)
+        - local (cloned t3claw)
         - railway-staging
     validations:
       required: true

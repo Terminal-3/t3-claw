@@ -6,9 +6,9 @@
 
 ## Motivation
 
-Research into [OpenViking](https://github.com/volcengine/OpenViking) (ByteDance's context database for AI agents, ~19.5k stars) reveals several techniques that would significantly improve BastionClaw's memory system. OpenViking's benchmarks show 83-96% reduction in input token costs and 43-49% improvement in task completion rates when integrated with an agent framework comparable to ours.
+Research into [OpenViking](https://github.com/volcengine/OpenViking) (ByteDance's context database for AI agents, ~19.5k stars) reveals several techniques that would significantly improve T3Claw's memory system. OpenViking's benchmarks show 83-96% reduction in input token costs and 43-49% improvement in task completion rates when integrated with an agent framework comparable to ours.
 
-BastionClaw v2's current memory system is functional but has clear gaps:
+T3Claw v2's current memory system is functional but has clear gaps:
 
 - **No tiered detail.** `MemoryDoc.content` is a single blob, truncated to 500 chars at injection. No summary layer — either the LLM sees a truncated fragment or we pay full token cost.
 - **Keyword-only retrieval.** `RetrievalEngine` does flat keyword matching + type priority. No embeddings, no semantic search, no intent analysis. The v1 workspace has hybrid FTS+vector search, but v2 doesn't use it.
@@ -76,7 +76,7 @@ pub struct MemoryDoc {
 
 ### 1.2 Summarization on write
 
-New module: `crates/bastionclaw_engine/src/memory/summarizer.rs`
+New module: `crates/t3claw_engine/src/memory/summarizer.rs`
 
 ```rust
 pub struct DocSummarizer {
@@ -93,7 +93,7 @@ impl DocSummarizer {
 - **Short docs** (< 500 chars): `summary = content`, `overview = None` (content IS the overview).
 - **Medium docs** (500-4000 chars): `summary` = LLM-generated ~100 token abstract. `overview = None` (content is close enough).
 - **Long docs** (> 4000 chars): Both `summary` and `overview` generated. Two LLM calls (or one batched call with two prompts).
-- Summarization prompt lives in `crates/bastionclaw_engine/prompts/doc_summarize.md`.
+- Summarization prompt lives in `crates/t3claw_engine/prompts/doc_summarize.md`.
 - `MemoryStore.create_doc()` calls summarizer before `store.save_memory_doc()`.
 - Summarization is **non-blocking** — write the doc immediately with `summary: None`, spawn a background task to generate summaries and update. This avoids blocking the agent on LLM calls during doc creation.
 
@@ -139,7 +139,7 @@ Database migration: add `summary TEXT`, `overview TEXT`, `content_hash TEXT`, `c
 
 ### 2.1 Embedding trait in the engine
 
-New file: `crates/bastionclaw_engine/src/traits/embedding.rs`
+New file: `crates/t3claw_engine/src/traits/embedding.rs`
 
 ```rust
 #[async_trait]
@@ -286,7 +286,7 @@ Type weight: `0.15` (between Summary and Issue — documents are reference mater
 
 ### 4.2 Document chunking
 
-New module: `crates/bastionclaw_engine/src/memory/chunker.rs`
+New module: `crates/t3claw_engine/src/memory/chunker.rs`
 
 Port and adapt the v1 chunker from `src/workspace/chunker.rs`:
 
@@ -312,7 +312,7 @@ pub fn chunk_text(text: &str, config: &ChunkConfig) -> Vec<DocChunk>;
 
 ### 4.3 Ingestion flow
 
-New module: `crates/bastionclaw_engine/src/memory/ingest.rs`
+New module: `crates/t3claw_engine/src/memory/ingest.rs`
 
 ```rust
 pub struct DocumentIngester {
@@ -391,7 +391,7 @@ Wire the existing `html_converter.rs` (readability + markdown conversion) into t
 
 ### 5.1 Query expander
 
-New module: `crates/bastionclaw_engine/src/memory/intent.rs`
+New module: `crates/t3claw_engine/src/memory/intent.rs`
 
 ```rust
 pub struct QueryExpander {
@@ -513,25 +513,25 @@ Rationale: Phase 4 (document ingestion) has the most user-visible impact — doc
 
 | File | Purpose |
 |------|---------|
-| `crates/bastionclaw_engine/src/memory/summarizer.rs` | L0/L1 summary generation |
-| `crates/bastionclaw_engine/src/memory/chunker.rs` | Document chunking (port from v1) |
-| `crates/bastionclaw_engine/src/memory/ingest.rs` | Document ingestion pipeline |
-| `crates/bastionclaw_engine/src/memory/intent.rs` | Query expansion |
-| `crates/bastionclaw_engine/src/traits/embedding.rs` | Embedding backend trait |
-| `crates/bastionclaw_engine/prompts/doc_summarize.md` | Summarization prompt template |
-| `crates/bastionclaw_engine/prompts/query_expand.md` | Query expansion prompt template |
+| `crates/t3claw_engine/src/memory/summarizer.rs` | L0/L1 summary generation |
+| `crates/t3claw_engine/src/memory/chunker.rs` | Document chunking (port from v1) |
+| `crates/t3claw_engine/src/memory/ingest.rs` | Document ingestion pipeline |
+| `crates/t3claw_engine/src/memory/intent.rs` | Query expansion |
+| `crates/t3claw_engine/src/traits/embedding.rs` | Embedding backend trait |
+| `crates/t3claw_engine/prompts/doc_summarize.md` | Summarization prompt template |
+| `crates/t3claw_engine/prompts/query_expand.md` | Query expansion prompt template |
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `crates/bastionclaw_engine/src/types/memory.rs` | Add summary, overview, content_hash, content_length, embedding fields; add `DocType::Document` |
-| `crates/bastionclaw_engine/src/memory/retrieval.rs` | Hybrid retrieval with RRF fusion, L0 scoring |
-| `crates/bastionclaw_engine/src/memory/store.rs` | Wire summarizer into create_doc flow |
-| `crates/bastionclaw_engine/src/executor/context.rs` | Use L1 overviews, auto-recall as tool calls |
-| `crates/bastionclaw_engine/src/executor/compaction.rs` | Save compaction summaries as MemoryDocs |
-| `crates/bastionclaw_engine/src/traits/store.rs` | Add vector search + summary update methods |
-| `crates/bastionclaw_engine/src/lib.rs` | Re-export new modules |
+| `crates/t3claw_engine/src/types/memory.rs` | Add summary, overview, content_hash, content_length, embedding fields; add `DocType::Document` |
+| `crates/t3claw_engine/src/memory/retrieval.rs` | Hybrid retrieval with RRF fusion, L0 scoring |
+| `crates/t3claw_engine/src/memory/store.rs` | Wire summarizer into create_doc flow |
+| `crates/t3claw_engine/src/executor/context.rs` | Use L1 overviews, auto-recall as tool calls |
+| `crates/t3claw_engine/src/executor/compaction.rs` | Save compaction summaries as MemoryDocs |
+| `crates/t3claw_engine/src/traits/store.rs` | Add vector search + summary update methods |
+| `crates/t3claw_engine/src/lib.rs` | Re-export new modules |
 | `src/bridge/effect_adapter.rs` | Wire memory_recall action, document ingester |
 | `src/bridge/store_adapter.rs` | Implement new Store methods (vector search, summary update) |
 | `src/agent/agent_loop.rs` | Route extracted documents to v2 ingester |

@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use bastionclaw_safety::sensitive_paths::is_sensitive_path;
+use t3claw_safety::sensitive_paths::is_sensitive_path;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
@@ -1166,7 +1166,7 @@ mod tests {
         );
     }
 
-    // Unit tests for is_sensitive_path live in crates/bastionclaw_safety/src/sensitive_paths.rs.
+    // Unit tests for is_sensitive_path live in crates/t3claw_safety/src/sensitive_paths.rs.
     // Only integration-level tests that exercise the tool's execute() method belong here.
 
     #[tokio::test]

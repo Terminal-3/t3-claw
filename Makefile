@@ -1,4 +1,4 @@
-# BastionClaw – convenience wrapper around docker compose.
+# T3Claw – convenience wrapper around docker compose.
 #
 # Usage:
 #   make up        – start the full stack (detached)
@@ -6,14 +6,14 @@
 #   make rebuild   – build then restart (use after code changes)
 #   make down      – stop containers, keep volumes
 #   make wipe      – stop containers AND delete all volumes (full reset)
-#   make restart   – restart only the bastionclaw service
-#   make logs      – follow bastionclaw logs
+#   make restart   – restart only the t3claw service
+#   make logs      – follow t3claw logs
 #   make shell     – open a shell inside the running container
 #   make status    – show running container state
 #   make help      – print this list
 
 # ── Docker socket GID detection ───────────────────────────────────────────────
-# The bastionclaw container needs to join the group that owns the Docker socket
+# The t3claw container needs to join the group that owns the Docker socket
 # so sandbox jobs can spawn worker containers.
 #
 # macOS Docker Desktop: the socket lives inside a VM and is not stat-able from
@@ -29,7 +29,7 @@ DOCKER_GID := $(shell stat -c %g /var/run/docker.sock 2>/dev/null \
 export DOCKER_GID
 
 COMPOSE := docker compose --profile app
-SERVICE := bastionclaw
+SERVICE := t3claw
 
 .PHONY: up build rebuild build-sidecar pull-sidecar down wipe restart logs shell status help
 
@@ -76,17 +76,17 @@ wipe:
 	@sleep 3
 	$(COMPOSE) down -v
 
-## Restart only the bastionclaw service (e.g. after a config change).
+## Restart only the t3claw service (e.g. after a config change).
 restart:
 	$(COMPOSE) restart $(SERVICE)
 
-## Follow bastionclaw logs (Ctrl-C to stop).
+## Follow t3claw logs (Ctrl-C to stop).
 logs:
 	$(COMPOSE) logs -f $(SERVICE)
 
-## Open an interactive shell inside the running bastionclaw container.
+## Open an interactive shell inside the running t3claw container.
 shell:
-	docker exec -it bastion-claw-$(SERVICE)-1 sh
+	docker exec -it t3-claw-$(SERVICE)-1 sh
 
 ## Show current container status.
 status:

@@ -2,7 +2,7 @@
 
 **Date:** 2026-02-24
 **Status:** Approved
-**Goal:** Deterministic browser-level E2E tests for the BastionClaw web gateway using Python + Playwright, with a mock LLM backend for CI reliability.
+**Goal:** Deterministic browser-level E2E tests for the T3Claw web gateway using Python + Playwright, with a mock LLM backend for CI reliability.
 
 ---
 
@@ -25,7 +25,7 @@
                     |
          +----------+-----------+
          |                      |
-   mock_llm.py           bastionclaw binary
+   mock_llm.py           t3claw binary
    (canned responses)    (cargo build --features libsql)
    127.0.0.1:{port}      127.0.0.1:{port}
          |                      |
@@ -39,12 +39,12 @@
 **Flow:**
 
 1. pytest session starts
-2. Session-scoped fixture builds bastionclaw binary (or reuses cached)
+2. Session-scoped fixture builds t3claw binary (or reuses cached)
 3. Session-scoped fixture starts mock LLM on OS-assigned port
-4. Session-scoped fixture starts bastionclaw subprocess pointing to mock LLM, gateway on OS-assigned port, libSQL in-memory
+4. Session-scoped fixture starts t3claw subprocess pointing to mock LLM, gateway on OS-assigned port, libSQL in-memory
 5. Function-scoped fixture launches Playwright browser, navigates to gateway with auth token
 6. Each test uses Playwright locators + DOM assertions
-7. Teardown kills bastionclaw and mock LLM
+7. Teardown kills t3claw and mock LLM
 
 ---
 
@@ -52,7 +52,7 @@
 
 ```
 tests/e2e/
-  conftest.py              # pytest fixtures: build binary, start bastionclaw, mock LLM, browser
+  conftest.py              # pytest fixtures: build binary, start t3claw, mock LLM, browser
   mock_llm.py              # OpenAI-compat HTTP server with canned responses
   helpers.py               # Shared utilities (wait_for_ready, selectors)
   scenarios/
@@ -76,7 +76,7 @@ A minimal async HTTP server that speaks the OpenAI Chat Completions API.
 - Parses the `messages` array from the request body
 - Pattern-matches the last user message content to select a canned response
 - Returns a well-formed `ChatCompletionResponse` with `id`, `choices[0].message`, `usage`
-- Supports `stream: true` by returning SSE chunks with `delta` objects (critical: BastionClaw streams responses via SSE to the browser)
+- Supports `stream: true` by returning SSE chunks with `delta` objects (critical: T3Claw streams responses via SSE to the browser)
 
 **Canned response table:**
 
@@ -109,8 +109,8 @@ data: [DONE]
 
 ### Session-scoped (run once per test session)
 
-**`bastionclaw_binary`**
-- Checks if `./target/debug/bastionclaw` exists
+**`t3claw_binary`**
+- Checks if `./target/debug/t3claw` exists
 - If missing or stale, runs `cargo build --no-default-features --features libsql`
 - Returns the binary path
 - Timeout: 300s (first build can be slow)
@@ -122,8 +122,8 @@ data: [DONE]
 - Yields `(process, url)`
 - Kills process on teardown
 
-**`bastionclaw_server(bastionclaw_binary, mock_llm_server)`**
-- Starts the bastionclaw binary with environment:
+**`t3claw_server(t3claw_binary, mock_llm_server)`**
+- Starts the t3claw binary with environment:
 
 ```
 GATEWAY_ENABLED=true
@@ -143,14 +143,14 @@ ROUTINES_ENABLED=false
 HEARTBEAT_ENABLED=false
 ```
 
-- Parses actual gateway port from bastionclaw stdout (`Gateway listening on 127.0.0.1:XXXX`)
+- Parses actual gateway port from t3claw stdout (`Gateway listening on 127.0.0.1:XXXX`)
 - Polls `GET /api/status` until ready (timeout 60s)
 - Yields the base URL (`http://127.0.0.1:{port}`)
 - Sends SIGTERM on teardown, SIGKILL after 5s grace
 
 ### Function-scoped (fresh per test)
 
-**`page(bastionclaw_server)`**
+**`page(t3claw_server)`**
 - Launches Playwright Chromium (headless)
 - Creates new browser context (isolated cookies/storage)
 - Creates new page with viewport 1280x720
@@ -248,7 +248,7 @@ test_skills_install_and_remove:
 
 ## Port Discovery
 
-BastionClaw logs `Gateway listening on 127.0.0.1:XXXX` at startup. The fixture reads stdout line-by-line until it finds this pattern, extracts the port.
+T3Claw logs `Gateway listening on 127.0.0.1:XXXX` at startup. The fixture reads stdout line-by-line until it finds this pattern, extracts the port.
 
 ```python
 async def wait_for_port(process, pattern=r"Gateway listening on .+:(\d+)", timeout=60):
@@ -260,7 +260,7 @@ async def wait_for_port(process, pattern=r"Gateway listening on .+:(\d+)", timeo
         )
         if match := re.search(pattern, line.decode()):
             return int(match.group(1))
-    raise TimeoutError("bastionclaw did not report listening port")
+    raise TimeoutError("t3claw did not report listening port")
 ```
 
 Same pattern for the mock LLM server.
@@ -272,7 +272,7 @@ Same pattern for the mock LLM server.
 ```toml
 # tests/e2e/pyproject.toml
 [project]
-name = "bastionclaw-e2e"
+name = "t3claw-e2e"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
@@ -316,7 +316,7 @@ jobs:
         with:
           path: target
           key: e2e-${{ hashFiles('Cargo.lock') }}
-      - name: Build bastionclaw
+      - name: Build t3claw
         run: cargo build --no-default-features --features libsql
       - uses: actions/setup-python@v5
         with:
@@ -347,7 +347,7 @@ Not in initial scope. Design accommodates it via:
 
 ## Success Criteria
 
-1. `pytest tests/e2e/ -v` passes locally with a pre-built bastionclaw binary
+1. `pytest tests/e2e/ -v` passes locally with a pre-built t3claw binary
 2. All 3 scenarios (connection, chat, skills) exercise real browser interactions
 3. Mock LLM provides deterministic responses (no flaky tests from LLM randomness)
 4. CI workflow runs on web gateway changes and weekly schedule

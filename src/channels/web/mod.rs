@@ -1,4 +1,4 @@
-//! Web gateway channel for browser-based access to BastionClaw.
+//! Web gateway channel for browser-based access to T3Claw.
 //!
 //! Provides a single-page web UI with:
 //! - Chat with the agent (via REST + SSE)
@@ -52,8 +52,8 @@ use crate::extensions::ExtensionManager;
 use crate::orchestrator::job_manager::ContainerJobManager;
 use crate::tools::ToolRegistry;
 use crate::workspace::Workspace;
-use bastionclaw_skills::catalog::SkillCatalog;
-use bastionclaw_skills::registry::SkillRegistry;
+use t3claw_skills::catalog::SkillCatalog;
+use t3claw_skills::registry::SkillRegistry;
 
 use self::log_layer::{LogBroadcaster, LogLevelHandle};
 

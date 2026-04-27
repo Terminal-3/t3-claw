@@ -1,4 +1,4 @@
-//! Composio WASM Tool for BastionClaw.
+//! Composio WASM Tool for T3Claw.
 //!
 //! Connects to 250+ third-party apps via Composio's REST API (v3).
 //! Provides a single multiplexed tool with actions: list, execute, connect,
@@ -7,7 +7,7 @@
 //! # Authentication
 //!
 //! Store your Composio API key:
-//! `bastionclaw secret set composio_api_key <key>`
+//! `t3claw secret set composio_api_key <key>`
 //!
 //! Get a key at: https://app.composio.dev/
 
@@ -76,7 +76,7 @@ fn execute_inner(params_str: &str, context: Option<&str>) -> Result<String, Stri
     if !near::agent::host::secret_exists("composio_api_key") {
         return Err(
             "Composio API key not configured. Set it with: \
-             bastionclaw secret set composio_api_key <key>. \
+             t3claw secret set composio_api_key <key>. \
              Get a key at: https://app.composio.dev/"
                 .into(),
         );
@@ -130,7 +130,7 @@ fn api_get(path: &str, query: &[(&str, &str)]) -> Result<serde_json::Value, Stri
 
     let headers = serde_json::json!({
         "Accept": "application/json",
-        "User-Agent": "BastionClaw-Composio-Tool/0.1"
+        "User-Agent": "T3Claw-Composio-Tool/0.1"
     });
 
     let response = get_with_retry(&url, &headers.to_string())?;
@@ -143,7 +143,7 @@ fn api_post(path: &str, body: &serde_json::Value) -> Result<serde_json::Value, S
     let headers = serde_json::json!({
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "User-Agent": "BastionClaw-Composio-Tool/0.1"
+        "User-Agent": "T3Claw-Composio-Tool/0.1"
     });
 
     let body_bytes = serde_json::to_vec(body).map_err(|e| format!("JSON serialize error: {e}"))?;
@@ -160,7 +160,7 @@ fn api_post(path: &str, body: &serde_json::Value) -> Result<serde_json::Value, S
     if resp.status == 401 || resp.status == 403 {
         return Err(
             "Composio API authentication failed. Ensure your API key is set: \
-             bastionclaw secret set composio_api_key <key>. \
+             t3claw secret set composio_api_key <key>. \
              Get a key at: https://app.composio.dev/"
                 .into(),
         );
@@ -191,7 +191,7 @@ fn get_with_retry(
         if resp.status == 401 || resp.status == 403 {
             return Err(
                 "Composio API authentication failed. Ensure your API key is set: \
-                 bastionclaw secret set composio_api_key <key>. \
+                 t3claw secret set composio_api_key <key>. \
                  Get a key at: https://app.composio.dev/"
                     .into(),
             );

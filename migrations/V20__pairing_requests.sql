@@ -1,4 +1,4 @@
--- Replaces file-based pairing store (~/.bastionclaw/{channel}-pairing.json).
+-- Replaces file-based pairing store (~/.t3claw/{channel}-pairing.json).
 -- A pending request has owner_id = NULL until approved.
 CREATE TABLE pairing_requests (
     id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1,17 +1,17 @@
 ---
 title: Configuration
 sidebarTitle: Configuration
-description: Complete environment variable reference for BastionClaw
+description: Complete environment variable reference for T3Claw
 ---
 
-BastionClaw is configured primarily through environment variables. This page documents all available configuration options.
+T3Claw is configured primarily through environment variables. This page documents all available configuration options.
 
 ## Two-Layer Configuration
 
-BastionClaw uses a two-layer configuration system:
+T3Claw uses a two-layer configuration system:
 
 <AccordionGroup>
-  <Accordion title="Layer 1: ~/.bastionclaw/.env (Bootstrap)" icon="file">
+  <Accordion title="Layer 1: ~/.t3claw/.env (Bootstrap)" icon="file">
     Contains settings needed **before** database connection:
 
     - `DATABASE_BACKEND` — Which database to use
@@ -32,7 +32,7 @@ BastionClaw uses a two-layer configuration system:
     - Skills configuration
     - Heartbeat settings
 
-    Managed through the wizard or `bastionclaw config` command.
+    Managed through the wizard or `t3claw config` command.
   </Accordion>
 </AccordionGroup>
 
@@ -68,7 +68,7 @@ BastionClaw uses a two-layer configuration system:
   </Card>
 
   <Card title="Security" icon="shield" href="#security">
-    SECRETS_MASTER_KEY, BASTIONCLAW_BASE_DIR
+    SECRETS_MASTER_KEY, T3CLAW_BASE_DIR
   </Card>
 </CardGroup>
 
@@ -76,7 +76,7 @@ BastionClaw uses a two-layer configuration system:
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `AGENT_NAME` | string | `bastionclaw` | Agent name displayed in responses |
+| `AGENT_NAME` | string | `t3claw` | Agent name displayed in responses |
 | `AGENT_MAX_PARALLEL_JOBS` | int | `5` | Maximum concurrent jobs |
 | `AGENT_JOB_TIMEOUT_SECS` | int | `300` | Job timeout in seconds |
 | `AGENT_STUCK_THRESHOLD_SECS` | int | `60` | Time before job considered stuck |
@@ -98,7 +98,7 @@ BastionClaw uses a two-layer configuration system:
 | `DATABASE_URL` | string | — | PostgreSQL connection URL |
 | `DATABASE_POOL_SIZE` | int | `10` | Connection pool size |
 | `DATABASE_SSLMODE` | enum | `prefer` | TLS mode: `disable`, `prefer`, `require` |
-| `LIBSQL_PATH` | path | `~/.bastionclaw/bastionclaw.db` | libSQL database file |
+| `LIBSQL_PATH` | path | `~/.t3claw/t3claw.db` | libSQL database file |
 | `LIBSQL_URL` | URL | — | Turso cloud sync URL |
 | `LIBSQL_AUTH_TOKEN` | string | — | Turso auth token |
 
@@ -106,7 +106,7 @@ BastionClaw uses a two-layer configuration system:
 
 ```bash
 export DATABASE_BACKEND=postgres
-export DATABASE_URL="postgres://user:pass@localhost/bastionclaw"
+export DATABASE_URL="postgres://user:pass@localhost/t3claw"
 export DATABASE_SSLMODE=require
 ```
 
@@ -114,14 +114,14 @@ export DATABASE_SSLMODE=require
 
 ```bash
 export DATABASE_BACKEND=libsql
-export LIBSQL_PATH="/home/user/.bastionclaw/bastionclaw.db"
+export LIBSQL_PATH="/home/user/.t3claw/t3claw.db"
 ```
 
 ### Turso Example
 
 ```bash
 export DATABASE_BACKEND=libsql
-export LIBSQL_PATH="/home/user/.bastionclaw/bastionclaw.db"
+export LIBSQL_PATH="/home/user/.t3claw/t3claw.db"
 export LIBSQL_URL="libsql://your-db.turso.io"
 export LIBSQL_AUTH_TOKEN="your-auth-token"
 ```
@@ -211,7 +211,7 @@ The HTTP webhook binds to `0.0.0.0:8080` by default. If you don't need external 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `WASM_CHANNELS_ENABLED` | bool | `true` | Enable WASM channels |
-| `WASM_CHANNELS_DIR` | path | `~/.bastionclaw/channels` | Channel modules directory |
+| `WASM_CHANNELS_DIR` | path | `~/.t3claw/channels` | Channel modules directory |
 | `TELEGRAM_OWNER_ID` | int | — | Telegram owner user ID (legacy) |
 
 ### Signal
@@ -245,7 +245,7 @@ The HTTP webhook binds to `0.0.0.0:8080` by default. If you don't need external 
 | `SANDBOX_TIMEOUT_SECS` | int | `120` | Command timeout |
 | `SANDBOX_MEMORY_LIMIT_MB` | int | `2048` | Memory limit per container |
 | `SANDBOX_CPU_SHARES` | int | `1024` | CPU shares (relative weight) |
-| `SANDBOX_IMAGE` | string | `bastionclaw-worker:latest` | Docker image |
+| `SANDBOX_IMAGE` | string | `t3claw-worker:latest` | Docker image |
 | `SANDBOX_AUTO_PULL` | bool | `true` | Auto-pull missing images |
 | `SANDBOX_EXTRA_DOMAINS` | list | — | Additional allowed domains |
 
@@ -291,17 +291,17 @@ The HTTP webhook binds to `0.0.0.0:8080` by default. If you don't need external 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `SECRETS_MASTER_KEY` | string | — | Master key for encryption (env var mode) |
-| `BASTIONCLAW_BASE_DIR` | path | `~/.bastionclaw` | Data directory |
-| `BASTIONCLAW_OAUTH_CALLBACK_URL` | URL | `http://127.0.0.1:9876` | OAuth callback URL |
+| `T3CLAW_BASE_DIR` | path | `~/.t3claw` | Data directory |
+| `T3CLAW_OAUTH_CALLBACK_URL` | URL | `http://127.0.0.1:9876` | OAuth callback URL |
 
 ## Environment File Example
 
-Create `~/.bastionclaw/.env`:
+Create `~/.t3claw/.env`:
 
 ```bash
 # Database
 DATABASE_BACKEND=libsql
-LIBSQL_PATH=/home/user/.bastionclaw/bastionclaw.db
+LIBSQL_PATH=/home/user/.t3claw/t3claw.db
 
 # LLM (NEAR AI)
 LLM_BACKEND=nearai
@@ -327,16 +327,16 @@ HEARTBEAT_INTERVAL_SECS=1800
 
 ```bash
 # View current config
-bastionclaw config list
+t3claw config list
 
 # Get specific value
-bastionclaw config get llm.backend
+t3claw config get llm.backend
 
 # Set value
-bastionclaw config set llm.backend nearai
+t3claw config set llm.backend nearai
 
 # Delete value (reset to default)
-bastionclaw config delete llm.backend
+t3claw config delete llm.backend
 ```
 
 ## Next Steps

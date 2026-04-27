@@ -1,4 +1,4 @@
-//! Interactive setup wizard for BastionClaw.
+//! Interactive setup wizard for T3Claw.
 //!
 //! Provides a guided setup experience for:
 //! 1. Database connection
@@ -16,7 +16,7 @@
 //! # Example
 //!
 //! ```ignore
-//! use bastionclaw::setup::SetupWizard;
+//! use t3claw::setup::SetupWizard;
 //!
 //! let mut wizard = SetupWizard::new();
 //! wizard.run().await?;

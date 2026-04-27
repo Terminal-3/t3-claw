@@ -1,6 +1,6 @@
 ---
 title: "Playwright Screenshot Pipeline with Token Authentication"
-description: "Building a UI screenshot capture pipeline that auto-authenticates with BastionClaw web gateway"
+description: "Building a UI screenshot capture pipeline that auto-authenticates with T3Claw web gateway"
 category: integration-issues
 date: 2026-03-04
 severity: medium
@@ -9,8 +9,8 @@ status: resolved
 
 ## Problem
 
-Building an automated screenshot documentation pipeline for BastionClaw's web gateway UI that:
-1. Auto-detects running BastionClaw instances
+Building an automated screenshot documentation pipeline for T3Claw's web gateway UI that:
+1. Auto-detects running T3Claw instances
 2. Captures screenshots of authenticated views (chat, skills, routines, settings, extensions, memory)
 3. Passes authentication tokens correctly to bypass the login screen
 4. Works with client-side routed tabs that return 404 when accessed directly
@@ -24,8 +24,8 @@ Building an automated screenshot documentation pipeline for BastionClaw's web ga
 
 ## Root Cause
 
-1. **Token URL Construction**: The `getBastionClawUrlWithToken()` function was creating malformed URLs like `/?token=TOKEN/skills` when appending paths
-2. **Client-Side Routing**: BastionClaw's web gateway uses client-side routing; only `/` is served by the backend
+1. **Token URL Construction**: The `getT3ClawUrlWithToken()` function was creating malformed URLs like `/?token=TOKEN/skills` when appending paths
+2. **Client-Side Routing**: T3Claw's web gateway uses client-side routing; only `/` is served by the backend
 3. **Environment Variable Loading**: The `pnpm screenshots` command wasn't loading `.env.screenshot` before running tests
 4. **Authentication Flow**: The web UI requires token in URL → auto-authentication → app visibility; tests were timing out before auth completed
 
@@ -36,9 +36,9 @@ Building an automated screenshot documentation pipeline for BastionClaw's web ga
 Updated `docs/tests/fixtures/seed.ts`:
 
 ```typescript
-export async function getBastionClawUrlWithToken(path?: string): Promise<string> {
+export async function getT3ClawUrlWithToken(path?: string): Promise<string> {
   const baseUrl = await getBaseUrl();
-  const token = process.env.BASTIONCLAW_TOKEN ?? 'screenshot-test-token';
+  const token = process.env.T3CLAW_TOKEN ?? 'screenshot-test-token';
 
   // Build the URL: base + path (if provided) + ?token=
   let url = baseUrl;
@@ -77,14 +77,14 @@ Example from `docs/tests/specs/web-routines.spec.ts`:
 
 ```typescript
 test('routines tab overview', async ({ page }) => {
-  const ready = await isBastionClawReady();
+  const ready = await isT3ClawReady();
   if (!ready) {
-    test.skip(true, 'BastionClaw not running');
+    test.skip(true, 'T3Claw not running');
     return;
   }
 
   // Navigate to root with token
-  const url = await getBastionClawUrlWithToken('/');
+  const url = await getT3ClawUrlWithToken('/');
   await page.goto(url);
 
   // Wait for auto-authentication
@@ -103,7 +103,7 @@ test('routines tab overview', async ({ page }) => {
 });
 ```
 
-### 4. Auto-Detection of BastionClaw Port
+### 4. Auto-Detection of T3Claw Port
 
 The `docs/tests/fixtures/seed.ts` includes port auto-detection:
 
@@ -129,7 +129,7 @@ async function checkPortHealth(port: number): Promise<boolean> {
 | File | Changes |
 |------|---------|
 | `docs/package.json` | Added env var loading to screenshots script |
-| `docs/tests/fixtures/seed.ts` | Fixed `getBastionClawUrlWithToken()` with optional path param |
+| `docs/tests/fixtures/seed.ts` | Fixed `getT3ClawUrlWithToken()` with optional path param |
 | `docs/tests/specs/web-chat.spec.ts` | Updated to wait for auth before screenshot |
 | `docs/tests/specs/web-routines.spec.ts` | Added tab click for client-side navigation |
 | `docs/tests/specs/web-settings.spec.ts` | Added tab click for client-side navigation |
@@ -157,11 +157,11 @@ cd docs && pnpm screenshots
 cd docs/tests && pnpm exec playwright test specs/web-chat.spec.ts
 
 # Run full pipeline
-cd /home/opselite/ai_projects/bastionclaw-src && bash docs/scripts/capture-screenshots.sh
+cd /home/opselite/ai_projects/t3claw-src && bash docs/scripts/capture-screenshots.sh
 ```
 
 ## References
 
-- BastionClaw web gateway auth: `src/channels/web/static/app.js` lines 96-114
+- T3Claw web gateway auth: `src/channels/web/static/app.js` lines 96-114
 - Client-side routing: All tab routes (`/routines`, `/skills`, etc.) handled by JavaScript
 - Related: `docs/.env.screenshot` configuration file

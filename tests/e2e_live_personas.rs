@@ -27,10 +27,10 @@
 //!
 //! **Live mode** (real LLM calls, records/updates trace fixtures):
 //! ```bash
-//! BASTIONCLAW_LIVE_TEST=1 cargo test --features libsql --test e2e_live_personas -- --ignored --test-threads=1
+//! T3CLAW_LIVE_TEST=1 cargo test --features libsql --test e2e_live_personas -- --ignored --test-threads=1
 //! ```
 //!
-//! Live mode requires `~/.bastionclaw/.env` with valid LLM credentials and
+//! Live mode requires `~/.t3claw/.env` with valid LLM credentials and
 //! runs one test at a time to avoid concurrent API pressure.
 
 #[cfg(feature = "libsql")]
@@ -81,7 +81,7 @@ mod persona_tests {
 
     fn should_run_test(test_name: &str) -> bool {
         if trace_fixture_path(test_name).exists()
-            || std::env::var("BASTIONCLAW_LIVE_TEST")
+            || std::env::var("T3CLAW_LIVE_TEST")
                 .ok()
                 .filter(|v| !v.is_empty() && v != "0")
                 .is_some()
@@ -210,7 +210,7 @@ mod persona_tests {
         let active_skills: Vec<Vec<String>> = new_events
             .iter()
             .filter_map(|event| match event {
-                bastionclaw::channels::StatusUpdate::SkillActivated { skill_names } => {
+                t3claw::channels::StatusUpdate::SkillActivated { skill_names } => {
                     Some(skill_names.clone())
                 }
                 _ => None,
@@ -219,7 +219,7 @@ mod persona_tests {
         let tools: Vec<String> = new_events
             .iter()
             .filter_map(|event| match event {
-                bastionclaw::channels::StatusUpdate::ToolStarted { name, .. } => Some(name.clone()),
+                t3claw::channels::StatusUpdate::ToolStarted { name, .. } => Some(name.clone()),
                 _ => None,
             })
             .collect();
@@ -236,7 +236,7 @@ mod persona_tests {
             .captured_status_events()
             .iter()
             .filter_map(|event| match event {
-                bastionclaw::channels::StatusUpdate::SkillActivated { skill_names } => {
+                t3claw::channels::StatusUpdate::SkillActivated { skill_names } => {
                     Some(skill_names.clone())
                 }
                 _ => None,

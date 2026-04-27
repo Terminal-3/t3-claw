@@ -4,13 +4,13 @@
 //! dotenvy, and assert values match. Each test uses a tempdir for isolation.
 //!
 //! These tests call the real `save_bootstrap_env_to` and `upsert_bootstrap_var_to`
-//! functions from `bastionclaw::bootstrap`, ensuring test coverage of the actual
+//! functions from `t3claw::bootstrap`, ensuring test coverage of the actual
 //! escaping/formatting logic rather than a reimplementation.
 
 use std::collections::HashMap;
 use tempfile::tempdir;
 
-use bastionclaw::bootstrap::{save_bootstrap_env_to, upsert_bootstrap_var_to};
+use t3claw::bootstrap::{save_bootstrap_env_to, upsert_bootstrap_var_to};
 
 /// Fake OpenAI API key for test use only. Mirrors the internal
 /// `TEST_OPENAI_API_KEY_LONG` constant from the main crate, which is not
@@ -198,7 +198,7 @@ fn bootstrap_env_preserves_existing_values() {
         ("DATABASE_BACKEND", "postgres"),
         (
             "DATABASE_URL",
-            "postgres://user:pass@localhost:5432/bastionclaw",
+            "postgres://user:pass@localhost:5432/t3claw",
         ),
         ("LLM_BACKEND", "nearai"),
         ("NEARAI_API_KEY", "key_abc123"),
@@ -252,7 +252,7 @@ fn bootstrap_env_preserves_existing_values() {
     );
     assert_eq!(
         map3.get("DATABASE_URL").map(String::as_str),
-        Some("postgres://user:pass@localhost:5432/bastionclaw"),
+        Some("postgres://user:pass@localhost:5432/t3claw"),
         "DATABASE_URL must be preserved after upsert of different key"
     );
     assert_eq!(
@@ -271,7 +271,7 @@ fn bootstrap_env_handles_special_characters() {
 
     let test_cases: &[(&str, &str)] = &[
         // Spaces in values
-        ("AGENT_NAME", "my bastionclaw agent"),
+        ("AGENT_NAME", "my t3claw agent"),
         // Equals signs in values (e.g., base64 tokens)
         ("API_TOKEN", "dGVzdA=="),
         // Hash characters (common in URL-encoded passwords, treated as comments without quoting)
@@ -281,7 +281,7 @@ fn bootstrap_env_handles_special_characters() {
         // Double quotes (must be escaped)
         ("QUOTED_VAL", r#"say "hello" world"#),
         // Backslashes (must be escaped)
-        ("WIN_PATH", r"C:\Users\bastionclaw\data"),
+        ("WIN_PATH", r"C:\Users\t3claw\data"),
         // Mixed special characters
         ("COMPLEX", r#"key=val with "quotes" & back\slash #hash"#),
         // Empty-ish but non-empty value (single space)

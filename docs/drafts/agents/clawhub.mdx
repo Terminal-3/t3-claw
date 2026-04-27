@@ -4,7 +4,7 @@ sidebarTitle: ClawHub
 description: Discover and install skills from the ClawHub registry
 ---
 
-ClawHub is the official registry for BastionClaw skills. It lets you discover community-built skills, install them with a single command, and keep them up to date — without leaving the agent interface.
+ClawHub is the official registry for T3Claw skills. It lets you discover community-built skills, install them with a single command, and keep them up to date — without leaving the agent interface.
 
 ## What ClawHub Provides
 
@@ -13,7 +13,7 @@ ClawHub is the official registry for BastionClaw skills. It lets you discover co
 - **Trust boundary** — all registry-installed skills run under the **Installed** trust level, limiting tool access to read-only operations
 
 <Warning>
-Skills from ClawHub are installed with **Installed** trust, not **Trusted** trust. They cannot execute shell commands, write files, or make HTTP requests. If you need elevated access, download the SKILL.md manually and place it in `~/.bastionclaw/skills/` after reviewing the contents.
+Skills from ClawHub are installed with **Installed** trust, not **Trusted** trust. They cannot execute shell commands, write files, or make HTTP requests. If you need elevated access, download the SKILL.md manually and place it in `~/.t3claw/skills/` after reviewing the contents.
 </Warning>
 
 ## Skill Tools
@@ -28,9 +28,9 @@ List all discovered skills on this instance, including trust level, activation s
 skill_list
 
 # Example output:
-# kubernetes-deploy  (trusted)    ~/.bastionclaw/skills/
+# kubernetes-deploy  (trusted)    ~/.t3claw/skills/
 # git-helper         (trusted)    <workspace>/skills/
-# python-lint        (installed)  ~/.bastionclaw/installed_skills/
+# python-lint        (installed)  ~/.t3claw/installed_skills/
 ```
 
 ### skill_search
@@ -45,7 +45,7 @@ skill_search "terraform infrastructure"
 
 ### skill_install
 
-Download and install a skill from ClawHub into `~/.bastionclaw/installed_skills/`.
+Download and install a skill from ClawHub into `~/.t3claw/installed_skills/`.
 
 ```
 skill_install python-lint
@@ -56,13 +56,13 @@ The skill is immediately available after installation — no restart required.
 
 ### skill_remove
 
-Remove an installed skill from `~/.bastionclaw/installed_skills/`.
+Remove an installed skill from `~/.t3claw/installed_skills/`.
 
 ```
 skill_remove python-lint
 ```
 
-Trusted skills in `~/.bastionclaw/skills/` must be removed manually by deleting the directory.
+Trusted skills in `~/.t3claw/skills/` must be removed manually by deleting the directory.
 
 ## Configuration
 
@@ -85,7 +85,7 @@ SKILLS_AUTO_DISCOVER=true
   </Step>
 
   <Step title="Install">
-    Run `skill_install <slug>`. The agent fetches the SKILL.md from the registry and writes it to `~/.bastionclaw/installed_skills/<slug>/SKILL.md`.
+    Run `skill_install <slug>`. The agent fetches the SKILL.md from the registry and writes it to `~/.t3claw/installed_skills/<slug>/SKILL.md`.
   </Step>
 
   <Step title="Activation">
@@ -113,7 +113,7 @@ This removes the old version and installs the current latest from the registry.
 ClawHub is an open registry. To publish a skill:
 
 1. Write a valid SKILL.md following the [SKILL.md Format](/agents/skills-format)
-2. Test it locally by placing it in `~/.bastionclaw/skills/`
+2. Test it locally by placing it in `~/.t3claw/skills/`
 3. Submit via the ClawHub web interface at [clawhub.dev](https://clawhub.dev)
 
 Published skills are reviewed before appearing in search results.

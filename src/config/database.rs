@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::bootstrap::bastionclaw_base_dir;
+use crate::bootstrap::t3claw_base_dir;
 use crate::config::helpers::{optional_env, parse_optional_env};
 use crate::error::ConfigError;
 
@@ -95,7 +95,7 @@ pub struct DatabaseConfig {
     pub ssl_mode: SslMode,
 
     // -- libSQL fields --
-    /// Path to local libSQL database file (default: ~/.bastionclaw/bastionclaw.db).
+    /// Path to local libSQL database file (default: ~/.t3claw/t3claw.db).
     pub libsql_path: Option<PathBuf>,
     /// Turso cloud URL for remote sync (optional).
     pub libsql_url: Option<String>,
@@ -116,7 +116,7 @@ impl DatabaseConfig {
 
         // PostgreSQL URL is required only when using the postgres backend.
         // For libsql backend, default to an empty placeholder.
-        // DATABASE_URL is loaded from ~/.bastionclaw/.env via dotenvy early in startup.
+        // DATABASE_URL is loaded from ~/.t3claw/.env via dotenvy early in startup.
         let url = optional_env("DATABASE_URL")?
             .or_else(|| {
                 if backend == DatabaseBackend::LibSql {
@@ -127,7 +127,7 @@ impl DatabaseConfig {
             })
             .ok_or_else(|| ConfigError::MissingRequired {
                 key: "DATABASE_URL".to_string(),
-                hint: "Run 'bastionclaw onboard' or set DATABASE_URL environment variable"
+                hint: "Run 't3claw onboard' or set DATABASE_URL environment variable"
                     .to_string(),
             })?;
 
@@ -225,9 +225,9 @@ impl SslMode {
     }
 }
 
-/// Default libSQL database path (~/.bastionclaw/bastionclaw.db).
+/// Default libSQL database path (~/.t3claw/t3claw.db).
 pub fn default_libsql_path() -> PathBuf {
-    bastionclaw_base_dir().join("bastionclaw.db")
+    t3claw_base_dir().join("t3claw.db")
 }
 
 #[cfg(test)]

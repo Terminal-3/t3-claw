@@ -8,8 +8,8 @@ use std::path::Path;
 use clap::Subcommand;
 
 use crate::config::SkillsConfig;
-use bastionclaw_skills::catalog::SkillCatalog;
-use bastionclaw_skills::{SkillRegistry, SkillSource};
+use t3claw_skills::catalog::SkillCatalog;
+use t3claw_skills::{SkillRegistry, SkillSource};
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum SkillsCommand {
@@ -123,7 +123,7 @@ async fn cmd_list(config: &SkillsConfig, verbose: bool, json: bool) -> anyhow::R
         println!("  User:      {}", config.local_dir.display());
         println!("  Installed: {}", config.installed_dir.display());
         println!();
-        println!("Use 'bastionclaw skills search <query>' to find skills on ClawHub.");
+        println!("Use 't3claw skills search <query>' to find skills on ClawHub.");
         return Ok(());
     }
 
@@ -159,7 +159,7 @@ async fn cmd_list(config: &SkillsConfig, verbose: bool, json: bool) -> anyhow::R
     if !verbose {
         println!();
         println!(
-            "Use --verbose for details, or 'bastionclaw skills info <name>' for a specific skill."
+            "Use --verbose for details, or 't3claw skills info <name>' for a specific skill."
         );
     }
 
@@ -253,7 +253,7 @@ async fn cmd_info(config: &SkillsConfig, name: &str, json: bool) -> anyhow::Resu
     let registry = discover_skills(config).await;
     let skill = registry.find_by_name(name).ok_or_else(|| {
         anyhow::anyhow!(
-            "Skill '{}' not found. Use 'bastionclaw skills list' to see available skills.",
+            "Skill '{}' not found. Use 't3claw skills list' to see available skills.",
             name
         )
     })?;

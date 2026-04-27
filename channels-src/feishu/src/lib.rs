@@ -1,11 +1,11 @@
 // Feishu API types have fields reserved for future use.
 #![allow(dead_code)]
 
-//! Feishu/Lark Bot channel for BastionClaw.
+//! Feishu/Lark Bot channel for T3Claw.
 //!
 //! This WASM component implements the channel interface for handling Feishu
 //! webhooks (Event Subscription v2.0) and sending messages back via the
-//! Feishu/Lark Bot API. BastionClaw currently does not connect to Feishu's
+//! Feishu/Lark Bot API. T3Claw currently does not connect to Feishu's
 //! long-connection websocket subscription mode; use Event Subscription
 //! webhooks for this channel.
 //!
@@ -549,7 +549,7 @@ fn handle_message_event(event_data: &serde_json::Value) {
                                 sender_id,
                                 "open_id",
                                 &format!(
-                                    "Enter this code in BastionClaw to pair your feishu account: `{}`. CLI fallback: `bastionclaw pairing approve feishu {}`",
+                                    "Enter this code in T3Claw to pair your feishu account: `{}`. CLI fallback: `t3claw pairing approve feishu {}`",
                                     result.code, result.code
                                 ),
                             );

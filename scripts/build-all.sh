@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build BastionClaw and all bundled channels.
+# Build T3Claw and all bundled channels.
 #
 # Run this before release or when channel sources have changed.
 # The main binary bundles telegram.wasm via include_bytes!; it must exist.
@@ -14,8 +14,8 @@ if [ -d "channels-src/telegram" ]; then
 fi
 
 echo ""
-echo "Building BastionClaw..."
+echo "Building T3Claw..."
 cargo build --release
 
 echo ""
-echo "Done. Binary: target/release/bastionclaw"
+echo "Done. Binary: target/release/t3claw"

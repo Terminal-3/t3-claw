@@ -1,4 +1,4 @@
-//! CLI subcommand definitions for `bastionclaw service`.
+//! CLI subcommand definitions for `t3claw service`.
 
 use clap::Subcommand;
 

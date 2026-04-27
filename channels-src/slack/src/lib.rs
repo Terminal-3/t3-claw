@@ -1,4 +1,4 @@
-//! Slack Events API channel for BastionClaw.
+//! Slack Events API channel for T3Claw.
 //!
 //! This WASM component implements the channel interface for handling Slack
 //! webhooks and sending messages back to Slack.
@@ -754,7 +754,7 @@ fn send_pairing_reply(channel_id: &str, code: &str) -> Result<(), String> {
     let payload = serde_json::json!({
         "channel": channel_id,
         "text": format!(
-            "Enter this code in BastionClaw to pair your slack account: `{}`. CLI fallback: `bastionclaw pairing approve slack {}`",
+            "Enter this code in T3Claw to pair your slack account: `{}`. CLI fallback: `t3claw pairing approve slack {}`",
             code, code
         ),
     });

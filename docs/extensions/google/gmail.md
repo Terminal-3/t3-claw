@@ -22,7 +22,7 @@ In your Google Cloud project, navigate to **APIs & Services → Library**, searc
 <Step title="Install the Extension">
 
 ```bash
-bastionclaw registry install gmail
+t3claw registry install gmail
 ```
 
 </Step>
@@ -30,10 +30,10 @@ bastionclaw registry install gmail
 <Step title="Authorize Access">
 
 ```bash
-bastionclaw tool auth gmail
+t3claw tool auth gmail
 ```
 
-BastionClaw will provide a URL for you to authenticate - remember to follow the [auth setup](./oauth-setup) to enable your agent to capture the callback. If possible, it will open a browser window. Once approved, the token is stored securely and refreshed automatically.
+T3Claw will provide a URL for you to authenticate - remember to follow the [auth setup](./oauth-setup) to enable your agent to capture the callback. If possible, it will open a browser window. Once approved, the token is stored securely and refreshed automatically.
 
 <Tip>
 If you already authenticated one Google service, you still need to authenticate each additional Google extension separately.

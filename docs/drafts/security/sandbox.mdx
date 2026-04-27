@@ -4,7 +4,7 @@ sidebarTitle: Sandbox
 description: WASM and Docker sandbox isolation
 ---
 
-BastionClaw uses two sandbox layers for tool execution: WASM sandbox for tools, and Docker sandbox for jobs.
+T3Claw uses two sandbox layers for tool execution: WASM sandbox for tools, and Docker sandbox for jobs.
 
 ## Two Sandboxes
 
@@ -88,7 +88,7 @@ export SANDBOX_CPU_SHARES=1024
 export SANDBOX_TIMEOUT_SECS=120
 
 # Docker image
-export SANDBOX_IMAGE=bastionclaw-worker:latest
+export SANDBOX_IMAGE=t3claw-worker:latest
 ```
 
 ## Network Proxy
@@ -163,7 +163,7 @@ USER 1000
 
 ## Docker-in-Docker
 
-BastionClaw can run inside Docker and still sandbox jobs:
+T3Claw can run inside Docker and still sandbox jobs:
 
 ```bash
 # Mount Docker socket
@@ -205,13 +205,13 @@ Containers are siblings, not children.
 ## Important Distinction
 
 <Warning>
-**BastionClaw runs alongside Docker** (for job sandboxing), not inside Docker by default.
+**T3Claw runs alongside Docker** (for job sandboxing), not inside Docker by default.
 
-- **Default**: BastionClaw binary → spawns containers for jobs
-- **Optional**: BastionClaw inside container → still spawns sibling containers
+- **Default**: T3Claw binary → spawns containers for jobs
+- **Optional**: T3Claw inside container → still spawns sibling containers
 </Warning>
 
-See [Docker Install](/install/docker) for running BastionClaw itself in a container.
+See [Docker Install](/install/docker) for running T3Claw itself in a container.
 
 ## Next Steps
 

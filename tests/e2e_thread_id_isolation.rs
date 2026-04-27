@@ -10,7 +10,7 @@ mod support;
 mod tests {
     use std::time::Duration;
 
-    use bastionclaw::channels::{IncomingMessage, OutgoingResponse};
+    use t3claw::channels::{IncomingMessage, OutgoingResponse};
     use uuid::Uuid;
 
     use crate::support::test_rig::TestRigBuilder;

@@ -5,8 +5,8 @@
 //! - Builder sub-tools use proper approval checks
 //! - Worker checks job-level approval context
 
-use bastionclaw::context::JobContext;
-use bastionclaw::tools::{
+use t3claw::context::JobContext;
+use t3claw::tools::{
     ApprovalContext, ApprovalRequirement, Tool, ToolError, ToolOutput, check_approval_in_context,
 };
 

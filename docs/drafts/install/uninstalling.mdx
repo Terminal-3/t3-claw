@@ -1,20 +1,20 @@
 ---
-title: Uninstalling BastionClaw
+title: Uninstalling T3Claw
 sidebarTitle: Uninstalling
-description: Completely remove BastionClaw from your system
+description: Completely remove T3Claw from your system
 ---
 
-How to completely remove BastionClaw from your system.
+How to completely remove T3Claw from your system.
 
-## Stop BastionClaw
+## Stop T3Claw
 
 ```bash
 # If running in terminal
 Ctrl+C
 
 # If running as a service
-sudo systemctl stop bastionclaw   # systemd
-brew services stop bastionclaw    # Homebrew
+sudo systemctl stop t3claw   # systemd
+brew services stop t3claw    # Homebrew
 ```
 
 ## Remove Binary
@@ -23,35 +23,35 @@ brew services stop bastionclaw    # Homebrew
   <Tab title="Linux/macOS">
     ```bash
     # Remove binary
-    rm ~/.local/bin/bastionclaw
+    rm ~/.local/bin/t3claw
 
     # Or if installed system-wide
-    sudo rm /usr/local/bin/bastionclaw
+    sudo rm /usr/local/bin/t3claw
     ```
   </Tab>
 
   <Tab title="Ubuntu/Debian (APT)">
     ```bash
-    sudo apt remove bastionclaw
+    sudo apt remove t3claw
     sudo apt autoremove
     ```
   </Tab>
 
   <Tab title="macOS (Homebrew)">
     ```bash
-    brew uninstall bastionclaw
-    brew untap bastionclaw-ai/tap
+    brew uninstall t3claw
+    brew untap t3claw-ai/tap
     ```
   </Tab>
 
   <Tab title="Docker">
     ```bash
     # Stop and remove container
-    docker stop bastionclaw
-    docker rm bastionclaw
+    docker stop t3claw
+    docker rm t3claw
 
     # Remove image
-    docker rmi nearai/bastionclaw:latest
+    docker rmi nearai/t3claw:latest
     ```
   </Tab>
 </Tabs>
@@ -59,22 +59,22 @@ brew services stop bastionclaw    # Homebrew
 ## Remove Data
 
 <Warning>
-This permanently deletes all BastionClaw data including conversations, memory, and settings. This cannot be undone.
+This permanently deletes all T3Claw data including conversations, memory, and settings. This cannot be undone.
 </Warning>
 
 ```bash
 # Remove data directory
-rm -rf ~/.bastionclaw
+rm -rf ~/.t3claw
 
 # Remove service files
-sudo rm -f /etc/systemd/system/bastionclaw.service
+sudo rm -f /etc/systemd/system/t3claw.service
 sudo systemctl daemon-reload
 
 # Remove launchd service (macOS)
-rm -f ~/Library/LaunchAgents/ai.bastionclaw.service.plist
+rm -f ~/Library/LaunchAgents/ai.t3claw.service.plist
 
 # Remove logs
-sudo rm -rf /var/log/bastionclaw
+sudo rm -rf /var/log/t3claw
 ```
 
 ## Remove PostgreSQL Database
@@ -84,8 +84,8 @@ If you used PostgreSQL:
 ```bash
 # Remove database (optional)
 sudo -u postgres psql <<EOF
-DROP DATABASE bastionclaw;
-DROP USER bastionclaw;
+DROP DATABASE t3claw;
+DROP USER t3claw;
 EOF
 ```
 
@@ -93,16 +93,16 @@ EOF
 
 ```bash
 # Check binary removed
-which bastionclaw
+which t3claw
 # Should return nothing
 
 # Check data removed
-ls -la ~/.bastionclaw
+ls -la ~/.t3claw
 # Should return: No such file or directory
 
 # Check service removed
-sudo systemctl status bastionclaw
-# Should return: Unit bastionclaw.service could not be found
+sudo systemctl status t3claw
+# Should return: Unit t3claw.service could not be found
 ```
 
 ## Partial Removal
@@ -111,13 +111,13 @@ To keep your data but remove the binary:
 
 ```bash
 # Just remove binary
-rm ~/.local/bin/bastionclaw
+rm ~/.local/bin/t3claw
 
-# Data remains at ~/.bastionclaw/
+# Data remains at ~/.t3claw/
 # Reinstall later and your data will be intact
 ```
 
 ## Next Steps
 
-- [Install BastionClaw](/install) again if needed
-- Your data can be restored if you kept `~/.bastionclaw/`
+- [Install T3Claw](/install) again if needed
+- Your data can be restored if you kept `~/.t3claw/`

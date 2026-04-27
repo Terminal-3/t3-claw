@@ -9,26 +9,26 @@ use secrecy::SecretString;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
-use bastionclaw::agent::routine_engine::RoutineEngine;
-use bastionclaw::agent::{Agent, AgentDeps, SessionManager as AgentSessionManager};
-use bastionclaw::app::{AppBuilder, AppBuilderFlags};
-use bastionclaw::channels::IncomingMessage;
-use bastionclaw::channels::web::auth::MultiAuthState;
-use bastionclaw::channels::web::log_layer::LogBroadcaster;
-use bastionclaw::channels::web::server::{
+use t3claw::agent::routine_engine::RoutineEngine;
+use t3claw::agent::{Agent, AgentDeps, SessionManager as AgentSessionManager};
+use t3claw::app::{AppBuilder, AppBuilderFlags};
+use t3claw::channels::IncomingMessage;
+use t3claw::channels::web::auth::MultiAuthState;
+use t3claw::channels::web::log_layer::LogBroadcaster;
+use t3claw::channels::web::server::{
     GatewayState, PerUserRateLimiter, RateLimiter, start_server,
 };
-use bastionclaw::channels::web::sse::SseManager;
-use bastionclaw::channels::web::ws::WsConnectionTracker;
-use bastionclaw::config::{Config, RegistryProviderConfig, RoutineConfig};
-use bastionclaw::db::Database;
-use bastionclaw::db::libsql::LibSqlBackend;
-use bastionclaw::llm::registry::ProviderProtocol;
-use bastionclaw::llm::{
+use t3claw::channels::web::sse::SseManager;
+use t3claw::channels::web::ws::WsConnectionTracker;
+use t3claw::config::{Config, RegistryProviderConfig, RoutineConfig};
+use t3claw::db::Database;
+use t3claw::db::libsql::LibSqlBackend;
+use t3claw::llm::registry::ProviderProtocol;
+use t3claw::llm::{
     SessionConfig as LlmSessionConfig, SessionManager as LlmSessionManager, create_llm_provider,
 };
-use bastionclaw::secrets::SecretsStore;
-use bastionclaw::tools::{Tool, ToolError, ToolOutput};
+use t3claw::secrets::SecretsStore;
+use t3claw::tools::{Tool, ToolError, ToolOutput};
 
 use crate::support::test_channel::{TestChannel, TestChannelHandle};
 
@@ -51,7 +51,7 @@ impl Tool for MockGithubWebhookTool {
     async fn execute(
         &self,
         params: serde_json::Value,
-        _ctx: &bastionclaw::context::JobContext,
+        _ctx: &t3claw::context::JobContext,
     ) -> Result<ToolOutput, ToolError> {
         let event = params
             .pointer("/webhook/headers/x-github-event")
@@ -91,8 +91,8 @@ impl Tool for MockGithubWebhookTool {
         ))
     }
 
-    fn webhook_capability(&self) -> Option<bastionclaw::tools::wasm::WebhookCapability> {
-        Some(bastionclaw::tools::wasm::WebhookCapability {
+    fn webhook_capability(&self) -> Option<t3claw::tools::wasm::WebhookCapability> {
+        Some(t3claw::tools::wasm::WebhookCapability {
             secret_name: Some("github_webhook_secret".to_string()),
             secret_header: Some("x-webhook-secret".to_string()),
             ..Default::default()
@@ -195,7 +195,7 @@ impl GatewayWorkflowHarness {
 
         let test_channel = Arc::new(TestChannel::new());
         let handle = TestChannelHandle::with_name(Arc::clone(&test_channel), "gateway");
-        let channel_manager = bastionclaw::channels::ChannelManager::new();
+        let channel_manager = t3claw::channels::ChannelManager::new();
         channel_manager.add(Box::new(handle)).await;
         let channels = Arc::new(channel_manager);
 
@@ -208,7 +208,7 @@ impl GatewayWorkflowHarness {
             }
         });
 
-        let scheduler_slot: bastionclaw::tools::builtin::SchedulerSlot =
+        let scheduler_slot: t3claw::tools::builtin::SchedulerSlot =
             Arc::new(tokio::sync::RwLock::new(None));
         let agent_session_manager = Arc::new(AgentSessionManager::new());
 
@@ -240,7 +240,7 @@ impl GatewayWorkflowHarness {
             cost_guard: Some(Arc::clone(&components.cost_guard)),
             routine_engine: Arc::clone(&routine_slot),
             startup_time: Instant::now(),
-            active_config: bastionclaw::channels::web::server::ActiveConfigSnapshot::default(),
+            active_config: t3claw::channels::web::server::ActiveConfigSnapshot::default(),
             secrets_store: None,
             db_auth: None,
             pairing_store: None,
@@ -278,10 +278,10 @@ impl GatewayWorkflowHarness {
                 transcription: None,
                 document_extraction: None,
                 sandbox_readiness:
-                    bastionclaw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
+                    t3claw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
                 builder: None,
                 llm_backend: "nearai".to_string(),
-                tenant_rates: std::sync::Arc::new(bastionclaw::tenant::TenantRateRegistry::new(
+                tenant_rates: std::sync::Arc::new(t3claw::tenant::TenantRateRegistry::new(
                     4, 3,
                 )),
             },
@@ -321,8 +321,8 @@ impl GatewayWorkflowHarness {
         .await
         .expect("failed to start gateway server");
 
-        let webhook_secrets = Arc::new(bastionclaw::secrets::InMemorySecretsStore::new(Arc::new(
-            bastionclaw::secrets::SecretsCrypto::new(SecretString::from(
+        let webhook_secrets = Arc::new(t3claw::secrets::InMemorySecretsStore::new(Arc::new(
+            t3claw::secrets::SecretsCrypto::new(SecretString::from(
                 "test-key-at-least-32-chars-long!!".to_string(),
             ))
             .expect("crypto"),
@@ -330,22 +330,22 @@ impl GatewayWorkflowHarness {
         webhook_secrets
             .create(
                 &user_id,
-                bastionclaw::secrets::CreateSecretParams::new(
+                t3claw::secrets::CreateSecretParams::new(
                     "github_webhook_secret",
                     "test-webhook-secret",
                 ),
             )
             .await
             .expect("store webhook secret");
-        let webhook_state = bastionclaw::webhooks::ToolWebhookState {
+        let webhook_state = t3claw::webhooks::ToolWebhookState {
             tools: Arc::clone(gateway_state.tool_registry.as_ref().expect("tool registry")),
             routine_engine: Arc::clone(&routine_slot),
             user_id: user_id.clone(),
             secrets_store: Some(
-                webhook_secrets as Arc<dyn bastionclaw::secrets::SecretsStore + Send + Sync>,
+                webhook_secrets as Arc<dyn t3claw::secrets::SecretsStore + Send + Sync>,
             ),
         };
-        let webhook_app = bastionclaw::webhooks::routes(webhook_state);
+        let webhook_app = t3claw::webhooks::routes(webhook_state);
         let webhook_listener = tokio::net::TcpListener::bind("127.0.0.1:0")
             .await
             .expect("failed to bind webhook listener");

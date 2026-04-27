@@ -1,10 +1,10 @@
 ---
 title: NEAR AI
 sidebarTitle: NEAR AI
-description: Default LLM provider for BastionClaw
+description: Default LLM provider for T3Claw
 ---
 
-NEAR AI is the default provider for BastionClaw, offering access to multiple models including Claude via a simple OAuth flow.
+NEAR AI is the default provider for T3Claw, offering access to multiple models including Claude via a simple OAuth flow.
 
 ## Overview
 
@@ -21,14 +21,14 @@ NEAR AI provides:
 **Best for:** Local machines with a browser
 
 **How it works:**
-1. `bastionclaw onboard` opens your browser
+1. `t3claw onboard` opens your browser
 2. Log in with GitHub or Google
-3. Session token saved to `~/.bastionclaw/session.json`
+3. Session token saved to `~/.t3claw/session.json`
 4. Automatic renewal
 
 **Setup:**
 ```bash
-bastionclaw onboard
+t3claw onboard
 # Select NEAR AI → Options 1 or 2 (GitHub/Google)
 ```
 
@@ -39,22 +39,22 @@ bastionclaw onboard
 **How it works:**
 1. Get API key from https://cloud.near.ai
 2. Paste into terminal during onboarding
-3. Key saved to `~/.bastionclaw/.env`
+3. Key saved to `~/.t3claw/.env`
 
 **Setup:**
 ```bash
-bastionclaw onboard
+t3claw onboard
 # Select NEAR AI → Option 4: "NEAR AI Cloud API key"
 ```
 
 <Warning>
-**VPS / Remote servers:** Browser OAuth won't work without a browser. Use API key mode or set `BASTIONCLAW_OAUTH_CALLBACK_URL` to a publicly reachable URL.
+**VPS / Remote servers:** Browser OAuth won't work without a browser. Use API key mode or set `T3CLAW_OAUTH_CALLBACK_URL` to a publicly reachable URL.
 </Warning>
 
 ## Configuration
 
 ```bash
-# ~/.bastionclaw/.env
+# ~/.t3claw/.env
 
 # Backend selection
 LLM_BACKEND=nearai
@@ -95,10 +95,10 @@ Session tokens auto-renew before expiration (typically 8-12 hours).
 If you need to update the session manually:
 
 ```bash
-bastionclaw config set nearai.session_token sess_xxxxx
+t3claw config set nearai.session_token sess_xxxxx
 ```
 
-Or edit `~/.bastionclaw/session.json`:
+Or edit `~/.t3claw/session.json`:
 
 ```json
 {
@@ -156,7 +156,7 @@ export NEARAI_CIRCUIT_BREAKER_TIMEOUT_SECS=60
   <Accordion title="Session expired" icon="clock">
     ```bash
     # Re-authenticate
-    bastionclaw onboard --skip-auth
+    t3claw onboard --skip-auth
     # Select NEAR AI → re-authenticate
     ```
   </Accordion>
@@ -167,7 +167,7 @@ export NEARAI_CIRCUIT_BREAKER_TIMEOUT_SECS=60
     1. **Use API key mode** (recommended)
     2. **Set callback URL**:
        ```bash
-       export BASTIONCLAW_OAUTH_CALLBACK_URL=https://your-server:9876
+       export T3CLAW_OAUTH_CALLBACK_URL=https://your-server:9876
        ```
   </Accordion>
 

@@ -1,13 +1,13 @@
 ---
 title: Windows (WSL2)
 sidebarTitle: Windows (WSL2)
-description: Running BastionClaw on Windows via WSL2 (recommended)
+description: Running T3Claw on Windows via WSL2 (recommended)
 ---
 
-WSL2 (Windows Subsystem for Linux 2) is the recommended way to run BastionClaw on Windows. It provides a full Linux environment with near-native performance and seamless port forwarding to Windows.
+WSL2 (Windows Subsystem for Linux 2) is the recommended way to run T3Claw on Windows. It provides a full Linux environment with near-native performance and seamless port forwarding to Windows.
 
 <Note>
-WSL2 is preferred over native Windows for BastionClaw. The Docker sandbox, shell tools, and keyring integrations all work without workarounds under WSL2. For a fully native Windows setup, see [Windows Native](/platforms/windows-native).
+WSL2 is preferred over native Windows for T3Claw. The Docker sandbox, shell tools, and keyring integrations all work without workarounds under WSL2. For a fully native Windows setup, see [Windows Native](/platforms/windows-native).
 </Note>
 
 ---
@@ -45,12 +45,12 @@ sudo apt update && sudo apt upgrade -y
 
 ---
 
-## Install BastionClaw in WSL2
+## Install T3Claw in WSL2
 
 Once inside the WSL2 Ubuntu terminal, installation is identical to Linux:
 
 ```bash
-curl -fsSL https://install.bastionclaw.ai | bash
+curl -fsSL https://install.t3claw.ai | bash
 ```
 
 Add to PATH:
@@ -63,14 +63,14 @@ source ~/.bashrc
 Run the setup wizard:
 
 ```bash
-bastionclaw onboard
+t3claw onboard
 ```
 
 ---
 
 ## Accessing the Web Gateway from Windows
 
-BastionClaw's Web Gateway binds to `127.0.0.1:3000` inside WSL2. Modern Windows 11 and recent Windows 10 versions automatically forward localhost ports from WSL2 to the Windows host.
+T3Claw's Web Gateway binds to `127.0.0.1:3000` inside WSL2. Modern Windows 11 and recent Windows 10 versions automatically forward localhost ports from WSL2 to the Windows host.
 
 **From a Windows browser, navigate to:** `http://localhost:3000`
 
@@ -131,11 +131,11 @@ On WSL2 without a desktop session, the keyring daemon may not start reliably. Us
 
 ```bash
 # Generate a key once and store it securely
-openssl rand -base64 32 > ~/.bastionclaw/master.key
-chmod 600 ~/.bastionclaw/master.key
+openssl rand -base64 32 > ~/.t3claw/master.key
+chmod 600 ~/.t3claw/master.key
 
 # Reference it in your .env
-BASTIONCLAW_MASTER_KEY=$(cat ~/.bastionclaw/master.key)
+T3CLAW_MASTER_KEY=$(cat ~/.t3claw/master.key)
 ```
 
 <Warning>
@@ -162,7 +162,7 @@ Docker Desktop integrates directly with WSL2 and is the recommended Docker setup
 docker run --rm hello-world
 ```
 
-You should see the Docker hello-world message. BastionClaw can now use Docker for sandbox execution without needing a separate Docker installation inside WSL2.
+You should see the Docker hello-world message. T3Claw can now use Docker for sandbox execution without needing a separate Docker installation inside WSL2.
 
 <Note>
 Do not install Docker Engine directly inside WSL2 when using Docker Desktop. The Docker Desktop WSL2 integration exposes the Docker daemon to WSL2 automatically — installing a second Docker daemon causes conflicts.
@@ -179,7 +179,7 @@ Windows Firewall applies to WSL2 network traffic. If your firewall is set to blo
 ```powershell
 # PowerShell (run as Administrator)
 New-NetFirewallRule `
-  -DisplayName "BastionClaw Web Gateway" `
+  -DisplayName "T3Claw Web Gateway" `
   -Direction Inbound `
   -Protocol TCP `
   -LocalPort 3000 `
@@ -191,7 +191,7 @@ Block public network access (keep it local-only):
 
 ```powershell
 New-NetFirewallRule `
-  -DisplayName "Block BastionClaw Public" `
+  -DisplayName "Block T3Claw Public" `
   -Direction Inbound `
   -Protocol TCP `
   -LocalPort 3000 `
@@ -205,7 +205,7 @@ New-NetFirewallRule `
 
 [Windows Terminal](https://apps.microsoft.com/detail/9n0dx20hk701) provides the best experience for WSL2:
 
-- Multi-pane view (BastionClaw logs + interactive shell side by side)
+- Multi-pane view (T3Claw logs + interactive shell side by side)
 - Proper font rendering and colors for the TUI interface
 - WSL2 profiles with custom colors and fonts
 
@@ -219,7 +219,7 @@ Set Ubuntu (WSL2) as the default profile in Settings.
 
 ---
 
-## Running BastionClaw as a WSL2 Background Service
+## Running T3Claw as a WSL2 Background Service
 
 WSL2 supports systemd on Windows 11 22H2+ and recent Windows 10 builds. Check if it is enabled:
 
@@ -254,7 +254,7 @@ Then follow the [Linux systemd setup](/platforms/linux#systemd-service) to creat
     Full systemd, keyring, and UFW setup reference
   </Card>
   <Card title="Windows Native" icon="windows" href="/platforms/windows-native">
-    Running BastionClaw natively without WSL2 (experimental)
+    Running T3Claw natively without WSL2 (experimental)
   </Card>
   <Card title="VPS Hardening" icon="shield" href="/platforms/vps">
     Securing a public-facing deployment

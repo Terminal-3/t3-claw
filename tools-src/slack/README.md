@@ -1,6 +1,6 @@
 # Slack WASM Tool
 
-A standalone WASM component that provides Slack integration for BastionClaw. This serves as both a functional tool and a template for building custom WASM tools.
+A standalone WASM component that provides Slack integration for T3Claw. This serves as both a functional tool and a template for building custom WASM tools.
 
 ## Features
 
@@ -50,9 +50,9 @@ target/wasm32-wasip2/release/slack_tool.wasm
 Copy the WASM and capabilities files to the agent's tools directory:
 
 ```bash
-mkdir -p ~/.bastionclaw/tools
-cp target/wasm32-wasip2/release/slack_tool.wasm ~/.bastionclaw/tools/slack.wasm
-cp slack.capabilities.json ~/.bastionclaw/tools/
+mkdir -p ~/.t3claw/tools
+cp target/wasm32-wasip2/release/slack_tool.wasm ~/.t3claw/tools/slack.wasm
+cp slack.capabilities.json ~/.t3claw/tools/
 ```
 
 ### Option B: Database Storage (Production)
@@ -60,7 +60,7 @@ cp slack.capabilities.json ~/.bastionclaw/tools/
 Use the agent CLI or API to store the tool:
 
 ```bash
-bastionclaw tool install \
+t3claw tool install \
   --name slack \
   --wasm target/wasm32-wasip2/release/slack_tool.wasm \
   --capabilities slack.capabilities.json
@@ -71,7 +71,7 @@ bastionclaw tool install \
 Store your Slack bot token as a secret:
 
 ```bash
-bastionclaw secret set slack_bot_token "xoxb-your-token-here"
+t3claw secret set slack_bot_token "xoxb-your-token-here"
 ```
 
 Or via SQL:
@@ -88,7 +88,7 @@ VALUES ('your_user_id', 'slack_bot_token', ...);
 {
   "action": "send_message",
   "channel": "#general",
-  "text": "Hello from BastionClaw!"
+  "text": "Hello from T3Claw!"
 }
 ```
 
@@ -214,7 +214,7 @@ world sandboxed-tool {
 
 Ensure you've stored the secret:
 ```bash
-bastionclaw secret set slack_bot_token "xoxb-..."
+t3claw secret set slack_bot_token "xoxb-..."
 ```
 
 ### "Endpoint not in allowlist"

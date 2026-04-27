@@ -7,8 +7,8 @@
 
 use std::sync::Arc;
 
-use bastionclaw::db::DatabaseHandles;
-use bastionclaw::secrets::{CreateSecretParams, SecretsCrypto, SecretsStore};
+use t3claw::db::DatabaseHandles;
+use t3claw::secrets::{CreateSecretParams, SecretsCrypto, SecretsStore};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -16,12 +16,12 @@ use bastionclaw::secrets::{CreateSecretParams, SecretsCrypto, SecretsStore};
 
 /// Build a libsql DatabaseConfig pointing at a temp file.
 #[cfg(feature = "libsql")]
-fn libsql_config(path: &std::path::Path) -> bastionclaw::config::DatabaseConfig {
-    bastionclaw::config::DatabaseConfig {
-        backend: bastionclaw::config::DatabaseBackend::LibSql,
+fn libsql_config(path: &std::path::Path) -> t3claw::config::DatabaseConfig {
+    t3claw::config::DatabaseConfig {
+        backend: t3claw::config::DatabaseBackend::LibSql,
         url: secrecy::SecretString::from(String::new()),
         pool_size: 1,
-        ssl_mode: bastionclaw::config::SslMode::Prefer,
+        ssl_mode: t3claw::config::SslMode::Prefer,
         libsql_path: Some(path.to_path_buf()),
         libsql_url: None,
         libsql_auth_token: None,
@@ -31,7 +31,7 @@ fn libsql_config(path: &std::path::Path) -> bastionclaw::config::DatabaseConfig 
 /// Build a master-key crypto instance for tests.
 fn test_crypto() -> Arc<SecretsCrypto> {
     let key =
-        secrecy::SecretString::from(bastionclaw::secrets::keychain::generate_master_key_hex());
+        secrecy::SecretString::from(t3claw::secrets::keychain::generate_master_key_hex());
     Arc::new(SecretsCrypto::new(key).expect("test crypto"))
 }
 
@@ -46,7 +46,7 @@ async fn connect_with_handles_returns_db_and_libsql_handle() {
     let db_path = dir.path().join("test.db");
     let config = libsql_config(&db_path);
 
-    let (db, handles) = bastionclaw::db::connect_with_handles(&config)
+    let (db, handles) = t3claw::db::connect_with_handles(&config)
         .await
         .expect("connect_with_handles");
 
@@ -72,7 +72,7 @@ async fn connect_from_config_produces_working_db() {
     let config = libsql_config(&db_path);
 
     // connect_from_config delegates to connect_with_handles internally.
-    let db = bastionclaw::db::connect_from_config(&config)
+    let db = t3claw::db::connect_from_config(&config)
         .await
         .expect("connect_from_config");
 
@@ -91,12 +91,12 @@ async fn secrets_store_from_handles_round_trips() {
     let db_path = dir.path().join("test.db");
     let config = libsql_config(&db_path);
 
-    let (_db, handles) = bastionclaw::db::connect_with_handles(&config)
+    let (_db, handles) = t3claw::db::connect_with_handles(&config)
         .await
         .expect("connect");
 
     let crypto = test_crypto();
-    let store = bastionclaw::secrets::create_secrets_store(crypto, &handles)
+    let store = t3claw::secrets::create_secrets_store(crypto, &handles)
         .expect("create_secrets_store should return Some for libsql");
 
     // Round-trip a secret to prove the store works.
@@ -124,7 +124,7 @@ async fn db_create_secrets_store_standalone_round_trips() {
     let config = libsql_config(&db_path);
     let crypto = test_crypto();
 
-    let store = bastionclaw::db::create_secrets_store(&config, crypto)
+    let store = t3claw::db::create_secrets_store(&config, crypto)
         .await
         .expect("db::create_secrets_store");
 
@@ -156,14 +156,14 @@ async fn both_secrets_factories_produce_compatible_stores() {
     let crypto = test_crypto();
 
     // Factory 1: connect_with_handles + secrets::create_secrets_store
-    let (_db, handles) = bastionclaw::db::connect_with_handles(&config)
+    let (_db, handles) = t3claw::db::connect_with_handles(&config)
         .await
         .expect("connect");
-    let store_a = bastionclaw::secrets::create_secrets_store(Arc::clone(&crypto), &handles)
+    let store_a = t3claw::secrets::create_secrets_store(Arc::clone(&crypto), &handles)
         .expect("store from handles");
 
     // Factory 2: db::create_secrets_store (standalone)
-    let store_b = bastionclaw::db::create_secrets_store(&config, crypto)
+    let store_b = t3claw::db::create_secrets_store(&config, crypto)
         .await
         .expect("standalone store");
 
@@ -189,11 +189,11 @@ async fn both_secrets_factories_produce_compatible_stores() {
 
 #[tokio::test]
 async fn extension_manager_with_process_manager_constructs() {
-    use bastionclaw::extensions::ExtensionManager;
-    use bastionclaw::secrets::InMemorySecretsStore;
-    use bastionclaw::tools::ToolRegistry;
-    use bastionclaw::tools::mcp::McpProcessManager;
-    use bastionclaw::tools::mcp::McpSessionManager;
+    use t3claw::extensions::ExtensionManager;
+    use t3claw::secrets::InMemorySecretsStore;
+    use t3claw::tools::ToolRegistry;
+    use t3claw::tools::mcp::McpProcessManager;
+    use t3claw::tools::mcp::McpSessionManager;
 
     let crypto = test_crypto();
     let secrets: Arc<dyn SecretsStore + Send + Sync> = Arc::new(InMemorySecretsStore::new(crypto));
@@ -220,9 +220,9 @@ async fn extension_manager_with_process_manager_constructs() {
     //
     // We do NOT assert the result is empty: with `store: None`,
     // ExtensionManager.list() falls back to file-based load_mcp_servers()
-    // which reads ~/.bastionclaw/mcp-servers.json. Asserting empty would leak
+    // which reads ~/.t3claw/mcp-servers.json. Asserting empty would leak
     // the developer's local MCP-server configuration into the test, and
-    // overriding BASTIONCLAW_BASE_DIR from an integration test is unsafe (it
+    // overriding T3CLAW_BASE_DIR from an integration test is unsafe (it
     // would mutate process-wide env state in a binary that has no access
     // to the crate-private ENV_MUTEX). The only thing this test is meant
     // to verify is that the constructor wires up correctly and list() can

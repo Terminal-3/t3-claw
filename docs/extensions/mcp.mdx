@@ -1,13 +1,13 @@
 ---
 title: MCP Servers
 sidebarTitle: MCP Servers
-description: Connect Model Context Protocol servers to extend BastionClaw
+description: Connect Model Context Protocol servers to extend T3Claw
 ---
 
-BastionClaw can connect to any [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server and expose its tools to the agent. MCP is an open standard for tool servers, with a growing ecosystem of pre-built servers covering databases, APIs, cloud services, and more.
+T3Claw can connect to any [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server and expose its tools to the agent. MCP is an open standard for tool servers, with a growing ecosystem of pre-built servers covering databases, APIs, cloud services, and more.
 
 <Info>
-BastionClaw connects to MCP servers over **HTTP transport** using JSON-RPC 2.0. The `stdio` transport (subprocess pipes) is not yet supported.
+T3Claw connects to MCP servers over **HTTP transport** using JSON-RPC 2.0. The `stdio` transport (subprocess pipes) is not yet supported.
 
 </Info>
 
@@ -18,7 +18,7 @@ BastionClaw connects to MCP servers over **HTTP transport** using JSON-RPC 2.0. 
 To add a MCP server you can either directly request your agent to use it, or configure it via CLI:
 
 ```bash
-bastionclaw mcp add <server_name> <server_url>
+t3claw mcp add <server_name> <server_url>
 ```
 
 ---
@@ -27,7 +27,7 @@ bastionclaw mcp add <server_name> <server_url>
 If your MCP server requires authentication, use the following command:
 
 ```bash
-bastionclaw mcp auth <server_name>
+t3claw mcp auth <server_name>
 ```
 
 ---
@@ -38,7 +38,7 @@ Once connected, MCP tools appear in the agent's tool list alongside built-in too
 
 ```bash
 # Via CLI
-bastionclaw mcp list
+t3claw mcp list
 ```
 
 ---
@@ -48,7 +48,7 @@ bastionclaw mcp list
 Remove a server with:
 
 ```bash
-bastionclaw mcp remove <server_name>
+t3claw mcp remove <server_name>
 ```
 
 ---
