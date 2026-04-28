@@ -36,7 +36,7 @@ COMPOSE     := docker compose --profile app --profile mcp
 COMPOSE_CORE := docker compose --profile app
 SERVICE := t3claw
 
-.PHONY: up build rebuild up-no-t3n build-no-t3n rebuild-no-t3n build-sidecar pull-sidecar down wipe wipe-all restart logs shell status help
+.PHONY: up build rebuild up-no-t3n build-no-t3n rebuild-no-t3n build-sidecar push-sidecar-gcp pull-sidecar down wipe wipe-all restart logs shell status help
 
 ## Start the full stack (detached). Builds images if they don't exist yet.
 up:
@@ -68,14 +68,23 @@ build-no-t3n:
 rebuild-no-t3n: build-no-t3n
 	$(COMPOSE_CORE) up -d
 
-## Build the t3n-mcp-sidecar image locally (requires NPM_GITHUB_TOKEN env var).
-## Only needed when you want to test sidecar changes before they are published and
-## pushed to GHCR by CI. Normal workflow: publish t3n-mcp via npm-package-release
-## workflow in trinity, then use `make pull-sidecar` instead.
+## Build the t3n-mcp-sidecar image for linux/amd64 and push to GCP Artifact Registry.
+## Requires the ../trinity repo to be checked out as a sibling directory.
+## Usage: make push-sidecar-gcp
+push-sidecar-gcp:
+	docker buildx build --platform linux/amd64 \
+		--build-context trinity_mcp=../trinity/client/mcp/t3n-mcp \
+		--build-context trinity_shared=../trinity/client/shared \
+		-f docker/t3n-mcp-sidecar.Dockerfile \
+		-t us-central1-docker.pkg.dev/gen-lang-client-0263867259/t3claw/t3n-mcp-sidecar:latest \
+		--push .
+
+## Build the t3n-mcp-sidecar image locally (for dev, not GCP).
+## Requires the ../trinity repo to be checked out as a sibling directory.
 build-sidecar:
-	@test -n "$(NPM_GITHUB_TOKEN)" || { echo "ERROR: NPM_GITHUB_TOKEN is not set"; exit 1; }
-	DOCKER_BUILDKIT=1 docker build \
-		--secret id=npm_github_token,env=NPM_GITHUB_TOKEN \
+	docker buildx build \
+		--build-context trinity_mcp=../trinity/client/mcp/t3n-mcp \
+		--build-context trinity_shared=../trinity/client/shared \
 		-f docker/t3n-mcp-sidecar.Dockerfile \
 		-t ghcr.io/terminal-3/t3n-mcp-sidecar:latest \
 		.

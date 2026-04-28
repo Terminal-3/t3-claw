@@ -22,6 +22,8 @@ set -euo pipefail
 PROJECT="${PROJECT:-gen-lang-client-0263867259}"
 REGION="${REGION:-us-central1}"
 ZONE="${ZONE:-asia-southeast1-a}"
+# This project has no `default` VPC; all VMs run on the shared openclaw-vpc.
+NETWORK="${NETWORK:-openclaw-vpc}"
 REPO="t3claw"
 IMAGE_PREFIX="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
 VM_NAME="t3claw-staging"
@@ -52,20 +54,27 @@ fi
 
 gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
-echo "     Building agent image (target: runtime-staging) ..."
-docker build --platform linux/amd64 --target runtime-staging \
-  -t "${IMAGE_PREFIX}/agent:latest" \
-  "${REPO_ROOT}"
+# Skip the (slow) image build+push entirely. Useful when you've already pushed
+# images and only want to (re-)create downstream GCP infrastructure.
+#   SKIP_BUILD=1 bash deploy-gcp/gcp-provision.sh
+if [ "${SKIP_BUILD:-0}" = "1" ]; then
+  echo "     SKIP_BUILD=1 set — skipping image build/push"
+else
+  echo "     Building agent image (target: runtime-staging) ..."
+  docker build --platform linux/amd64 --target runtime-staging \
+    -t "${IMAGE_PREFIX}/agent:latest" \
+    "${REPO_ROOT}"
 
-echo "     Building worker image ..."
-docker build --platform linux/amd64 \
-  -f "${REPO_ROOT}/Dockerfile.worker" \
-  -t "${IMAGE_PREFIX}/worker:latest" \
-  "${REPO_ROOT}"
+  echo "     Building worker image ..."
+  docker build --platform linux/amd64 \
+    -f "${REPO_ROOT}/Dockerfile.worker" \
+    -t "${IMAGE_PREFIX}/worker:latest" \
+    "${REPO_ROOT}"
 
-echo "     Pushing images ..."
-docker push "${IMAGE_PREFIX}/agent:latest"
-docker push "${IMAGE_PREFIX}/worker:latest"
+  echo "     Pushing images ..."
+  docker push "${IMAGE_PREFIX}/agent:latest"
+  docker push "${IMAGE_PREFIX}/worker:latest"
+fi
 
 # ── Phase 2: Service Account + VM ─────────────────────────────────────────────
 echo "==> [2/5] Service account + VM"
@@ -92,10 +101,23 @@ if gcloud compute firewall-rules describe allow-t3claw-lb \
   echo "     firewall rule already exists, skipping create"
 else
   gcloud compute firewall-rules create allow-t3claw-lb \
-    --network=default \
+    --network="${NETWORK}" \
     --allow=tcp:3000 \
     --source-ranges=130.211.0.0/22,35.191.0.0/16 \
     --target-tags=t3claw \
+    --project="${PROJECT}"
+fi
+
+# Firewall: allow IAP SSH tunnelling (35.235.240.0/20 is the IAP range).
+# Required because the VM is created with no public IP.
+if gcloud compute firewall-rules describe allow-ssh-iap \
+    --project="${PROJECT}" &>/dev/null; then
+  echo "     IAP SSH firewall rule already exists, skipping create"
+else
+  gcloud compute firewall-rules create allow-ssh-iap \
+    --network="${NETWORK}" \
+    --allow=tcp:22 \
+    --source-ranges=35.235.240.0/20 \
     --project="${PROJECT}"
 fi
 
@@ -112,22 +134,26 @@ else
     --boot-disk-size=30GB \
     --service-account="${SA_EMAIL}" \
     --scopes=cloud-platform \
+    --network="${NETWORK}" \
+    --subnet="${NETWORK}" \
+    --no-address \
     --tags=t3claw
 fi
 
 # ── Phase 3: Copy files + bootstrap VM ────────────────────────────────────────
 echo "==> [3/5] VM bootstrap"
 echo ""
+echo "     The VM has no public IP — all SSH/SCP must go via IAP tunnel."
 echo "     Copy deploy-gcp/ and docker-compose.yml to the VM, then run vm-setup.sh:"
 echo ""
-echo "       gcloud compute scp --recurse deploy-gcp/ ${VM_NAME}:/tmp/deploy --zone=${ZONE} --project=${PROJECT}"
-echo "       gcloud compute scp docker-compose.yml ${VM_NAME}:/tmp/docker-compose.yml --zone=${ZONE} --project=${PROJECT}"
-echo "       gcloud compute ssh ${VM_NAME} --zone=${ZONE} --project=${PROJECT} -- sudo bash /tmp/deploy/vm-setup.sh"
+echo "       gcloud compute scp --recurse deploy-gcp/ ${VM_NAME}:/tmp/deploy --zone=${ZONE} --project=${PROJECT} --tunnel-through-iap"
+echo "       gcloud compute scp docker-compose.yml ${VM_NAME}:/tmp/docker-compose.yml --zone=${ZONE} --project=${PROJECT} --tunnel-through-iap"
+echo "       gcloud compute ssh ${VM_NAME} --zone=${ZONE} --project=${PROJECT} --tunnel-through-iap -- sudo bash /tmp/deploy/vm-setup.sh"
 echo ""
 echo "     Then create /opt/t3claw/.env on the VM (see deploy-gcp/env.example),"
 echo "     and start the service:"
 echo ""
-echo "       gcloud compute ssh ${VM_NAME} --zone=${ZONE} --project=${PROJECT} -- \\"
+echo "       gcloud compute ssh ${VM_NAME} --zone=${ZONE} --project=${PROJECT} --tunnel-through-iap -- \\"
 echo "         'sudo systemctl enable t3claw && sudo systemctl start t3claw'"
 echo ""
 read -rp "     Press Enter once the VM is bootstrapped and .env is in place, or Ctrl-C to stop here..."

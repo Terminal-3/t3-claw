@@ -23,21 +23,21 @@ gcloud auth configure-docker us-central1-docker.pkg.dev
 Both images must be built for `linux/amd64` (the VM is x86). Your Mac is ARM so a cross-platform build is required.
 
 ```bash
-# Source GITHUB_TOKEN from your local .env (required for the t3n-mcp-sidecar)
-export $(grep GITHUB_TOKEN .env | xargs)
-
 # Agent
 docker buildx build --platform linux/amd64 \
   -t us-central1-docker.pkg.dev/gen-lang-client-0263867259/t3claw/agent:latest \
   --push .
 
-# t3n-mcp sidecar
+# t3n-mcp sidecar — requires ../trinity checked out as a sibling directory
 docker buildx build --platform linux/amd64 \
-  --build-arg GITHUB_TOKEN=$GITHUB_TOKEN \
+  --build-context trinity_mcp=../trinity/client/mcp/t3n-mcp \
+  --build-context trinity_shared=../trinity/client/shared \
   -f docker/t3n-mcp-sidecar.Dockerfile \
   -t us-central1-docker.pkg.dev/gen-lang-client-0263867259/t3claw/t3n-mcp-sidecar:latest \
   --push .
 ```
+
+Or use the Makefile shortcut for the sidecar: `make push-sidecar-gcp`
 
 > The agent build takes 30–60 min from scratch (Rust + WASM compilation). Subsequent builds use the BuildKit layer cache and are much faster.
 
@@ -138,6 +138,29 @@ bash deploy-gcp/gcp-provision.sh
 ```
 
 See `gcp-provision.sh` for details. After the VM is created, populate `/opt/t3claw/.env` using `deploy-gcp/env.example` as a template, then start the service.
+
+The script is idempotent — re-running it is safe and will skip resources that already exist.
+
+### Network prerequisites
+
+This project does **not** have a `default` VPC. All VMs run on the shared
+`openclaw-vpc` network (auto-mode), and the VM is created with **no public IP**
+(SSH is via IAP tunnel only). The script defaults to `NETWORK=openclaw-vpc` and
+creates two firewall rules on it:
+
+- `allow-t3claw-lb` — Google LB health-check ranges → `tcp:3000`
+- `allow-ssh-iap` — IAP range `35.235.240.0/20` → `tcp:22`
+
+If you need a different network, override it: `NETWORK=my-vpc bash deploy-gcp/gcp-provision.sh`.
+
+For the `--no-address` VM to reach the internet (Debian apt, Docker Hub during
+bootstrap, etc.), the VPC must have either Cloud NAT or Private Google Access
+configured. The existing `bastionclaw-staging` / `ironclaw-staging` VMs share
+this VPC, so this is already in place — confirm with:
+
+```bash
+gcloud compute routers list --project=gen-lang-client-0263867259
+```
 
 ---
 
