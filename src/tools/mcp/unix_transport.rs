@@ -23,12 +23,21 @@ use crate::tools::tool::ToolError;
 /// Connects to an existing Unix socket at the given path. Requests are
 /// written as newline-delimited JSON to the write half, and responses are
 /// read from the read half by a background reader task.
+///
+/// Reconnect behaviour: if a write returns a broken-pipe error (which
+/// happens when the remote side — typically the t3n-mcp-sidecar — was
+/// restarted and the socket server recreated), the transport will
+/// transparently reconnect once and retry the request. Callers see a
+/// single clean error only if the reconnect attempt itself fails.
 pub struct UnixMcpTransport {
     socket_path: PathBuf,
     server_name: String,
     writer: Arc<Mutex<tokio::io::WriteHalf<UnixStream>>>,
     pending: Arc<Mutex<HashMap<u64, oneshot::Sender<McpResponse>>>>,
     reader_handle: Mutex<Option<JoinHandle<()>>>,
+    /// Serialises reconnect attempts so that concurrent callers do not
+    /// each race to rebuild the connection simultaneously.
+    reconnect_lock: Arc<Mutex<()>>,
 }
 
 impl UnixMcpTransport {
@@ -68,7 +77,63 @@ impl UnixMcpTransport {
             writer: Arc::new(Mutex::new(write_half)),
             pending,
             reader_handle: Mutex::new(Some(reader_handle)),
+            reconnect_lock: Arc::new(Mutex::new(())),
         })
+    }
+
+    /// Reconnect to the Unix socket, replacing the writer and restarting
+    /// the reader task. Any pending waiters are drained so they wake
+    /// immediately with an error rather than hanging.
+    async fn reconnect(&self) -> Result<(), ToolError> {
+        // Serialise concurrent reconnect attempts — only the first caller
+        // does the real work; subsequent callers block here and then return
+        // once the first reconnect has completed.
+        let _guard = self.reconnect_lock.lock().await;
+
+        tracing::debug!(
+            "[{}] Reconnecting to Unix socket '{}'",
+            self.server_name,
+            self.socket_path.display()
+        );
+
+        // Abort the stale reader task.
+        if let Some(handle) = self.reader_handle.lock().await.take() {
+            handle.abort();
+        }
+
+        // Drain pending waiters so any in-flight requests fail fast.
+        self.pending.lock().await.clear();
+
+        let stream = UnixStream::connect(&self.socket_path).await.map_err(|e| {
+            ToolError::ExternalService(format!(
+                "[{}] Failed to reconnect to Unix socket '{}': {}",
+                self.server_name,
+                self.socket_path.display(),
+                e
+            ))
+        })?;
+
+        let (read_half, new_write_half) = tokio::io::split(stream);
+
+        // Replace the writer.
+        *self.writer.lock().await = new_write_half;
+
+        // Start a fresh reader task.
+        let reader = BufReader::new(read_half);
+        let handle = spawn_jsonrpc_reader(
+            reader,
+            self.pending.clone(),
+            self.server_name.clone(),
+        );
+        *self.reader_handle.lock().await = Some(handle);
+
+        tracing::info!(
+            "[{}] Reconnected to Unix socket '{}'",
+            self.server_name,
+            self.socket_path.display()
+        );
+
+        Ok(())
     }
 
     /// Get the path to the Unix domain socket.
@@ -84,6 +149,13 @@ impl UnixMcpTransport {
     }
 }
 
+/// Return true when `err` is an EPIPE / broken-pipe error, meaning the
+/// remote end closed the socket and we should attempt a reconnect.
+fn is_broken_pipe(err: &ToolError) -> bool {
+    let msg = err.to_string().to_ascii_lowercase();
+    msg.contains("broken pipe") || msg.contains("epipe") || msg.contains("os error 32")
+}
+
 #[async_trait]
 impl McpTransport for UnixMcpTransport {
     async fn send(
@@ -91,14 +163,39 @@ impl McpTransport for UnixMcpTransport {
         request: &McpRequest,
         _headers: &HashMap<String, String>,
     ) -> Result<McpResponse, ToolError> {
-        stream_transport_send(
+        let result = stream_transport_send(
             &self.writer,
             &self.pending,
             request,
             &self.server_name,
             Duration::from_secs(30),
         )
-        .await
+        .await;
+
+        // On broken pipe, reconnect once and retry. This recovers from the
+        // common case where the sidecar container was recycled (e.g. to pick
+        // up a new env var) while bastionclaw was already running. The caller
+        // does not need to know a reconnect happened.
+        if let Err(ref e) = result {
+            if is_broken_pipe(e) {
+                tracing::info!(
+                    "[{}] Broken pipe detected; reconnecting to '{}'",
+                    self.server_name,
+                    self.socket_path.display()
+                );
+                self.reconnect().await?;
+                return stream_transport_send(
+                    &self.writer,
+                    &self.pending,
+                    request,
+                    &self.server_name,
+                    Duration::from_secs(30),
+                )
+                .await;
+            }
+        }
+
+        result
     }
 
     async fn shutdown(&self) -> Result<(), ToolError> {
