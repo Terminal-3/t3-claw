@@ -73,7 +73,12 @@ pub struct McpServerConfig {
 }
 
 /// Guidance for local MCP servers that need an external user step before use.
+///
+/// Bastion-claw-owned config record — closed shape so a typo in the on-disk
+/// `mcp-servers.json` (e.g. `instruction` for `instructions`) fails loud at
+/// load time rather than producing a silently-empty setup prompt.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct LocalMcpAuthConfig {
     /// Human-readable setup instructions shown to the user.
     pub instructions: String,
@@ -478,7 +483,11 @@ impl OAuthConfig {
 }
 
 /// Configuration file containing all MCP servers.
+///
+/// Bastion-claw-owned config envelope — closed shape so an unknown top-level
+/// key on disk fails loud rather than being silently ignored.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct McpServersFile {
     /// List of configured MCP servers.
     #[serde(default)]

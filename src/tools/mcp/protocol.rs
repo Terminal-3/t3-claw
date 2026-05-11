@@ -94,7 +94,12 @@ impl McpTool {
 }
 
 /// Request to an MCP server.
+///
+/// Outgoing-only on the wire — bastion-claw is an MCP client, so this struct
+/// is only deserialised inside our own tests. `deny_unknown_fields` catches
+/// drift between the request shape we construct and the shape our tests parse.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct McpRequest {
     /// JSON-RPC version.
     pub jsonrpc: String,
@@ -273,7 +278,13 @@ pub struct ServerInfo {
 }
 
 /// Result of listing tools.
+///
+/// MCP 2024-11-05 defines a single `tools` field on this result. We close the
+/// shape so a server returning a paginated `nextCursor` (or another evolution
+/// of the spec) fails loud at deserialise time rather than silently dropping
+/// data the runtime is meant to act on.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ListToolsResult {
     pub tools: Vec<McpTool>,
 }
