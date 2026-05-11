@@ -2915,8 +2915,22 @@ function loadHistory(before) {
   const isPaginating = !!before;
   if (isPaginating) loadingOlder = true;
 
-  // Show skeleton while loading (only for fresh loads)
+  // Fresh load (non-paginating): show a skeleton while the request is in
+  // flight. Drop activity-group references and the stream-debounce buffer
+  // first — the `container.innerHTML = ''` immediately below detaches the
+  // nodes those references point at, so leaving them set would let a later
+  // `showActivityThinking` call update text on a detached element instead of
+  // re-attaching, leaving a stale "Processing..." indicator visible across an
+  // SSE reconnect.
   if (!isPaginating) {
+    if (_streamDebounceTimer) {
+      clearInterval(_streamDebounceTimer);
+      _streamDebounceTimer = null;
+    }
+    _streamBuffer = '';
+    _activityThinking = null;
+    _activeGroup = null;
+    _activeToolCards = {};
     const chatContainer = document.getElementById('chat-messages');
     chatContainer.innerHTML = '';
     chatContainer.appendChild(renderSkeleton('message', 3));
@@ -2926,7 +2940,12 @@ function loadHistory(before) {
     const container = document.getElementById('chat-messages');
 
     if (!isPaginating) {
-      // Fresh load: clear and render
+      // Repeat the activity-ref reset: an SSE event that landed between the
+      // skeleton paint and this fetch completing may have re-populated the
+      // refs, which the second `container.innerHTML = ''` below will detach.
+      _activityThinking = null;
+      _activeGroup = null;
+      _activeToolCards = {};
       container.innerHTML = '';
       for (const turn of data.turns) {
         if (turn.user_input) {
@@ -2943,7 +2962,11 @@ function loadHistory(before) {
       if (data.turns.length === 0) {
         showWelcomeCard();
       }
-      // Show processing indicator if the last turn is still in-progress
+      // Re-show the processing indicator only if the server still reports the
+      // last turn as in-flight (in-memory `ThreadState::Processing` with no
+      // response yet). Any other shape — response present, state `Idle` /
+      // `Completed` / `Failed` — is treated as terminal and leaves the
+      // indicator cleared.
       var lastTurn = data.turns.length > 0 ? data.turns[data.turns.length - 1] : null;
       if (lastTurn && !lastTurn.response && lastTurn.state === 'Processing') {
         showActivityThinking('Processing...');
