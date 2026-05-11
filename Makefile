@@ -1,16 +1,18 @@
 # BastionClaw – convenience wrapper around docker compose.
 #
 # Usage:
-#   make up        – start the full stack (detached)
-#   make build     – build / rebuild images without starting
-#   make rebuild   – build then restart (use after code changes)
-#   make down      – stop containers, keep volumes
-#   make wipe      – stop containers AND delete all volumes (full reset)
-#   make restart   – restart only the bastionclaw service
-#   make logs      – follow bastionclaw logs
-#   make shell     – open a shell inside the running container
-#   make status    – show running container state
-#   make help      – print this list
+#   make up               – start the full stack (detached)
+#   make build            – build / rebuild images without starting
+#   make rebuild          – build then restart (use after code changes)
+#   make rebuild-claw     – rebuild bastionclaw + t3n-mcp-sidecar, then up
+#   make rebuild-sidecar  – rebuild t3n-mcp-sidecar only, then restart bastionclaw
+#   make down             – stop containers, keep volumes
+#   make wipe             – stop containers AND delete all volumes (full reset)
+#   make restart          – restart only the bastionclaw service
+#   make logs             – follow bastionclaw logs
+#   make shell            – open a shell inside the running container
+#   make status           – show running container state
+#   make help             – print this list
 
 # ── Docker socket GID detection ───────────────────────────────────────────────
 # The bastionclaw container needs to join the group that owns the Docker socket
@@ -31,7 +33,7 @@ export DOCKER_GID
 COMPOSE := docker compose --profile app
 SERVICE := bastionclaw
 
-.PHONY: up build rebuild down wipe restart logs shell status help
+.PHONY: up build rebuild rebuild-claw rebuild-sidecar down wipe restart logs shell status help
 
 ## Start the full stack (detached). Builds images if they don't exist yet.
 up:
@@ -46,6 +48,24 @@ build:
 ## Build images then restart the stack — use this after code changes.
 rebuild: build
 	$(COMPOSE) up -d
+
+## Rebuild bastionclaw + t3n-mcp-sidecar images and bring the stack up.
+## Use after edits to either Rust crate or the sidecar bridge. `up -d` recreates
+## containers whose images changed, so the new code is picked up immediately.
+rebuild-claw:
+	@echo "Using DOCKER_GID=$(DOCKER_GID)"
+	$(COMPOSE) build bastionclaw t3n-mcp-sidecar
+	$(COMPOSE) up -d
+
+## Rebuild the t3n-mcp-sidecar image only, then restart bastionclaw so the
+## lazy-spawn re-execs the new sidecar binary. (The sidecar is spawned by
+## bastionclaw on first MCP request, so restarting bastionclaw is what forces
+## a fresh exec — the image must already be up to date.)
+rebuild-sidecar:
+	@echo "Using DOCKER_GID=$(DOCKER_GID)"
+	$(COMPOSE) build t3n-mcp-sidecar
+	$(COMPOSE) up -d t3n-mcp-sidecar
+	$(COMPOSE) restart $(SERVICE)
 
 ## Stop containers and remove them. Volumes are preserved (data survives).
 down:
