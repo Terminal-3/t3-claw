@@ -63,7 +63,7 @@ pub const SESSION_COOKIE_NAME: &str = "t3claw_session";
 
 // ── User identity ────────────────────────────────────────────────────────
 
-/// Identity resolved from a bearer token or OIDC JWT.
+/// Identity resolved from a bearer token, OIDC JWT, or Trinity ID token.
 #[derive(Debug, Clone)]
 pub struct UserIdentity {
     pub user_id: String,
@@ -73,6 +73,10 @@ pub struct UserIdentity {
     pub role: String,
     /// Additional user scopes this identity can read from.
     pub workspace_read_scopes: Vec<String>,
+    /// Trinity DID for users authenticated via the T3-TS-031 ID token
+    /// path. `None` for users resolved through bearer-token or OIDC
+    /// paths.
+    pub did: Option<String>,
 }
 
 impl UserIdentity {
@@ -123,6 +127,7 @@ impl MultiAuthState {
                     user_id,
                     role: "admin".to_string(),
                     workspace_read_scopes: Vec::new(),
+                    did: None,
                 },
             )],
             display_token: Some(token),
@@ -267,6 +272,7 @@ impl DbAuthenticator {
             user_id: user_record.id.clone(),
             role: user_record.role.clone(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         };
 
         // Record token usage (best-effort, don't block auth)
@@ -288,10 +294,35 @@ impl DbAuthenticator {
     }
 }
 
+// ── Trinity verifier state ────────────────────────────────────────────────
+
+/// `provider` value written to `user_identities` for Trinity-linked
+/// accounts.
+pub const TRINITY_IDENTITY_PROVIDER: &str = "trinity";
+
+/// Trinity ID-token verifier bundled with the DB store used to resolve
+/// `claims.sub` (the user's Trinity DID) to a local user row. Spec
+/// T3-TS-031 §"t3-claw integration" point 2.
+#[derive(Clone)]
+pub struct TrinityAuthState {
+    pub verifier: crate::auth::trinity_verifier::TrinityVerifier,
+    pub store: Arc<dyn Database>,
+}
+
+impl TrinityAuthState {
+    pub fn new(
+        verifier: crate::auth::trinity_verifier::TrinityVerifier,
+        store: Arc<dyn Database>,
+    ) -> Self {
+        Self { verifier, store }
+    }
+}
+
 // ── Combined auth state ────────────────────────────────────────────────────
 
 /// Combined auth state: tries env-var tokens first, then DB-backed tokens,
-/// then OIDC JWT (if configured).
+/// then OIDC JWT (if configured), then Trinity ID-token verifier
+/// (if configured).
 #[derive(Clone)]
 pub struct CombinedAuthState {
     /// In-memory tokens from GATEWAY_AUTH_TOKEN.
@@ -302,6 +333,10 @@ pub struct CombinedAuthState {
     pub oidc: Option<OidcState>,
     /// Email domains allowed for OIDC login. Empty means allow all.
     pub oidc_allowed_domains: Vec<String>,
+    /// Trinity ID-token verifier (None when `T3_TRINITY_ISSUER` is
+    /// unset). Tried last so legacy bearer-token clients pay no
+    /// verification cost during the migration window.
+    pub trinity: Option<TrinityAuthState>,
 }
 
 impl From<MultiAuthState> for CombinedAuthState {
@@ -311,6 +346,7 @@ impl From<MultiAuthState> for CombinedAuthState {
             db_auth: None,
             oidc: None,
             oidc_allowed_domains: Vec::new(),
+            trinity: None,
         }
     }
 }
@@ -1046,15 +1082,20 @@ fn extract_token(headers: &HeaderMap, request: &Request) -> Option<String> {
 
 // ── Middleware ────────────────────────────────────────────────────────────
 
-/// Auth middleware: bearer/query token → OIDC JWT → 401.
+/// Auth middleware: bearer/query token → OIDC JWT → Trinity ID token → 401.
 ///
-/// Tries env-var tokens first (constant-time, in-memory), then falls back
-/// to DB-backed token lookup if configured, then OIDC JWT validation.
-/// SSE connections can't set headers from `EventSource`, so we also accept
-/// `?token=xxx` as a query parameter, but only on SSE/WS endpoints.
+/// Tries env-var tokens first (constant-time, in-memory), then falls
+/// back to DB-backed token lookup if configured, then OIDC JWT
+/// validation, then the Trinity ID-token verifier (T3-TS-031) if
+/// configured. Trinity is intentionally last so legacy bearer-token
+/// clients pay no verification cost during the migration window.
+/// SSE connections can't set headers from `EventSource`, so we also
+/// accept `?token=xxx` as a query parameter, but only on SSE/WS
+/// endpoints.
 ///
-/// On successful authentication, inserts the matching `UserIdentity` into
-/// request extensions for downstream extraction via `AuthenticatedUser`.
+/// On successful authentication, inserts the matching `UserIdentity`
+/// into request extensions for downstream extraction via
+/// `AuthenticatedUser`.
 pub async fn auth_middleware(
     State(auth): State<CombinedAuthState>,
     headers: HeaderMap,
@@ -1120,12 +1161,65 @@ pub async fn auth_middleware(
                     user_id: sub,
                     role: "member".to_string(),
                     workspace_read_scopes: Vec::new(),
+                    did: None,
                 };
                 request.extensions_mut().insert(identity);
                 return next.run(request).await;
             }
             Err(e) => {
                 tracing::warn!(error = %e, "OIDC auth failed");
+            }
+        }
+    }
+
+    // 4. Try the Trinity ID-token verifier (T3-TS-031). The candidate
+    // is the same bearer token already extracted above; we re-check
+    // here so legacy bearer-token clients see the existing fast paths
+    // first and only valid Trinity JWS values fall through.
+    if let (Some(tok), Some(trinity)) = (&token, &auth.trinity) {
+        match trinity.verifier.verify(tok).await {
+            Ok(claims) => match trinity
+                .store
+                .get_identity_by_provider(TRINITY_IDENTITY_PROVIDER, &claims.sub)
+                .await
+            {
+                Ok(Some(identity_record)) => {
+                    let user_id = identity_record.user_id.clone();
+                    let role = match trinity.store.get_user(&user_id).await {
+                        Ok(Some(user)) => user.role,
+                        _ => "member".to_string(),
+                    };
+                    let identity = UserIdentity {
+                        user_id,
+                        role,
+                        workspace_read_scopes: Vec::new(),
+                        did: Some(claims.sub.clone()),
+                    };
+                    request.extensions_mut().insert(identity);
+                    return next.run(request).await;
+                }
+                Ok(None) => {
+                    // Phase A: user provisioning is deferred to Phase B.
+                    // Until then a verified-but-unprovisioned DID is a
+                    // hard 401 — the operator must link the account out
+                    // of band.
+                    tracing::warn!(
+                        did = %claims.sub,
+                        "Trinity token verified but no local user is linked"
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        did = %claims.sub,
+                        error = %e,
+                        "Trinity identity lookup failed"
+                    );
+                    return (StatusCode::SERVICE_UNAVAILABLE, "Database unavailable")
+                        .into_response();
+                }
+            },
+            Err(e) => {
+                tracing::debug!(error = %e, "Trinity ID-token verify failed");
             }
         }
     }
@@ -1199,6 +1293,7 @@ mod tests {
                 user_id: "alice".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             },
         );
         tokens.insert(
@@ -1207,6 +1302,7 @@ mod tests {
                 user_id: "bob".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             },
         );
         let state = MultiAuthState::multi(tokens);
@@ -1804,6 +1900,7 @@ mod tests {
                 user_id: "alice".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec!["shared".to_string()],
+                did: None,
             },
         );
         tokens.insert(
@@ -1812,6 +1909,7 @@ mod tests {
                 user_id: "bob".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec!["shared".to_string(), "alice".to_string()],
+                did: None,
             },
         );
         tokens
@@ -2020,6 +2118,7 @@ mod tests {
             db_auth: None,
             oidc: Some(test_oidc_state().await),
             oidc_allowed_domains: Vec::new(),
+            trinity: None,
         }
     }
 

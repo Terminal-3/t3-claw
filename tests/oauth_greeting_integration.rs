@@ -45,6 +45,7 @@ mod tests {
                     user_id: user_id.to_string(),
                     role: "admin".to_string(),
                     workspace_read_scopes: Vec::new(),
+                    did: None,
                 },
             );
         }

@@ -435,6 +435,7 @@ mod tests {
             broadcast_buffer: DEFAULT_BROADCAST_BUFFER,
             workspace_read_scopes: Vec::new(),
             oidc: None,
+            trinity_verifier: None,
             memory_layers: Vec::new(),
         });
         c
@@ -451,6 +452,7 @@ mod tests {
             workspace_read_scopes: Vec::new(),
             memory_layers: Vec::new(),
             oidc: None,
+            trinity_verifier: None,
         });
         c
     }

@@ -82,6 +82,10 @@ pub struct GatewayConfig {
     pub memory_layers: Vec<crate::workspace::layer::MemoryLayer>,
     /// OIDC JWT authentication (e.g., behind AWS ALB with Okta).
     pub oidc: Option<GatewayOidcConfig>,
+    /// Trinity-derived ID token verifier (T3-TS-031). When set, the
+    /// middleware accepts `ES256K` JWS bearer tokens issued by the
+    /// configured Trinity cluster.
+    pub trinity_verifier: Option<TrinityVerifierConfig>,
 }
 
 /// OIDC JWT authentication configuration for the web gateway.
@@ -100,6 +104,25 @@ pub struct GatewayOidcConfig {
     pub issuer: Option<String>,
     /// Expected `aud` claim. Validated if set.
     pub audience: Option<String>,
+}
+
+/// Trinity-derived ID token verifier configuration.
+///
+/// Activated by `T3_TRINITY_ISSUER`; when that is set, the verifier
+/// also requires `T3_TRINITY_AUDIENCE`. Spec: T3-TS-031 §"t3-claw
+/// integration" point 4. The discovery URL defaults to
+/// `{issuer}/.well-known/openid-configuration` and can be overridden
+/// for non-standard deployments via `T3_TRINITY_DISCOVERY_URL`.
+#[derive(Debug, Clone)]
+pub struct TrinityVerifierConfig {
+    /// Expected `iss` claim — the Trinity cluster identifier.
+    pub issuer: String,
+    /// Expected `aud` claim — the per-instance `client_id`, e.g.
+    /// `claw-acme`.
+    pub audience: String,
+    /// OIDC discovery URL. Defaults to
+    /// `{issuer}/.well-known/openid-configuration`.
+    pub discovery_url: String,
 }
 
 /// Signal channel configuration (signal-cli daemon HTTP/JSON-RPC).
@@ -277,6 +300,43 @@ impl ChannelsConfig {
                 None
             };
 
+            // Trinity-derived ID token verifier (T3-TS-031). Activated
+            // when `T3_TRINITY_ISSUER` is set. Audience is mandatory
+            // in that case — a misconfigured instance must fail
+            // closed rather than accept tokens from any RP.
+            let trinity_verifier = match optional_env("T3_TRINITY_ISSUER")? {
+                Some(issuer) => {
+                    let audience =
+                        optional_env("T3_TRINITY_AUDIENCE")?.ok_or(ConfigError::InvalidValue {
+                            key: "T3_TRINITY_AUDIENCE".to_string(),
+                            message: "required when T3_TRINITY_ISSUER is set".to_string(),
+                        })?;
+                    let discovery_url =
+                        optional_env("T3_TRINITY_DISCOVERY_URL")?.unwrap_or_else(|| {
+                            format!(
+                                "{}/.well-known/openid-configuration",
+                                issuer.trim_end_matches('/')
+                            )
+                        });
+                    Some(TrinityVerifierConfig {
+                        issuer,
+                        audience,
+                        discovery_url,
+                    })
+                }
+                None => {
+                    if optional_env("T3_TRINITY_AUDIENCE")?.is_some()
+                        || optional_env("T3_TRINITY_DISCOVERY_URL")?.is_some()
+                    {
+                        tracing::warn!(
+                            "T3_TRINITY_AUDIENCE / T3_TRINITY_DISCOVERY_URL set without \
+                             T3_TRINITY_ISSUER; Trinity verifier remains disabled."
+                        );
+                    }
+                    None
+                }
+            };
+
             Some(GatewayConfig {
                 host: db_first_optional_string(&cs.gateway_host, "GATEWAY_HOST")?
                     .unwrap_or_else(|| "127.0.0.1".to_string()),
@@ -323,6 +383,7 @@ impl ChannelsConfig {
                 workspace_read_scopes,
                 memory_layers,
                 oidc,
+                trinity_verifier,
             })
         } else {
             None
@@ -513,6 +574,7 @@ mod tests {
             workspace_read_scopes: vec![],
             memory_layers: vec![],
             oidc: None,
+            trinity_verifier: None,
         };
         assert_eq!(cfg.host, "127.0.0.1");
         assert_eq!(cfg.port, 3000);
@@ -530,6 +592,7 @@ mod tests {
             workspace_read_scopes: vec![],
             memory_layers: vec![],
             oidc: None,
+            trinity_verifier: None,
         };
         assert!(cfg.auth_token.is_none());
     }

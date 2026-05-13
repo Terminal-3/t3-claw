@@ -323,6 +323,7 @@ mod tests {
                 user_id: "bob".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             },
         );
         let auth = MultiAuthState::multi(tokens);
@@ -354,6 +355,7 @@ mod tests {
             user_id: "bob".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         };
         let bob_workspace = pool.get_or_create(&bob).await;
         bob_workspace

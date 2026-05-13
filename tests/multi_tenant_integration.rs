@@ -50,6 +50,7 @@ fn two_user_auth() -> MultiAuthState {
             user_id: ALICE_USER_ID.to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         },
     );
     tokens.insert(
@@ -58,6 +59,7 @@ fn two_user_auth() -> MultiAuthState {
             user_id: BOB_USER_ID.to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec!["shared".to_string()],
+            did: None,
         },
     );
     MultiAuthState::multi(tokens)
@@ -613,6 +615,7 @@ async fn start_owner_scoped_sender_server() -> (
             user_id: OWNER_SCOPE_ID.to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         },
     );
     tokens.insert(
@@ -621,6 +624,7 @@ async fn start_owner_scoped_sender_server() -> (
             user_id: BOB_USER_ID.to_string(),
             role: "member".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         },
     );
 
