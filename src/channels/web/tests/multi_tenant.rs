@@ -102,6 +102,7 @@ fn build_state(
         oauth_sweep_shutdown: None,
         frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
         tool_dispatcher: None,
+        trinity_sso: None,
     })
 }
 
@@ -1317,6 +1318,7 @@ mod admin_tool_policy {
             auth_manager: None,
             frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
             tool_dispatcher: None,
+            trinity_sso: None,
         })
     }
 

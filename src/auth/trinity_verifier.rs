@@ -202,6 +202,17 @@ impl TrinityVerifier {
         &self.cfg.audience
     }
 
+    /// Seed the in-memory JWKS cache with `(kid, verifying_key)` and
+    /// mark the cache as freshly populated. Test-only helper — the
+    /// production path always loads keys via the discovery doc.
+    #[cfg(test)]
+    pub(crate) async fn seed_key(&self, kid: &str, verifying_key: VerifyingKey) {
+        let mut cache = self.jwks_cache.write().await;
+        cache.insert(kid.to_string(), CachedKey { verifying_key });
+        drop(cache);
+        *self.jwks_fetched_at.write().await = Some(Instant::now());
+    }
+
     /// Verify a compact JWS produced by Trinity's `client-token`
     /// interface. On success returns the parsed claims; on failure a
     /// distinct error per reason.

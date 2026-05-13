@@ -22,7 +22,7 @@ use crate::db::{UserIdentityRecord, UserRecord};
 
 use crate::channels::web::auth::SESSION_COOKIE_NAME;
 /// Session lifetime: 30 days (cookie Max-Age and token expiry).
-const SESSION_LIFETIME_SECS: i64 = 30 * 24 * 60 * 60;
+pub(super) const SESSION_LIFETIME_SECS: i64 = 30 * 24 * 60 * 60;
 
 /// Query parameters for the login redirect.
 #[derive(serde::Deserialize)]
@@ -789,7 +789,7 @@ fn build_identity_record(
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
-fn build_session_cookie(token: &str, secure: bool) -> String {
+pub(super) fn build_session_cookie(token: &str, secure: bool) -> String {
     let secure_flag = if secure { "; Secure" } else { "" };
     format!(
         "{SESSION_COOKIE_NAME}={token}; HttpOnly; SameSite=Lax; Path=/; Max-Age={SESSION_LIFETIME_SECS}{secure_flag}"
@@ -801,16 +801,16 @@ fn build_session_cookie_clear(secure: bool) -> String {
     format!("{SESSION_COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0{secure_flag}")
 }
 
-fn is_secure(base_url: &str) -> bool {
+pub(super) fn is_secure(base_url: &str) -> bool {
     base_url.starts_with("https://")
 }
 
 /// Extract a rate-limit key from request headers (X-Forwarded-For or fallback).
-fn rate_limit_key(headers: &axum::http::HeaderMap) -> String {
+pub(super) fn rate_limit_key(headers: &axum::http::HeaderMap) -> String {
     crate::channels::web::platform::state::rate_limit_key_from_headers(headers)
 }
 
-fn error_page(message: &str) -> Response {
+pub(super) fn error_page(message: &str) -> Response {
     let escaped = message
         .replace('&', "&amp;")
         .replace('<', "&lt;")

@@ -146,6 +146,7 @@ impl GatewayChannel {
             // lookup; populated later via `with_store` once the
             // gateway gains a DB binding.
             trinity: None,
+            adoption: crate::auth::adoption::AuthAdoptionCounter::new(),
         };
 
         let state = Arc::new(GatewayState {
@@ -200,6 +201,7 @@ impl GatewayChannel {
             oauth_sweep_shutdown: None,
             frontend_html_cache: Arc::new(tokio::sync::RwLock::new(None)),
             tool_dispatcher: None,
+            trinity_sso: None,
         });
 
         Self {
@@ -266,6 +268,7 @@ impl GatewayChannel {
             // just because a `with_*` builder added a new subsystem.
             frontend_html_cache: Arc::clone(&self.state.frontend_html_cache),
             tool_dispatcher: self.state.tool_dispatcher.clone(),
+            trinity_sso: self.state.trinity_sso.clone(),
         };
         mutate(&mut new_state);
         new_state.auth_manager = build_gateway_auth_manager(&new_state);
@@ -360,7 +363,13 @@ impl GatewayChannel {
                         audience = %trinity_cfg.audience,
                         "Trinity ID-token verifier enabled"
                     );
+                    let sso = platform::state::TrinitySsoState {
+                        issuer: trinity_cfg.issuer.clone(),
+                        audience: trinity_cfg.audience.clone(),
+                        verifier: verifier.clone(),
+                    };
                     self.auth.trinity = Some(auth::TrinityAuthState::new(verifier, store));
+                    self.rebuild_state(|s| s.trinity_sso = Some(sso));
                 }
                 Err(e) => {
                     tracing::error!(
