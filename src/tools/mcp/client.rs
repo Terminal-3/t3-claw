@@ -19,6 +19,9 @@ use crate::tools::mcp::http_transport::HttpMcpTransport;
 use crate::tools::mcp::protocol::{
     CallToolResult, InitializeResult, ListToolsResult, McpRequest, McpResponse, McpTool,
 };
+use crate::tools::mcp::redact::{
+    REDACTED_ARG_FIELDS, is_payroll_tool, redact_payroll_args, redact_payroll_result,
+};
 use crate::tools::mcp::session::McpSessionManager;
 use crate::tools::mcp::transport::McpTransport;
 use crate::tools::tool::{ApprovalRequirement, Tool, ToolError, ToolOutput};
@@ -918,6 +921,20 @@ impl Tool for McpToolWrapper {
         Some(&self.provider_extension)
     }
 
+    /// For payroll tools, credential-bearing and per-employee fields are listed
+    /// here so every `redact_params` call site in the dispatch, audit, hook, and
+    /// approval paths strips them without any per-site changes.
+    ///
+    /// The `execute()` method still receives the original parameters — this only
+    /// governs the observability paths.
+    fn sensitive_params(&self) -> &[&str] {
+        if is_payroll_tool(&self.tool.name) {
+            REDACTED_ARG_FIELDS
+        } else {
+            &[]
+        }
+    }
+
     async fn execute(
         &self,
         params: serde_json::Value,
@@ -929,6 +946,15 @@ impl Tool for McpToolWrapper {
         // `"field": null` for optional params, but many MCP servers reject
         // explicit nulls for fields that should simply be absent.
         let params = strip_top_level_nulls(params);
+
+        // Log the call arguments with credential-bearing fields redacted.
+        // The `params` forwarded to `call_tool` below is the original — only
+        // this log line sees the sanitised copy.
+        tracing::debug!(
+            tool = %self.tool.name,
+            args = %redact_payroll_args(&self.tool.name, &params),
+            "MCP tool call dispatched"
+        );
 
         let result = self.client.call_tool(&self.tool.name, params).await?;
 
@@ -955,6 +981,26 @@ impl Tool for McpToolWrapper {
                 msg.push_str(&format!(" (reason: {reason})"));
             }
             return Err(ToolError::ExecutionFailed(msg));
+        }
+
+        // Belt-and-braces log: parse the result content as JSON and emit a
+        // redacted copy at debug level. For payroll tools, per-employee arrays
+        // (`disbursement_records`, `flagged_entries`) are replaced with their
+        // counts. Non-JSON content or non-payroll tools are logged verbatim
+        // (truncated to 512 bytes to keep log lines bounded).
+        // NOTE: the `ToolOutput` returned to the caller is always the original
+        // `content` — redaction only applies to this log line.
+        if tracing::enabled!(tracing::Level::DEBUG) {
+            let log_value: serde_json::Value =
+                serde_json::from_str(&content).map_or_else(
+                    |_| serde_json::Value::String(content.chars().take(512).collect()),
+                    |v| redact_payroll_result(&self.tool.name, &v),
+                );
+            tracing::debug!(
+                tool = %self.tool.name,
+                result = %log_value,
+                "MCP tool call result"
+            );
         }
 
         Ok(ToolOutput::text(content, start.elapsed()))

@@ -32,6 +32,7 @@ pub mod auth;
 mod client;
 pub mod config;
 pub mod factory;
+pub(crate) mod redact;
 pub(crate) mod http_transport;
 pub(crate) mod process;
 mod protocol;
