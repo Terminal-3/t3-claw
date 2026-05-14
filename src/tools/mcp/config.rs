@@ -378,7 +378,11 @@ impl OAuthConfig {
 }
 
 /// Configuration file containing all MCP servers.
+///
+/// T3Claw-owned config envelope — closed shape so an unknown top-level
+/// key on disk fails loud rather than being silently ignored.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct McpServersFile {
     /// List of configured MCP servers.
     #[serde(default)]
