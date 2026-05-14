@@ -1571,10 +1571,7 @@ impl ExtensionManager {
                 name: name.to_string(),
                 kind: ExtensionKind::AcpAgent,
                 tools_loaded: Vec::new(),
-                message: format!(
-                    "ACP agent '{}' is managed via 't3claw acp' commands",
-                    name
-                ),
+                message: format!("ACP agent '{}' is managed via 't3claw acp' commands", name),
             }),
         }
     }
@@ -4200,9 +4197,7 @@ impl ExtensionManager {
             .await
             .unwrap_or(ExtensionKind::WasmChannel);
         let launch = build_pending_oauth_launch(PendingOAuthLaunchParams {
-            extension_name: t3claw_common::ExtensionName::from_trusted(
-                extension_name.to_string(),
-            ),
+            extension_name: t3claw_common::ExtensionName::from_trusted(extension_name.to_string()),
             display_name: display_name.to_string(),
             authorization_url: oauth.authorization_url.clone(),
             token_url: oauth.token_url.clone(),
@@ -6786,6 +6781,39 @@ impl ExtensionManager {
                     }],
                 })
             }
+            ExtensionKind::McpServer => {
+                // t3n-mcp exposes a single per-user delegation credential field so
+                // the existing extension setup form can accept the Trinity-minted
+                // JSON without any static-asset changes.
+                if name == crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED {
+                    let provided = self
+                        .secrets
+                        .exists(
+                            user_id,
+                            crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET,
+                        )
+                        .await
+                        .unwrap_or(false);
+                    return Ok(ExtensionSetupSchema {
+                        secrets: vec![crate::channels::web::types::SecretFieldInfo {
+                            name: crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET
+                                .to_string(),
+                            prompt: "Paste the delegation credential JSON \
+                                     ({ credential_jcs, user_sig, agent_pubkey }) \
+                                     minted at the Trinity network portal."
+                                .to_string(),
+                            optional: false,
+                            provided,
+                            auto_generate: false,
+                        }],
+                        fields: Vec::new(),
+                    });
+                }
+                Ok(ExtensionSetupSchema {
+                    secrets: Vec::new(),
+                    fields: Vec::new(),
+                })
+            }
             _ => Ok(ExtensionSetupSchema {
                 secrets: Vec::new(),
                 fields: Vec::new(),
@@ -6862,6 +6890,12 @@ impl ExtensionManager {
                     .map_err(|e| ExtensionError::NotInstalled(e.to_string()))?;
                 let mut names = std::collections::HashSet::new();
                 names.insert(server.token_secret_name());
+                // t3n-mcp stores a per-user Trinity delegation credential so the
+                // agent can inject it into runPayroll params without header plumbing.
+                if name == crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED {
+                    names
+                        .insert(crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET.to_string());
+                }
                 (names, Vec::new())
             }
             ExtensionKind::ChannelRelay => {

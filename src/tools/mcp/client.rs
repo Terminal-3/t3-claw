@@ -690,6 +690,89 @@ impl McpClient {
         Ok(result.tools)
     }
 
+    /// Inject the Trinity delegation credential into `arguments` for `t3n-mcp` tool calls.
+    ///
+    /// Reads the per-user `t3n_delegation_token` secret (a JSON object with
+    /// `credential_jcs`, `user_sig`, and `agent_pubkey` produced by the Trinity FE),
+    /// then merges `credential_jcs_b64u` and `user_sig_b64u` into `arguments` so the
+    /// sidecar can forward them to the Trinity node via `runPayroll`'s schema fields.
+    ///
+    /// Fails closed — returns an error when the secret is absent or malformed rather
+    /// than forwarding the call without a credential.
+    async fn inject_t3n_delegation_credential(
+        &self,
+        arguments: serde_json::Value,
+    ) -> Result<serde_json::Value, ToolError> {
+        let secrets = self.secrets.as_ref().ok_or_else(|| {
+            ToolError::ExternalService(
+                "t3n-mcp: no secrets store available; delegation token cannot be read".to_string(),
+            )
+        })?;
+
+        let raw = secrets
+            .get_decrypted(
+                &self.user_id,
+                crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET,
+            )
+            .await
+            .map_err(|_| {
+                ToolError::ExternalService(
+                    "t3n-mcp: no delegation token configured — paste your Trinity delegation \
+                     credential into the t3n-mcp extension setup form before invoking payroll tools"
+                        .to_string(),
+                )
+            })?;
+
+        let token_str = raw.expose();
+
+        let token: serde_json::Value = serde_json::from_str(token_str).map_err(|e| {
+            ToolError::ExternalService(format!(
+                "t3n-mcp: stored delegation token is not valid JSON: {e}"
+            ))
+        })?;
+
+        let credential_jcs = token
+            .get("credential_jcs")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                ToolError::ExternalService(
+                    "t3n-mcp: delegation token missing required field 'credential_jcs'".to_string(),
+                )
+            })?
+            .to_string();
+
+        let user_sig = token
+            .get("user_sig")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                ToolError::ExternalService(
+                    "t3n-mcp: delegation token missing required field 'user_sig'".to_string(),
+                )
+            })?
+            .to_string();
+
+        let mut merged = match arguments {
+            serde_json::Value::Object(map) => map,
+            other => {
+                // Caller passed a non-object value; wrap it so the credential fields
+                // can be merged in without losing the original payload.
+                let mut m = serde_json::Map::new();
+                m.insert("__args".to_string(), other);
+                m
+            }
+        };
+        merged.insert(
+            "credential_jcs_b64u".to_string(),
+            serde_json::Value::String(credential_jcs),
+        );
+        merged.insert(
+            "user_sig_b64u".to_string(),
+            serde_json::Value::String(user_sig),
+        );
+
+        Ok(serde_json::Value::Object(merged))
+    }
+
     /// Call a tool on the MCP server.
     pub async fn call_tool(
         &self,
@@ -697,6 +780,18 @@ impl McpClient {
         arguments: serde_json::Value,
     ) -> Result<CallToolResult, ToolError> {
         self.initialize().await?;
+
+        // Inject the per-user Trinity delegation credential for every t3n-mcp call.
+        // The sidecar's runPayroll tool accepts `credential_jcs_b64u` and `user_sig_b64u`
+        // as schema fields, so riding the credential in the JSON-RPC params requires no
+        // unix-transport changes (phase-0 approach; header plumbing is phase 1).
+        let arguments = if self.server_name.as_str()
+            == crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED
+        {
+            self.inject_t3n_delegation_credential(arguments).await?
+        } else {
+            arguments
+        };
 
         let request = McpRequest::call_tool(self.next_request_id(), name, arguments);
         let response = self.send_request(request).await?;
@@ -2152,6 +2247,247 @@ mod tests {
             headers.get("Authorization").unwrap(), // safety: test
             "Bearer gho_abc123",
             "Token must be trimmed before use in Authorization header"
+        );
+    }
+
+    // ── t3n-mcp delegation credential injection ─────────────────────────────
+    //
+    // The next three unit tests exercise `inject_t3n_delegation_credential`
+    // directly, covering the three sentinel cases (present, absent, malformed).
+    // The caller-level integration test below then drives `call_tool` itself
+    // (the "Test Through the Caller, Not Just the Helper" rule from
+    // `.claude/rules/testing.md`).
+
+    fn make_test_secrets_store() -> std::sync::Arc<dyn crate::secrets::SecretsStore + Send + Sync> {
+        use crate::secrets::{InMemorySecretsStore, SecretsCrypto};
+        let key =
+            secrecy::SecretString::from(crate::testing::credentials::TEST_CRYPTO_KEY.to_string());
+        let crypto = std::sync::Arc::new(SecretsCrypto::new(key).expect("test crypto"));
+        std::sync::Arc::new(InMemorySecretsStore::new(crypto))
+    }
+
+    fn t3n_mcp_client_with_secrets(
+        secrets: std::sync::Arc<dyn crate::secrets::SecretsStore + Send + Sync>,
+    ) -> McpClient {
+        McpClient::new_with_transport(
+            crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED,
+            Arc::new(MockTransport::new(false, vec![])),
+            None,
+            Some(secrets),
+            "test-user",
+            None,
+        )
+    }
+
+    #[tokio::test]
+    async fn inject_t3n_delegation_credential_merges_fields_when_secret_present() {
+        use crate::secrets::CreateSecretParams;
+
+        let store = make_test_secrets_store();
+        let token_json = serde_json::json!({
+            "credential_jcs": "cjcs-value",
+            "user_sig": "usig-value",
+            "agent_pubkey": "pubkey-value"
+        })
+        .to_string();
+        store
+            .create(
+                "test-user",
+                CreateSecretParams::new(
+                    crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET,
+                    &token_json,
+                ),
+            )
+            .await
+            .expect("store delegation token");
+
+        let client = t3n_mcp_client_with_secrets(store);
+        let original_args = serde_json::json!({"cycle_id": "2025-01"});
+
+        let merged = client
+            .inject_t3n_delegation_credential(original_args)
+            .await
+            .expect("inject should succeed when secret is present");
+
+        assert_eq!(merged["credential_jcs_b64u"], "cjcs-value");
+        assert_eq!(merged["user_sig_b64u"], "usig-value");
+        assert_eq!(merged["cycle_id"], "2025-01");
+    }
+
+    #[tokio::test]
+    async fn inject_t3n_delegation_credential_fails_closed_when_secret_absent() {
+        let store = make_test_secrets_store();
+        let client = t3n_mcp_client_with_secrets(store);
+
+        let err = client
+            .inject_t3n_delegation_credential(serde_json::json!({}))
+            .await
+            .expect_err("must fail when delegation token not configured");
+
+        let msg = err.to_string();
+        assert!(
+            msg.contains("no delegation token configured"),
+            "error must guide the user to the setup form: {msg}"
+        );
+    }
+
+    #[tokio::test]
+    async fn inject_t3n_delegation_credential_fails_closed_when_secret_malformed() {
+        use crate::secrets::CreateSecretParams;
+
+        let store = make_test_secrets_store();
+        store
+            .create(
+                "test-user",
+                CreateSecretParams::new(
+                    crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET,
+                    "not-valid-json{{{",
+                ),
+            )
+            .await
+            .expect("store bad token");
+
+        let client = t3n_mcp_client_with_secrets(store);
+
+        let err = client
+            .inject_t3n_delegation_credential(serde_json::json!({}))
+            .await
+            .expect_err("must fail when delegation token is not valid JSON");
+
+        let msg = err.to_string();
+        assert!(
+            msg.contains("not valid JSON"),
+            "error must mention JSON parse failure: {msg}"
+        );
+    }
+
+    /// Caller-level integration test: drives `McpClient::call_tool` for a
+    /// `t3n_mcp` server and asserts that the JSON-RPC params forwarded to the
+    /// transport contain the merged `credential_jcs_b64u` and `user_sig_b64u`
+    /// fields from the stored delegation token.
+    ///
+    /// This is the "Test Through the Caller, Not Just the Helper" pattern from
+    /// `.claude/rules/testing.md`.  The three unit tests above exercise the
+    /// `inject_t3n_delegation_credential` helper in isolation; this test
+    /// exercises `call_tool` — the caller that invokes the helper — so that a
+    /// future refactor that bypasses the helper (or changes when it is called)
+    /// would be caught here rather than only at runtime.
+    #[tokio::test]
+    async fn call_tool_injects_delegation_credential_for_t3n_mcp() {
+        use crate::secrets::CreateSecretParams;
+
+        // ── Build a mock transport that captures the full request ──────
+        struct CapturingTransport {
+            requests: std::sync::Mutex<Vec<McpRequest>>,
+        }
+        #[async_trait]
+        impl McpTransport for CapturingTransport {
+            async fn send(
+                &self,
+                request: &McpRequest,
+                _headers: &HashMap<String, String>,
+            ) -> Result<McpResponse, crate::tools::tool::ToolError> {
+                self.requests.lock().unwrap().push(request.clone());
+                // Return appropriate responses depending on the method so
+                // that `initialize()` completes before `call_tool` runs.
+                let result = match request.method.as_str() {
+                    "initialize" => serde_json::json!({
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {},
+                        "serverInfo": {"name": "t3n-mcp", "version": "1.0"}
+                    }),
+                    "notifications/initialized" => {
+                        // Notification — return empty response (id is None).
+                        return Ok(McpResponse {
+                            jsonrpc: "2.0".to_string(),
+                            id: None,
+                            result: None,
+                            error: None,
+                        });
+                    }
+                    _ => serde_json::json!({
+                        "content": [{"type": "text", "text": "ok"}],
+                        "is_error": false
+                    }),
+                };
+                Ok(McpResponse {
+                    jsonrpc: "2.0".to_string(),
+                    id: request.id,
+                    result: Some(result),
+                    error: None,
+                })
+            }
+            async fn shutdown(&self) -> Result<(), crate::tools::tool::ToolError> {
+                Ok(())
+            }
+            fn supports_http_features(&self) -> bool {
+                false
+            }
+        }
+
+        // ── Seed the delegation token in an in-memory store ───────────
+        let store = make_test_secrets_store();
+        let token_json = serde_json::json!({
+            "credential_jcs": "cjcs-test",
+            "user_sig": "usig-test",
+            "agent_pubkey": "pubkey-test"
+        })
+        .to_string();
+        store
+            .create(
+                "test-user",
+                CreateSecretParams::new(
+                    crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET,
+                    &token_json,
+                ),
+            )
+            .await
+            .expect("store delegation token");
+
+        // ── Build a t3n_mcp client wired to the capturing transport ───
+        let transport = Arc::new(CapturingTransport {
+            requests: std::sync::Mutex::new(Vec::new()),
+        });
+        let client = McpClient::new_with_transport(
+            crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED,
+            Arc::clone(&transport) as Arc<dyn McpTransport>,
+            None,
+            Some(store),
+            "test-user",
+            None,
+        );
+
+        // ── Drive call_tool (the caller) ──────────────────────────────
+        let result = client
+            .call_tool("runPayroll", serde_json::json!({"cycle_id": "2025-01"}))
+            .await
+            .expect("call_tool should succeed with delegation token present");
+        assert!(!result.is_error);
+
+        // ── Assert the forwarded params contain the injected fields ───
+        let requests = transport.requests.lock().unwrap();
+        let call_req = requests
+            .iter()
+            .find(|r| r.method == "tools/call")
+            .expect("a tools/call request must have been forwarded");
+
+        let params = call_req
+            .params
+            .as_ref()
+            .expect("tools/call must have params");
+        let args = &params["arguments"];
+
+        assert_eq!(
+            args["credential_jcs_b64u"], "cjcs-test",
+            "credential_jcs_b64u must be injected into the forwarded arguments"
+        );
+        assert_eq!(
+            args["user_sig_b64u"], "usig-test",
+            "user_sig_b64u must be injected into the forwarded arguments"
+        );
+        assert_eq!(
+            args["cycle_id"], "2025-01",
+            "caller-supplied params must be preserved alongside injected fields"
         );
     }
 }

@@ -6,8 +6,8 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use t3claw_common::{MAX_MCP_SERVER_NAME_LEN, McpServerName};
 use serde::{Deserialize, Serialize};
+use t3claw_common::{MAX_MCP_SERVER_NAME_LEN, McpServerName};
 use tokio::fs;
 
 use crate::bootstrap::t3claw_base_dir;
@@ -520,6 +520,22 @@ pub async fn bootstrap_nearai_mcp_server(
 /// MCP server id for the t3n (Trinity) sidecar auto-bootstrap.
 pub const T3N_MCP_SERVER_NAME: &str = "t3n-mcp";
 
+/// Normalised (hyphen → underscore) form of `T3N_MCP_SERVER_NAME`.
+///
+/// `create_client_from_config` normalises every server name before constructing
+/// an `McpClient`, so `McpClient::server_name()` returns `"t3n_mcp"` rather than
+/// `"t3n-mcp"`. Code that needs to special-case the t3n sidecar by comparing
+/// against `self.server_name` must use this constant.
+pub const T3N_MCP_SERVER_NAME_NORMALISED: &str = "t3n_mcp";
+
+/// Secret name under which the per-user Trinity delegation credential is stored.
+///
+/// The value is a JSON object with the shape `{ credential_jcs, user_sig, agent_pubkey }`
+/// produced by the Trinity FE delegation-mint flow. `call_tool` reads this secret
+/// and merges `credential_jcs_b64u` and `user_sig_b64u` into the params of every
+/// `t3n-mcp` tool invocation so the sidecar can forward them to the Trinity node.
+pub const T3N_DELEGATION_TOKEN_SECRET: &str = "t3n_delegation_token";
+
 /// Environment variable used to enable the t3n-mcp auto-bootstrap. When set to a
 /// non-empty Unix socket path, a `unix`-transport MCP server entry is registered
 /// on first boot so the agent can connect to the sidecar without manual setup.
@@ -527,8 +543,7 @@ pub const T3N_MCP_SERVER_NAME: &str = "t3n-mcp";
 /// same behaviour should export it themselves.
 const T3N_MCP_SOCKET_PATH_ENV: &str = "T3N_MCP_SOCKET_PATH";
 
-const T3N_MCP_DESCRIPTION: &str =
-    "Terminal 3 Trinity network MCP server (served by the t3n-mcp-sidecar container over a Unix socket).";
+const T3N_MCP_DESCRIPTION: &str = "Terminal 3 Trinity network MCP server (served by the t3n-mcp-sidecar container over a Unix socket).";
 
 fn t3n_mcp_server_from_env() -> Option<McpServerConfig> {
     let socket_path = crate::config::helpers::env_or_override(T3N_MCP_SOCKET_PATH_ENV)?;
