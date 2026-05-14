@@ -145,12 +145,10 @@ fn validate_delegation_token(value: &str) -> Result<(), DelegationTokenValidatio
     let get_str = |field: &'static str| -> Result<&str, DelegationTokenValidationError> {
         match token.get(field) {
             None => Err(DelegationTokenValidationError::MissingField { field }),
-            Some(v) => v
-                .as_str()
-                .ok_or(DelegationTokenValidationError::WrongType {
-                    field,
-                    expected: "string",
-                }),
+            Some(v) => v.as_str().ok_or(DelegationTokenValidationError::WrongType {
+                field,
+                expected: "string",
+            }),
         }
     };
 
@@ -183,12 +181,11 @@ fn validate_delegation_token(value: &str) -> Result<(), DelegationTokenValidatio
                 reason: e.to_string(),
             })?
         } else {
-            b64u.decode(agent_pubkey.trim_end_matches('=')).map_err(|e| {
-                DelegationTokenValidationError::InvalidB64u {
+            b64u.decode(agent_pubkey.trim_end_matches('='))
+                .map_err(|e| DelegationTokenValidationError::InvalidB64u {
                     field: "agent_pubkey",
                     reason: e.to_string(),
-                }
-            })?
+                })?
         }
     };
     if pubkey_bytes.len() != AGENT_PUBKEY_LEN {
@@ -604,7 +601,10 @@ mod tests {
         v["credential_jcs"] = serde_json::Value::String(jcs);
         let err = validate_delegation_token(&v.to_string()).unwrap_err();
         assert!(
-            matches!(err, DelegationTokenValidationError::InvalidOrgDidShape { .. }),
+            matches!(
+                err,
+                DelegationTokenValidationError::InvalidOrgDidShape { .. }
+            ),
             "expected InvalidOrgDidShape, got: {err:?}"
         );
         assert!(err.reason().contains("did:t3n:"));

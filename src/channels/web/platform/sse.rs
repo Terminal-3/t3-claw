@@ -180,11 +180,7 @@ impl SseManager {
     /// Snapshot the current replay buffer for a user, filtered by
     /// `last_event_id` so we don't redeliver events the client already
     /// saw. The returned Vec is in insertion order (oldest first).
-    fn snapshot_replay(
-        &self,
-        user_id: &str,
-        last_event_id: Option<&str>,
-    ) -> Vec<ScopedEvent> {
+    fn snapshot_replay(&self, user_id: &str, last_event_id: Option<&str>) -> Vec<ScopedEvent> {
         let guard = match self.replay.lock() {
             Ok(g) => g,
             Err(poisoned) => poisoned.into_inner(),

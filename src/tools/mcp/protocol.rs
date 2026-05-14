@@ -285,7 +285,11 @@ pub struct ServerInfo {
 #[serde(deny_unknown_fields)]
 pub struct ListToolsResult {
     pub tools: Vec<McpTool>,
-    #[serde(default, rename = "nextCursor", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        rename = "nextCursor",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub next_cursor: Option<String>,
 }
 

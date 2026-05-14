@@ -522,13 +522,12 @@ async fn bootstrap_mcp_server(
 ) -> Result<bool, ConfigError> {
     match db {
         Some(store) => {
-            let existing =
-                store
-                    .get_setting(user_id, "mcp_servers")
-                    .await
-                    .map_err(|e| ConfigError::InvalidConfig {
-                        reason: format!("Failed to read mcp_servers from DB: {}", e),
-                    })?;
+            let existing = store
+                .get_setting(user_id, "mcp_servers")
+                .await
+                .map_err(|e| ConfigError::InvalidConfig {
+                    reason: format!("Failed to read mcp_servers from DB: {}", e),
+                })?;
 
             let mut servers = match existing {
                 Some(value) => {
