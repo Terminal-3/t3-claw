@@ -21,6 +21,8 @@ PROJECT="${PROJECT:-gen-lang-client-0263867259}"
 GITHUB_REPO="Terminal-3/t3-claw"
 SA_NAME="t3claw-ci-deploy"
 SA_EMAIL="${SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
+VM_SA_NAME="t3claw-vm"
+VM_SA_EMAIL="${VM_SA_NAME}@${PROJECT}.iam.gserviceaccount.com"
 POOL_NAME="github-actions"
 PROVIDER_NAME="github-provider"
 
@@ -72,6 +74,19 @@ gcloud projects add-iam-policy-binding "${PROJECT}" \
 gcloud projects add-iam-policy-binding "${PROJECT}" \
   --member="serviceAccount:${SA_EMAIL}" \
   --role="roles/compute.instanceAdmin.v1" \
+  --quiet 2>/dev/null
+
+# gcloud compute ssh must actAs the VM's attached service account to inject keys.
+gcloud iam service-accounts add-iam-policy-binding "${VM_SA_EMAIL}" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/iam.serviceAccountUser" \
+  --project="${PROJECT}" \
+  --quiet 2>/dev/null
+
+# sudo in deploy commands (systemctl restart, docker compose).
+gcloud projects add-iam-policy-binding "${PROJECT}" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/compute.osAdminLogin" \
   --quiet 2>/dev/null
 
 echo "     roles granted"

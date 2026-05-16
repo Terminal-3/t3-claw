@@ -244,7 +244,7 @@ gcloud compute instances get-serial-port-output t3claw-staging \
   --zone=asia-southeast1-a --project=gen-lang-client-0263867259 | tail -80
 ```
 
-> **Note.** `vm-setup.sh` and `startup-script.sh` are two different bootstrap paths: `startup-script.sh` (used by `instances reset`) embeds its own compose definition that includes the t3n-mcp sidecar and is the authoritative running configuration. `vm-setup.sh` installs `docker-compose.staging.yml` which omits the sidecar — that file is outdated relative to what actually runs. If you change the compose configuration, update `startup-script.sh`.
+> **Note.** `docker-compose.staging.yml` is the source of truth for `/opt/t3claw/docker-compose.yml`. `vm-setup.sh` installs it on first bootstrap; `staging-gcp.yml` re-syncs it on every deploy. `startup-script.sh` still embeds an older compose for `instances reset` — update that heredoc if you change the staging file.
 
 ---
 
@@ -339,7 +339,7 @@ bash deploy-gcp/wif-setup.sh
 ```
 
 The script is idempotent — safe to re-run. It creates the `t3claw-ci-deploy` service
-account, grants the four required IAM roles, creates the `github-actions` WIF pool and
+account, grants the required IAM roles (including `serviceAccountUser` on `t3claw-vm` for IAP SSH), creates the `github-actions` WIF pool and
 `github-provider` OIDC provider scoped to this repo, and prints the two secret values.
 
 **Add GitHub repository secrets**
@@ -380,3 +380,4 @@ The deploy job runs `docker compose --profile app pull` which pulls both the age
 | HTTPS endpoint returns cert error | Google-managed cert hasn't provisioned yet | Wait. `gcloud compute ssl-certificates describe t3claw-cert ...` — wait for `managed.status: ACTIVE`. |
 | Docker build is slow on every script run | `gcp-provision.sh` builds the agent (cargo-chef cached) and the sidecar (Node, fast) | Use `SKIP_BUILD=1` when iterating on infrastructure rather than code |
 | `gcloud compute scp ... ERROR: ... Permission denied` on first run | Stale `~/.ssh/google_compute_engine` from a previous account | `rm ~/.ssh/google_compute_engine*` and retry — gcloud will regenerate. |
+| CI deploy: `iam.serviceAccounts.actAs` on `t3claw-vm` | `t3claw-ci-deploy` missing `roles/iam.serviceAccountUser` on the VM SA | Re-run `bash deploy-gcp/wif-setup.sh` or bind manually: `gcloud iam service-accounts add-iam-policy-binding t3claw-vm@PROJECT.iam.gserviceaccount.com --member=serviceAccount:t3claw-ci-deploy@PROJECT.iam.gserviceaccount.com --role=roles/iam.serviceAccountUser` |

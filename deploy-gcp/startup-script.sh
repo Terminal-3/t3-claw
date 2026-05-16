@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Self-contained GCP startup script for T3Claw staging VM.
-# Injected via: gcloud compute instances add-metadata ... --metadata-from-file startup-script=...
-# Triggered by: gcloud compute instances reset ...
+# Injected via (then reset to run on boot):
+#   gcloud compute instances add-metadata t3claw-staging \
+#     --zone=asia-southeast1-a --project=gen-lang-client-0263867259 \
+#     --metadata-from-file startup-script=deploy-gcp/startup-script.sh
+#   gcloud compute instances reset t3claw-staging \
+#     --zone=asia-southeast1-a --project=gen-lang-client-0263867259
 #
 # Runs as root automatically on VM boot. Logs to /var/log/t3claw-startup.log
 # and to the serial port (visible via: gcloud compute instances get-serial-port-output).
@@ -14,7 +18,7 @@ REGION="us-central1"
 REPO="t3claw"
 IMAGE_PREFIX="${REGION}-docker.pkg.dev/${PROJECT}/${REPO}"
 
-echo "==> [1/5] Installing Docker (official repo)"
+echo "==> [1/7] Installing Docker (official repo)"
 apt-get update -qq
 apt-get install -y --no-install-recommends ca-certificates curl gnupg
 install -m 0755 -d /etc/apt/keyrings
@@ -30,10 +34,21 @@ apt-get install -y --no-install-recommends \
 systemctl enable docker
 systemctl start docker
 
-echo "==> [2/5] Configuring Artifact Registry auth"
+echo "==> [2/7] Installing gcloud CLI (required for AR auth and Secret Manager)"
+if ! command -v gcloud &>/dev/null; then
+  apt-get install -y --no-install-recommends apt-transport-https ca-certificates gnupg curl
+  curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+    | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+  echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+    > /etc/apt/sources.list.d/google-cloud-sdk.list
+  apt-get update -qq
+  apt-get install -y google-cloud-cli
+fi
+
+echo "==> [3/7] Configuring Artifact Registry auth"
 gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
-echo "==> [3/5] Setting up /opt/t3claw"
+echo "==> [4/7] Setting up /opt/t3claw"
 mkdir -p /opt/t3claw
 chmod 700 /opt/t3claw
 
@@ -98,7 +113,6 @@ services:
       PRIVATE_KEY: ${T3N_MCP_PRIVATE_KEY:-}
       T3N_MCP_AGENT_SECRET_HEX: ${T3N_MCP_AGENT_SECRET_HEX:-}
       MCP_SOCKET_PATH: /var/run/t3n-mcp/t3n-mcp.sock
-      T3N_PROJECT_DIR: /app
     volumes:
       - t3n_mcp_socket:/var/run/t3n-mcp
 
@@ -108,7 +122,7 @@ volumes:
   t3n_mcp_socket:
 COMPOSE
 
-echo "==> [4/5] Installing t3claw.service"
+echo "==> [5/7] Installing t3claw.service"
 cat > /etc/systemd/system/t3claw.service << 'SERVICE'
 [Unit]
 Description=T3Claw AI Assistant
@@ -134,7 +148,7 @@ WantedBy=multi-user.target
 SERVICE
 systemctl daemon-reload
 
-echo "==> [5/6] Seeding t3n-mcp server config"
+echo "==> [6/7] Seeding t3n-mcp server config"
 mkdir -p /home/t3claw/.t3claw 2>/dev/null || true
 # Pre-register t3n-mcp as a Unix socket MCP server so it appears in the UI on
 # first boot without a manual `t3claw mcp add` step.
@@ -161,11 +175,17 @@ else
   echo "     WARNING: t3claw_data volume not found yet, skipping mcp seed (run after first compose up)"
 fi
 
-echo "==> [6/6] Pre-pulling images"
+echo "==> [7/7] Pre-pulling images and starting service"
 docker pull "${IMAGE_PREFIX}/agent:latest"
 docker pull "${IMAGE_PREFIX}/t3n-mcp-sidecar:latest"
 
-echo ""
-echo "==> Bootstrap complete."
-echo "    Ensure the 't3claw-staging-env' Secret Manager secret has a version, then run:"
-echo "      systemctl enable t3claw && systemctl start t3claw"
+systemctl enable t3claw
+if gcloud secrets versions list t3claw-staging-env \
+     --filter="state=ENABLED" --limit=1 --format="value(name)" \
+     --project="${PROJECT}" 2>/dev/null | grep -q .; then
+  systemctl restart t3claw
+  echo "==> Bootstrap complete — t3claw.service started"
+else
+  echo "==> Bootstrap complete — start manually after uploading t3claw-staging-env:"
+  echo "      systemctl start t3claw"
+fi
