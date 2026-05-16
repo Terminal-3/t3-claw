@@ -354,6 +354,10 @@ by the script:
 
 ### How the workflow runs
 
+```text
+push to staging
+  ├── build-agent    Dockerfile --target runtime-staging → AR agent:latest + :<sha>
+  └── build-sidecar  docker/t3n-mcp-sidecar.Dockerfile → AR t3n-mcp-sidecar:latest + :<sha>
         ↓ both succeed
   └── deploy         IAP SSH → docker compose --profile app pull && up -d
                      Smoke test: curl /api/health (retries 10×10 s)
