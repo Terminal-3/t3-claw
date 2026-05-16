@@ -30,6 +30,19 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Checkout trinity (sidecar sources)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: Terminal-3/trinity
+          path: trinity
+          token: ${{ secrets.TRINITY_CHECKOUT_TOKEN }}
+
+      - name: Verify trinity build context
+        run: |
+          test -f trinity/client/pnpm-lock.yaml
+          test -d trinity/client/t3n-sdk
+          test -d trinity/client/mcp/t3n-mcp
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
@@ -45,6 +58,8 @@ jobs:
         with:
           context: .
           file: docker/t3n-mcp-sidecar.Dockerfile
+          build-contexts: |
+            trinity_client=trinity/client
           push: true
           tags: |
             ghcr.io/terminal-3/t3n-mcp-sidecar:latest
