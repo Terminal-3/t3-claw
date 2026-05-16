@@ -138,7 +138,7 @@ gcloud secrets versions add t3claw-staging-env \
   --project=gen-lang-client-0263867259
 ```
 
-> **Secret vs image updates.** The CI deploy workflow runs `docker compose pull && up -d` directly — it does **not** invoke `systemctl restart t3claw`. This means secret updates are not picked up automatically by a code deploy. To apply a new secret version, SSH in and restart the service manually:
+> **Secret vs image updates.** The CI deploy workflow calls `systemctl restart t3claw`, so `ExecStartPre` re-fetches the latest secret version on every code deploy. If you rotate a secret **without** pushing code, you still need to restart manually:
 > ```bash
 > gcloud compute ssh t3claw-staging \
 >   --zone=asia-southeast1-a --project=gen-lang-client-0263867259 --tunnel-through-iap \
