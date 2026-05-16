@@ -324,10 +324,9 @@ See `deploy-gcp/env.example` for the full template. Five values must be replaced
 
 ---
 
-## CI/CD — automated deploy on merge to main
+## CI/CD — automated deploy on push to staging
 
-`.github/workflows/deploy-gcp.yml` runs automatically when the `Run Tests` workflow
-passes on `main`. It builds and pushes both images to Artifact Registry, then IAP-SSHes
+`.github/workflows/staging-gcp.yml` runs automatically on every push to `staging`. It builds and pushes both images to Artifact Registry, then IAP-SSHes
 into the VM and does a rolling update. No human action required.
 
 ### One-time GCP setup
