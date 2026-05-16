@@ -119,7 +119,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/t3claw
-ExecStartPre=/bin/bash -c 'gcloud secrets versions access latest --secret=t3claw-staging-env --project=gen-lang-client-0263867259 > /opt/t3claw/.env && chmod 600 /opt/t3claw/.env'
+ExecStartPre=/bin/bash -c 'set -e; tmp=$(mktemp /opt/t3claw/.env.XXXXXX); chmod 600 "$tmp"; gcloud secrets versions access latest --secret=t3claw-staging-env --project=gen-lang-client-0263867259 > "$tmp"; mv "$tmp" /opt/t3claw/.env'
 ExecStartPre=/usr/bin/docker compose --profile app pull
 ExecStart=/usr/bin/docker compose --profile app up --remove-orphans
 ExecStop=/usr/bin/docker compose --profile app down
