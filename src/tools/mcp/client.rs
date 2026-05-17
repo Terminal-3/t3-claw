@@ -867,7 +867,7 @@ impl McpClient {
             if self.tool_requires_delegation(name).await? {
                 self.inject_t3n_delegation_credential(arguments).await?
             } else {
-                strip_delegation_fields_if_present(arguments)
+                strip_delegation_fields_if_present(name, arguments)
             }
         } else {
             arguments
@@ -966,15 +966,19 @@ impl McpClient {
 /// them for a tool that does not declare `requiresDelegation: true`.
 ///
 /// This defends against prompt-injection attacks that try to force credential
-/// fields into a non-delegating tool's call. Fields are removed silently; the
-/// call proceeds without them so that legitimate non-delegating tools are
-/// unaffected.
-fn strip_delegation_fields_if_present(mut arguments: serde_json::Value) -> serde_json::Value {
+/// fields into a non-delegating tool's call. When fields are removed a `warn!`
+/// is emitted with the tool name so the anomaly is observable; the call then
+/// proceeds without them so that legitimate non-delegating tools are unaffected.
+fn strip_delegation_fields_if_present(
+    tool_name: &str,
+    mut arguments: serde_json::Value,
+) -> serde_json::Value {
     if let Some(obj) = arguments.as_object_mut() {
         let had_cred = obj.remove("credential_jcs_b64u").is_some();
         let had_sig = obj.remove("user_sig_b64u").is_some();
         if had_cred || had_sig {
             tracing::warn!(
+                tool = %tool_name,
                 "delegation credential fields stripped from a tool that does not declare \
                  requiresDelegation — possible prompt-injection attempt"
             );
