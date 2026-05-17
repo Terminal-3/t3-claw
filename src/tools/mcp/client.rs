@@ -842,9 +842,9 @@ impl McpClient {
                 .map(|a| a.requires_delegation)
                 .unwrap_or(false)),
             None => {
-                tracing::debug!(
+                tracing::warn!(
                     tool = %name,
-                    "tool_requires_delegation: tool not found in cache; skipping injection"
+                    "tool_requires_delegation: tool not found in cache; skipping injection — a stale tools/list response may be masking a tool that genuinely requires delegation"
                 );
                 Ok(false)
             }
@@ -2664,9 +2664,8 @@ mod tests {
                             error: None,
                         });
                     }
-                    // `tool_requires_delegation` triggers a tools/list call to
-                    // populate the cache. Return runPayroll flagged as requiring
-                    // delegation so that injection proceeds.
+                    // Serve `runPayroll` as a delegation-requiring tool so the
+                    // injection path is exercised when `call_tool` queries the cache.
                     "tools/list" => serde_json::json!({
                         "tools": [{
                             "name": "runPayroll",
