@@ -817,6 +817,40 @@ impl McpClient {
         Ok(serde_json::Value::Object(merged))
     }
 
+    /// Determine whether a t3n-mcp tool requires delegation-credential injection.
+    ///
+    /// Reads `annotations.requires_delegation` from the cached tool list. If the
+    /// cache is empty, `list_tools` is called first. Returns `false` when the tool
+    /// is not found — the underlying call will surface a not-found error from the
+    /// upstream MCP server through the normal error path.
+    async fn tool_requires_delegation(&self, name: &str) -> Result<bool, ToolError> {
+        // Populate the cache on first call if it isn't already warm.
+        if self.tools_cache.read().await.is_none() {
+            self.list_tools().await?;
+        }
+
+        let cache = self.tools_cache.read().await;
+        let tools = match cache.as_ref() {
+            Some(t) => t,
+            None => return Ok(false),
+        };
+
+        match tools.iter().find(|t| t.name == name) {
+            Some(tool) => Ok(tool
+                .annotations
+                .as_ref()
+                .map(|a| a.requires_delegation)
+                .unwrap_or(false)),
+            None => {
+                tracing::debug!(
+                    tool = %name,
+                    "tool_requires_delegation: tool not found in cache; skipping injection"
+                );
+                Ok(false)
+            }
+        }
+    }
+
     /// Call a tool on the MCP server.
     pub async fn call_tool(
         &self,
@@ -825,12 +859,13 @@ impl McpClient {
     ) -> Result<CallToolResult, ToolError> {
         self.initialize().await?;
 
-        // Inject the per-user Trinity delegation credential for every t3n-mcp call.
-        // The sidecar's runPayroll tool accepts `credential_jcs_b64u` and `user_sig_b64u`
-        // as schema fields, so riding the credential in the JSON-RPC params requires no
-        // unix-transport changes (phase-0 approach; header plumbing is phase 1).
+        // For t3n-mcp tools, inject the per-user Trinity delegation credential only
+        // when the tool's annotations declare `requiresDelegation: true`. Read-only
+        // and direct-mode tools leave the flag absent (defaults to false) and receive
+        // the call unmodified.
         let arguments = if self.server_name.as_str()
             == crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED
+            && self.tool_requires_delegation(name).await?
         {
             self.inject_t3n_delegation_credential(arguments).await?
         } else {
@@ -1376,9 +1411,7 @@ mod tests {
             input_schema: serde_json::json!({"type": "object"}),
             annotations: Some(McpToolAnnotations {
                 destructive_hint: true,
-                side_effects_hint: false,
-                read_only_hint: false,
-                execution_time_hint: None,
+                ..McpToolAnnotations::default()
             }),
         };
         assert!(tool.requires_approval());
@@ -1392,10 +1425,8 @@ mod tests {
             description: "Reads data".to_string(),
             input_schema: serde_json::json!({"type": "object"}),
             annotations: Some(McpToolAnnotations {
-                destructive_hint: false,
                 side_effects_hint: true,
-                read_only_hint: false,
-                execution_time_hint: None,
+                ..McpToolAnnotations::default()
             }),
         };
         assert!(!tool.requires_approval());
@@ -1854,9 +1885,7 @@ mod tests {
             annotations: if destructive {
                 Some(McpToolAnnotations {
                     destructive_hint: true,
-                    side_effects_hint: false,
-                    read_only_hint: false,
-                    execution_time_hint: None,
+                    ..McpToolAnnotations::default()
                 })
             } else {
                 None
@@ -2621,8 +2650,6 @@ mod tests {
                 _headers: &HashMap<String, String>,
             ) -> Result<McpResponse, crate::tools::tool::ToolError> {
                 self.requests.lock().unwrap().push(request.clone());
-                // Return appropriate responses depending on the method so
-                // that `initialize()` completes before `call_tool` runs.
                 let result = match request.method.as_str() {
                     "initialize" => serde_json::json!({
                         "protocolVersion": "2024-11-05",
@@ -2630,7 +2657,6 @@ mod tests {
                         "serverInfo": {"name": "t3n-mcp", "version": "1.0"}
                     }),
                     "notifications/initialized" => {
-                        // Notification — return empty response (id is None).
                         return Ok(McpResponse {
                             jsonrpc: "2.0".to_string(),
                             id: None,
@@ -2638,9 +2664,20 @@ mod tests {
                             error: None,
                         });
                     }
+                    // `tool_requires_delegation` triggers a tools/list call to
+                    // populate the cache. Return runPayroll flagged as requiring
+                    // delegation so that injection proceeds.
+                    "tools/list" => serde_json::json!({
+                        "tools": [{
+                            "name": "runPayroll",
+                            "description": "Run payroll",
+                            "inputSchema": {"type": "object", "properties": {}},
+                            "annotations": {"requiresDelegation": true}
+                        }]
+                    }),
                     _ => serde_json::json!({
                         "content": [{"type": "text", "text": "ok"}],
-                        "is_error": false
+                        "isError": false
                     }),
                 };
                 Ok(McpResponse {
@@ -2720,6 +2757,292 @@ mod tests {
         assert_eq!(
             args["cycle_id"], "2025-01",
             "caller-supplied params must be preserved alongside injected fields"
+        );
+    }
+
+    // ── per-tool delegation gating ───────────────────────────────────────────
+    //
+    // These tests exercise the `requiresDelegation` annotation gating added to
+    // `call_tool`. A helper builds a `CapturingTransport` that serves a
+    // configurable tool list so each test can control whether the tool under
+    // test has the flag set.
+
+    /// Build a `CapturingTransport` that records every request and serves a
+    /// `tools/list` response containing exactly one tool.
+    ///
+    /// `requires_delegation` controls the `requiresDelegation` annotation
+    /// value on that tool. The `tools/call` arm always returns a success
+    /// response so tests can focus on injection behaviour rather than result
+    /// parsing.
+    fn make_gating_transport(
+        tool_name: &'static str,
+        requires_delegation: bool,
+    ) -> std::sync::Arc<GatingCapturingTransport> {
+        std::sync::Arc::new(GatingCapturingTransport {
+            tool_name,
+            requires_delegation,
+            requests: std::sync::Mutex::new(Vec::new()),
+        })
+    }
+
+    struct GatingCapturingTransport {
+        tool_name: &'static str,
+        requires_delegation: bool,
+        requests: std::sync::Mutex<Vec<McpRequest>>,
+    }
+
+    #[async_trait]
+    impl McpTransport for GatingCapturingTransport {
+        async fn send(
+            &self,
+            request: &McpRequest,
+            _headers: &HashMap<String, String>,
+        ) -> Result<McpResponse, crate::tools::tool::ToolError> {
+            self.requests.lock().unwrap().push(request.clone());
+            let result = match request.method.as_str() {
+                "initialize" => serde_json::json!({
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "serverInfo": {"name": "t3n-mcp", "version": "1.0"}
+                }),
+                "notifications/initialized" => {
+                    return Ok(McpResponse {
+                        jsonrpc: "2.0".to_string(),
+                        id: None,
+                        result: None,
+                        error: None,
+                    });
+                }
+                "tools/list" => serde_json::json!({
+                    "tools": [{
+                        "name": self.tool_name,
+                        "description": "test tool",
+                        "inputSchema": {"type": "object", "properties": {}},
+                        "annotations": {"requiresDelegation": self.requires_delegation}
+                    }]
+                }),
+                _ => serde_json::json!({
+                    "content": [{"type": "text", "text": "ok"}],
+                    "isError": false
+                }),
+            };
+            Ok(McpResponse {
+                jsonrpc: "2.0".to_string(),
+                id: request.id,
+                result: Some(result),
+                error: None,
+            })
+        }
+        async fn shutdown(&self) -> Result<(), crate::tools::tool::ToolError> {
+            Ok(())
+        }
+        fn supports_http_features(&self) -> bool {
+            false
+        }
+    }
+
+    /// When a tool declares `requiresDelegation: false`, `call_tool` must NOT
+    /// inject any delegation fields into the forwarded arguments.
+    #[tokio::test]
+    async fn call_tool_skips_injection_for_unflagged_tool() {
+        use crate::secrets::CreateSecretParams;
+
+        let store = make_test_secrets_store();
+        store
+            .create(
+                "test-user",
+                CreateSecretParams::new(
+                    crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET,
+                    &make_token_json(TEST_ORG_DID),
+                ),
+            )
+            .await
+            .expect("store delegation token");
+
+        let transport = make_gating_transport("getAgentDid", false);
+        let client = McpClient::new_with_transport(
+            crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED,
+            Arc::clone(&transport) as Arc<dyn McpTransport>,
+            None,
+            Some(store),
+            "test-user",
+            None,
+        );
+
+        let result = client
+            .call_tool("getAgentDid", serde_json::json!({}))
+            .await
+            .expect("call should succeed");
+        assert!(!result.is_error);
+
+        let requests = transport.requests.lock().unwrap();
+        let call_req = requests
+            .iter()
+            .find(|r| r.method == "tools/call")
+            .expect("a tools/call request must have been forwarded");
+
+        let args = &call_req.params.as_ref().expect("params present")["arguments"];
+
+        assert!(
+            args.get("credential_jcs_b64u").is_none(),
+            "credential_jcs_b64u must NOT be injected for an unflagged tool"
+        );
+        assert!(
+            args.get("user_sig_b64u").is_none(),
+            "user_sig_b64u must NOT be injected for an unflagged tool"
+        );
+        assert!(
+            args.get("org_did").is_none(),
+            "org_did must NOT be injected for an unflagged tool"
+        );
+    }
+
+    /// When a tool declares `requiresDelegation: true`, `call_tool` must inject
+    /// the delegation fields even when the call originates from a non-payroll tool.
+    #[tokio::test]
+    async fn call_tool_injects_for_flagged_tool() {
+        use crate::secrets::CreateSecretParams;
+
+        let store = make_test_secrets_store();
+        store
+            .create(
+                "test-user",
+                CreateSecretParams::new(
+                    crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET,
+                    &make_token_json(TEST_ORG_DID),
+                ),
+            )
+            .await
+            .expect("store delegation token");
+
+        let transport = make_gating_transport("someDelegatedTool", true);
+        let client = McpClient::new_with_transport(
+            crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED,
+            Arc::clone(&transport) as Arc<dyn McpTransport>,
+            None,
+            Some(store),
+            "test-user",
+            None,
+        );
+
+        let result = client
+            .call_tool("someDelegatedTool", serde_json::json!({"foo": "bar"}))
+            .await
+            .expect("call should succeed with token present");
+        assert!(!result.is_error);
+
+        let requests = transport.requests.lock().unwrap();
+        let call_req = requests
+            .iter()
+            .find(|r| r.method == "tools/call")
+            .expect("a tools/call request must have been forwarded");
+
+        let args = &call_req.params.as_ref().expect("params present")["arguments"];
+
+        assert_eq!(
+            args["credential_jcs_b64u"],
+            make_credential_jcs_b64u(TEST_ORG_DID),
+            "credential_jcs_b64u must be injected for a flagged tool"
+        );
+        assert_eq!(
+            args["user_sig_b64u"], "usig-value",
+            "user_sig_b64u must be injected for a flagged tool"
+        );
+        assert_eq!(
+            args["org_did"], TEST_ORG_DID,
+            "org_did must be injected for a flagged tool"
+        );
+        assert_eq!(args["foo"], "bar", "caller args must be preserved");
+    }
+
+    /// Regression test for the original bug: an unflagged tool (e.g. `getAgentDid`)
+    /// must succeed even when no delegation token is configured. Previously, every
+    /// t3n-mcp call injected unconditionally, so read-only tools failed closed with
+    /// "no delegation token configured" when the user had no token.
+    #[tokio::test]
+    async fn call_tool_unflagged_tool_works_without_delegation_token_configured() {
+        // No secret seeded — the store is empty.
+        let store = make_test_secrets_store();
+
+        let transport = make_gating_transport("getAgentDid", false);
+        let client = McpClient::new_with_transport(
+            crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED,
+            Arc::clone(&transport) as Arc<dyn McpTransport>,
+            None,
+            Some(store),
+            "test-user",
+            None,
+        );
+
+        // This must not return the "no delegation token configured" error.
+        let result = client
+            .call_tool("getAgentDid", serde_json::json!({}))
+            .await
+            .expect("unflagged tool must succeed without a delegation token");
+        assert!(!result.is_error);
+    }
+
+    /// A tool that declares `requiresDelegation: true` must fail closed with the
+    /// "no delegation token configured" error when no token is present, preserving
+    /// the existing fail-closed behaviour for tools that genuinely need a credential.
+    #[tokio::test]
+    async fn call_tool_flagged_tool_fails_closed_without_token() {
+        // No secret seeded.
+        let store = make_test_secrets_store();
+
+        let transport = make_gating_transport("someDelegatedTool", true);
+        let client = McpClient::new_with_transport(
+            crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED,
+            Arc::clone(&transport) as Arc<dyn McpTransport>,
+            None,
+            Some(store),
+            "test-user",
+            None,
+        );
+
+        let err = client
+            .call_tool("someDelegatedTool", serde_json::json!({}))
+            .await
+            .expect_err("flagged tool must fail when delegation token is absent");
+
+        let msg = err.to_string();
+        assert!(
+            msg.contains("no delegation token configured"),
+            "error must guide the user to configure their token: {msg}"
+        );
+    }
+
+    // ── McpToolAnnotations serde round-trips ─────────────────────────────────
+
+    #[test]
+    fn mcp_tool_annotations_deserialises_requires_delegation() {
+        use crate::tools::mcp::protocol::McpToolAnnotations;
+
+        let json = r#"{"requiresDelegation": true, "destructiveHint": false}"#;
+        let annotations: McpToolAnnotations =
+            serde_json::from_str(json).expect("deserialise annotations");
+
+        assert!(
+            annotations.requires_delegation,
+            "requires_delegation must be true when requiresDelegation: true is present"
+        );
+        assert!(
+            !annotations.destructive_hint,
+            "destructive_hint must be false"
+        );
+    }
+
+    #[test]
+    fn mcp_tool_annotations_defaults_when_field_absent() {
+        use crate::tools::mcp::protocol::McpToolAnnotations;
+
+        let json = r#"{"destructiveHint": true}"#;
+        let annotations: McpToolAnnotations =
+            serde_json::from_str(json).expect("deserialise annotations without requiresDelegation");
+
+        assert!(
+            !annotations.requires_delegation,
+            "requires_delegation must default to false when the field is absent"
         );
     }
 
