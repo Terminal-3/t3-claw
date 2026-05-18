@@ -496,8 +496,7 @@ mod tests {
     #[tokio::test]
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_create_or_update_file_puts_contents_payload() {
-        let expected_url =
-            "https://api.github.com/repos/nearai/ironclaw/contents/docs/replay.md";
+        let expected_url = "https://api.github.com/repos/nearai/ironclaw/contents/docs/replay.md";
         let expected_body = json!({
             "message": "Add replay doc",
             "content": "IyBSZXBsYXkgZG9jCg==",
@@ -576,8 +575,7 @@ mod tests {
     #[tokio::test]
     #[ignore] // requires pre-compiled WASM binary
     async fn wasm_github_delete_file_deletes_contents_with_sha() {
-        let expected_url =
-            "https://api.github.com/repos/nearai/ironclaw/contents/docs/replay.md";
+        let expected_url = "https://api.github.com/repos/nearai/ironclaw/contents/docs/replay.md";
         let expected_body = json!({
             "message": "Remove replay doc",
             "sha": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef",

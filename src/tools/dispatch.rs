@@ -285,8 +285,8 @@ mod integration_tests {
     use crate::db::libsql::LibSqlBackend;
     use crate::tools::tool::{Tool, ToolError, ToolOutput};
     use async_trait::async_trait;
-    use t3claw_safety::SafetyLayer;
     use std::time::Duration;
+    use t3claw_safety::SafetyLayer;
 
     // ── Stub tools ──────────────────────────────────────────
 

@@ -1240,8 +1240,7 @@ async fn reconcile_pending_gate_state(
             continue;
         };
 
-        if thread.state != t3claw_engine::ThreadState::Waiting
-            || !thread.is_owned_by(&gate.user_id)
+        if thread.state != t3claw_engine::ThreadState::Waiting || !thread.is_owned_by(&gate.user_id)
         {
             let _ = pending_gates.discard(&gate.key()).await;
         }
@@ -2327,10 +2326,7 @@ pub async fn handle_auth_gate_resolution(
 }
 
 fn gate_is_approval(gate: &PendingGate) -> bool {
-    matches!(
-        gate.resume_kind,
-        t3claw_engine::ResumeKind::Approval { .. }
-    )
+    matches!(gate.resume_kind, t3claw_engine::ResumeKind::Approval { .. })
 }
 
 fn gate_is_authentication(gate: &PendingGate) -> bool {
@@ -2341,10 +2337,7 @@ fn gate_is_authentication(gate: &PendingGate) -> bool {
 }
 
 fn gate_view_is_approval(gate: &crate::gate::pending::PendingGateView) -> bool {
-    matches!(
-        gate.resume_kind,
-        t3claw_engine::ResumeKind::Approval { .. }
-    )
+    matches!(gate.resume_kind, t3claw_engine::ResumeKind::Approval { .. })
 }
 
 fn gate_view_is_authentication(gate: &crate::gate::pending::PendingGateView) -> bool {
@@ -3422,10 +3415,7 @@ async fn handle_with_engine_inner(
             return resolve_gate(agent, message, gate.thread_id, request_id, resolution).await;
         }
         PendingGateResolution::Resolved(gate)
-            if matches!(
-                gate.resume_kind,
-                t3claw_engine::ResumeKind::Approval { .. }
-            ) =>
+            if matches!(gate.resume_kind, t3claw_engine::ResumeKind::Approval { .. }) =>
         {
             let pending = gate.clone();
             // Clone the SSE arc and the tools registry out of state,
@@ -5488,8 +5478,8 @@ pub async fn reset_engine_state() {
 /// new test suites that spawn engine threads must do the same or clear state
 /// via `reset_engine_state()` before calling.
 #[cfg(feature = "libsql")]
-pub async fn engine_retrospectives_for_test()
--> Vec<t3claw_engine::executor::trace::ExecutionTrace> {
+pub async fn engine_retrospectives_for_test() -> Vec<t3claw_engine::executor::trace::ExecutionTrace>
+{
     let Some(lock) = ENGINE_STATE.get() else {
         return Vec::new();
     };
@@ -5925,8 +5915,8 @@ mod tests {
     use crate::testing::{StubChannel, StubLlm};
     use crate::tools::ToolRegistry;
     use futures::{StreamExt, stream};
-    use t3claw_safety::SafetyLayer;
     use rust_decimal::Decimal;
+    use t3claw_safety::SafetyLayer;
 
     static ENGINE_STATE_TEST_LOCK: LazyLock<TokioMutex<()>> = LazyLock::new(|| TokioMutex::new(()));
     static CWD_TEST_LOCK: LazyLock<TokioMutex<()>> = LazyLock::new(|| TokioMutex::new(()));
@@ -6183,8 +6173,7 @@ mod tests {
         async fn list_conversations(
             &self,
             user_id: &str,
-        ) -> Result<Vec<t3claw_engine::ConversationSurface>, t3claw_engine::EngineError>
-        {
+        ) -> Result<Vec<t3claw_engine::ConversationSurface>, t3claw_engine::EngineError> {
             Ok(self
                 .conversations
                 .read()
@@ -7253,8 +7242,7 @@ mod tests {
             thread_id,
             request_id,
             t3claw_engine::ResumeKind::Authentication {
-                credential_name: t3claw_common::CredentialName::new("telegram_bot_token")
-                    .unwrap(),
+                credential_name: t3claw_common::CredentialName::new("telegram_bot_token").unwrap(),
                 instructions: "paste token".into(),
                 auth_url: None,
             },
@@ -7293,8 +7281,7 @@ mod tests {
             thread_id,
             request_id,
             t3claw_engine::ResumeKind::Authentication {
-                credential_name: t3claw_common::CredentialName::new("telegram_bot_token")
-                    .unwrap(),
+                credential_name: t3claw_common::CredentialName::new("telegram_bot_token").unwrap(),
                 instructions: "paste token".into(),
                 auth_url: None,
             },

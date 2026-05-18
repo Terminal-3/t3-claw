@@ -409,9 +409,7 @@ pub async fn init_secrets_store()
 -> anyhow::Result<Arc<dyn crate::secrets::SecretsStore + Send + Sync>> {
     let config = crate::config::Config::from_env().await?;
     let master_key = config.secrets.master_key().ok_or_else(|| {
-        anyhow::anyhow!(
-            "SECRETS_MASTER_KEY not set. Run 't3claw onboard' first or set it in .env"
-        )
+        anyhow::anyhow!("SECRETS_MASTER_KEY not set. Run 't3claw onboard' first or set it in .env")
     })?;
 
     let crypto = Arc::new(crate::secrets::SecretsCrypto::new(master_key.clone())?);

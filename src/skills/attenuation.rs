@@ -122,8 +122,8 @@ pub fn attenuate_tools(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use t3claw_skills::{ActivationCriteria, GatingRequirements, SkillManifest, SkillSource};
     use std::path::PathBuf;
+    use t3claw_skills::{ActivationCriteria, GatingRequirements, SkillManifest, SkillSource};
 
     fn make_tool(name: &str) -> ToolDefinition {
         ToolDefinition {

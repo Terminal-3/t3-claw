@@ -13,6 +13,7 @@ mod tests {
     use std::time::Duration;
 
     use async_trait::async_trait;
+    use rust_decimal::Decimal;
     use t3claw::channels::IncomingMessage;
     use t3claw::config::Config;
     use t3claw::llm::{
@@ -20,7 +21,6 @@ mod tests {
         ToolCompletionResponse,
     };
     use t3claw::tools::permissions::{ADMIN_SETTINGS_USER_ID, ADMIN_TOOL_POLICY_KEY};
-    use rust_decimal::Decimal;
 
     use crate::support::test_rig::TestRigBuilder;
 

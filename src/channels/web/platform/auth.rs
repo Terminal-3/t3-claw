@@ -1469,10 +1469,7 @@ mod tests {
         let app = test_app(TEST_AUTH_SECRET_TOKEN);
         let req = Request::builder()
             .uri("/api/chat/history")
-            .header(
-                "Cookie",
-                format!("t3claw_session={TEST_AUTH_SECRET_TOKEN}"),
-            )
+            .header("Cookie", format!("t3claw_session={TEST_AUTH_SECRET_TOKEN}"))
             .body(Body::empty())
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();

@@ -196,10 +196,7 @@ fn bootstrap_env_preserves_existing_values() {
 
     let initial_vars: &[(&str, &str)] = &[
         ("DATABASE_BACKEND", "postgres"),
-        (
-            "DATABASE_URL",
-            "postgres://user:pass@localhost:5432/t3claw",
-        ),
+        ("DATABASE_URL", "postgres://user:pass@localhost:5432/t3claw"),
         ("LLM_BACKEND", "nearai"),
         ("NEARAI_API_KEY", "key_abc123"),
         ("EMBEDDING_ENABLED", "true"),

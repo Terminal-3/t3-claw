@@ -2768,10 +2768,7 @@ mod tests {
         let client = make_t3n_client_with_store(Arc::clone(&transport), store);
 
         let result = client
-            .call_tool(
-                "runPayroll",
-                serde_json::json!({ "cycle_id": "2025-01" }),
-            )
+            .call_tool("runPayroll", serde_json::json!({ "cycle_id": "2025-01" }))
             .await
             .expect("call_tool should succeed when tool requires delegation and token is present");
         assert!(!result.is_error);
@@ -2930,10 +2927,7 @@ mod tests {
         let client = make_t3n_client_with_store(Arc::clone(&transport), store);
 
         let err = client
-            .call_tool(
-                "runPayroll",
-                serde_json::json!({ "cycle_id": "2025-01" }),
-            )
+            .call_tool("runPayroll", serde_json::json!({ "cycle_id": "2025-01" }))
             .await
             .expect_err("must fail when tool requires delegation but no token is configured");
 
@@ -2985,10 +2979,7 @@ mod tests {
         let client = make_t3n_client_with_store(Arc::clone(&transport), store);
 
         let result = client
-            .call_tool(
-                "runPayroll",
-                serde_json::json!({ "cycle_id": "2025-01" }),
-            )
+            .call_tool("runPayroll", serde_json::json!({ "cycle_id": "2025-01" }))
             .await
             .expect("annotation-based injection must fire even when agent omits credential fields");
         assert!(!result.is_error);

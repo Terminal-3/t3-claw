@@ -22,8 +22,8 @@
 //!    variants remain `High`.
 //! 6. **`risk_level_for` trait method** — delegates to classify_command_risk.
 
-use t3claw::tools::{ApprovalRequirement, RiskLevel, Tool, ToolRegistry};
 use std::sync::Arc;
+use t3claw::tools::{ApprovalRequirement, RiskLevel, Tool, ToolRegistry};
 
 // ---------------------------------------------------------------------------
 // Helper: obtain a `ShellTool` from the registry

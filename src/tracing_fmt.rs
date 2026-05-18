@@ -37,8 +37,7 @@ pub fn init_cli_tracing() {
 pub fn init_worker_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("t3claw=info")),
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("t3claw=info")),
         )
         .init();
 }

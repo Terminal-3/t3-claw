@@ -6,8 +6,8 @@
 
 use std::collections::VecDeque;
 
-use t3claw_common::{ExtensionName, JobResultStatus};
 use ratatui::crossterm::event::KeyEvent;
+use t3claw_common::{ExtensionName, JobResultStatus};
 
 /// A single log entry displayed in the TUI Logs tab.
 ///

@@ -666,9 +666,7 @@ impl LiveTestHarnessBuilder {
             None
         } else {
             match config.database.backend {
-                t3claw::config::DatabaseBackend::LibSql
-                    if config.database.libsql_url.is_none() =>
-                {
+                t3claw::config::DatabaseBackend::LibSql if config.database.libsql_url.is_none() => {
                     config
                         .database
                         .libsql_path
@@ -1062,9 +1060,7 @@ fn scan_preview_for_errors(preview: &str) -> Option<String> {
 /// native auth path it supports.
 #[cfg(feature = "libsql")]
 async fn hydrate_llm_secrets_into_env() {
-    use t3claw::secrets::{
-        LibSqlSecretsStore, SecretsStore, crypto_from_hex, resolve_master_key,
-    };
+    use t3claw::secrets::{LibSqlSecretsStore, SecretsStore, crypto_from_hex, resolve_master_key};
 
     // Known (secret_name, env_var) pairs. When a backend supports multiple
     // env-var fallbacks we pick the most canonical one.

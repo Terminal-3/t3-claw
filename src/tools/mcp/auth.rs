@@ -2215,10 +2215,8 @@ mod tests {
             return;
         };
         let _proxy_url_guard = set_env_var("T3CLAW_OAUTH_EXCHANGE_URL", Some(&base_url));
-        let _proxy_token_guard = set_env_var(
-            "T3CLAW_OAUTH_PROXY_AUTH_TOKEN",
-            Some("gateway-test-token"),
-        );
+        let _proxy_token_guard =
+            set_env_var("T3CLAW_OAUTH_PROXY_AUTH_TOKEN", Some("gateway-test-token"));
         let expected_token_url = format!("{base_url}/token");
 
         let secrets = test_secrets_store();

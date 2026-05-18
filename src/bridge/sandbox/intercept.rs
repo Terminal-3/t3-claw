@@ -5,8 +5,8 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use t3claw_engine::{MountError, ProjectId, WorkspaceMounts};
 use serde_json::Value;
+use t3claw_engine::{MountError, ProjectId, WorkspaceMounts};
 use tracing::debug;
 
 /// Tool names that the sandbox **may** handle when their path argument
@@ -273,11 +273,11 @@ fn is_mountable_path(path: &str) -> bool {
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use t3claw_engine::workspace::{DirEntry, EntryKind, FilesystemBackend, ShellOutput};
-    use t3claw_engine::{MountBackend, ProjectMountFactory, ProjectMounts};
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use t3claw_engine::workspace::{DirEntry, EntryKind, FilesystemBackend, ShellOutput};
+    use t3claw_engine::{MountBackend, ProjectMountFactory, ProjectMounts};
     use tempfile::TempDir;
 
     #[derive(Debug)]

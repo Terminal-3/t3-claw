@@ -64,12 +64,8 @@ async fn start_test_server() -> (
         skill_registry: None,
         skill_catalog: None,
         auth_manager: None,
-        chat_rate_limiter: t3claw::channels::web::platform::state::PerUserRateLimiter::new(
-            30, 60,
-        ),
-        oauth_rate_limiter: t3claw::channels::web::platform::state::PerUserRateLimiter::new(
-            20, 60,
-        ),
+        chat_rate_limiter: t3claw::channels::web::platform::state::PerUserRateLimiter::new(30, 60),
+        oauth_rate_limiter: t3claw::channels::web::platform::state::PerUserRateLimiter::new(20, 60),
         webhook_rate_limiter: t3claw::channels::web::platform::state::RateLimiter::new(10, 60),
         registry_entries: Vec::new(),
         cost_guard: None,

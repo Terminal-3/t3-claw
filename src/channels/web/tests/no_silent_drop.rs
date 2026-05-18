@@ -93,8 +93,8 @@ async fn gateway_broadcast_without_thread_id_and_no_store_returns_error() {
 async fn gateway_broadcast_without_thread_id_falls_back_to_assistant_thread() {
     use crate::db::Database;
     use futures::StreamExt;
-    use t3claw_common::AppEvent;
     use std::sync::Arc;
+    use t3claw_common::AppEvent;
 
     let dir = tempfile::tempdir().unwrap();
     let db_path = dir.path().join("test_broadcast_fallback.db");
@@ -177,8 +177,8 @@ async fn mission_notification_cross_user_does_not_leak_owner_thread_id() {
     use crate::channels::ChannelManager;
     use crate::db::Database;
     use futures::StreamExt;
-    use t3claw_common::AppEvent;
     use std::sync::Arc;
+    use t3claw_common::AppEvent;
 
     // Set up DB for broadcast fallback
     let dir = tempfile::tempdir().unwrap();
@@ -254,8 +254,8 @@ async fn mission_notification_same_user_attaches_owner_thread_id() {
     use crate::channels::ChannelManager;
     use crate::db::Database;
     use futures::StreamExt;
-    use t3claw_common::AppEvent;
     use std::sync::Arc;
+    use t3claw_common::AppEvent;
 
     let dir = tempfile::tempdir().unwrap();
     let db_path = dir.path().join("test_same_user.db");
@@ -322,8 +322,8 @@ async fn mission_notification_explicit_same_user_attaches_owner_thread_id() {
     use crate::channels::ChannelManager;
     use crate::db::Database;
     use futures::StreamExt;
-    use t3claw_common::AppEvent;
     use std::sync::Arc;
+    use t3claw_common::AppEvent;
 
     let dir = tempfile::tempdir().unwrap();
     let db_path = dir.path().join("test_explicit_same_user.db");

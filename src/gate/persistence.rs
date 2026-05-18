@@ -136,8 +136,8 @@ impl GatePersistence for FileGatePersistence {
 
 #[cfg(test)]
 mod tests {
-    use t3claw_engine::{ConversationId, ResumeKind, ThreadId};
     use chrono::{Duration, Utc};
+    use t3claw_engine::{ConversationId, ResumeKind, ThreadId};
 
     use super::*;
 

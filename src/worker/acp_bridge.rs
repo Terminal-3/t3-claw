@@ -217,11 +217,11 @@ impl AcpBridgeRuntime {
                     });
                 tokio::task::spawn_local(handle_io);
 
-                conn.initialize(t3claw_init_request())
-                    .await
-                    .map_err(|e| WorkerError::ExecutionFailed {
+                conn.initialize(t3claw_init_request()).await.map_err(|e| {
+                    WorkerError::ExecutionFailed {
                         reason: format!("ACP initialize failed: {}", e),
-                    })?;
+                    }
+                })?;
 
                 tracing::info!(job_id = %job_id, "ACP handshake complete");
 
@@ -376,9 +376,8 @@ impl<S: AcpEventSink> acp::Client for T3ClawAcpClient<S> {
 
 /// Build the standard T3Claw ACP initialization request.
 pub(crate) fn t3claw_init_request() -> acp::InitializeRequest {
-    acp::InitializeRequest::new(acp::ProtocolVersion::V1).client_info(
-        acp::Implementation::new("t3claw", env!("CARGO_PKG_VERSION")).title("T3Claw"),
-    )
+    acp::InitializeRequest::new(acp::ProtocolVersion::V1)
+        .client_info(acp::Implementation::new("t3claw", env!("CARGO_PKG_VERSION")).title("T3Claw"))
 }
 
 // ==================== Child process monitor ====================

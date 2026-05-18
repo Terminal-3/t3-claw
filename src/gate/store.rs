@@ -220,10 +220,7 @@ impl PendingGateStore {
     /// Returns the gates that were removed. Used when a thread is deleted or
     /// becomes unreachable while gates are still pending — prevents orphaned
     /// gates that can never be resolved.
-    pub async fn discard_for_thread(
-        &self,
-        thread_id: t3claw_engine::ThreadId,
-    ) -> Vec<PendingGate> {
+    pub async fn discard_for_thread(&self, thread_id: t3claw_engine::ThreadId) -> Vec<PendingGate> {
         let removed = {
             let mut inner = self.inner.lock().await;
             let keys: Vec<PendingGateKey> = inner
@@ -336,8 +333,8 @@ impl PendingGateStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use t3claw_engine::{ConversationId, ResumeKind, ThreadId};
     use chrono::{Duration, Utc};
+    use t3claw_engine::{ConversationId, ResumeKind, ThreadId};
 
     fn sample_gate_with(
         user_id: &str,

@@ -327,8 +327,8 @@ mod tests {
 
     #[test]
     fn test_register_skill_credentials_valid() {
-        use t3claw_skills::types::*;
         use std::path::PathBuf;
+        use t3claw_skills::types::*;
 
         let skill = t3claw_skills::LoadedSkill {
             manifest: SkillManifest {
@@ -365,8 +365,8 @@ mod tests {
 
     #[test]
     fn test_register_skill_credentials_registers_oauth_refresh_config() {
-        use t3claw_skills::types::*;
         use std::path::PathBuf;
+        use t3claw_skills::types::*;
 
         let skill = t3claw_skills::LoadedSkill {
             manifest: SkillManifest {
@@ -421,8 +421,8 @@ mod tests {
 
     #[test]
     fn test_register_skill_credentials_invalid_skipped() {
-        use t3claw_skills::types::*;
         use std::path::PathBuf;
+        use t3claw_skills::types::*;
 
         let skill = t3claw_skills::LoadedSkill {
             manifest: SkillManifest {

@@ -10,10 +10,10 @@ use std::time::Duration;
 use crate::tools::wasm::{ssrf_safe_client_builder_for_target, validate_and_resolve_http_target};
 
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
-use t3claw_common::ExtensionName;
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use t3claw_common::ExtensionName;
 use tokio::sync::RwLock;
 
 pub use crate::auth::providers::{
@@ -1797,10 +1797,8 @@ mod tests {
     #[test]
     fn test_oauth_proxy_auth_token_prefers_dedicated_env() {
         let _guard = lock_env();
-        let _proxy_guard = set_env_var(
-            "T3CLAW_OAUTH_PROXY_AUTH_TOKEN",
-            Some("shared-proxy-secret"),
-        );
+        let _proxy_guard =
+            set_env_var("T3CLAW_OAUTH_PROXY_AUTH_TOKEN", Some("shared-proxy-secret"));
         let _gateway_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-token"));
 
         assert_eq!(

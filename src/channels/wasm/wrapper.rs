@@ -5021,8 +5021,8 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
-    use t3claw_common::CredentialName;
     use secrecy::SecretString;
+    use t3claw_common::CredentialName;
 
     use crate::channels::Channel;
     use crate::channels::OutgoingResponse;

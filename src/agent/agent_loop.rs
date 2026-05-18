@@ -655,8 +655,7 @@ impl Agent {
         feedback.extend(outcome.notes);
 
         // Merge: explicit mentions first, then scored (dedup by name)
-        let mut selected: Vec<t3claw_skills::LoadedSkill> =
-            explicit.into_iter().cloned().collect();
+        let mut selected: Vec<t3claw_skills::LoadedSkill> = explicit.into_iter().cloned().collect();
         for skill in outcome.selected {
             if !selected
                 .iter()
@@ -2178,10 +2177,10 @@ mod tests {
             ToolCompletionRequest, ToolCompletionResponse,
         },
     };
-    use t3claw_safety::SafetyLayer;
     use rust_decimal::Decimal;
     use std::sync::Arc;
     use std::time::Duration;
+    use t3claw_safety::SafetyLayer;
     use uuid::Uuid;
 
     struct StaticLlmProvider;

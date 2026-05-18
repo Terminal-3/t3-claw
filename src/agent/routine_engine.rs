@@ -2102,8 +2102,7 @@ async fn send_notification(
         // Wrap with `from_trusted` — the upstream caller already carried a
         // routine-scoped identifier, and routines do not originate from
         // external channel input.
-        thread_id: thread_id
-            .map(|s| t3claw_common::ExternalThreadId::from_trusted(s.to_string())),
+        thread_id: thread_id.map(|s| t3claw_common::ExternalThreadId::from_trusted(s.to_string())),
         attachments: Vec::new(),
         metadata: serde_json::json!({
             "source": "routine",

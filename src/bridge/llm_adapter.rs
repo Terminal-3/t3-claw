@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
+use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use t3claw_engine::{
     ActionDef, EngineError, LlmBackend, LlmCallConfig, LlmOutput, LlmResponse, ThreadMessage,
     TokenUsage,
 };
-use rust_decimal::Decimal;
-use rust_decimal::prelude::ToPrimitive;
 
 use crate::llm::{
     ChatMessage, LlmProvider, Role, ToolCall, ToolCompletionRequest, ToolDefinition,

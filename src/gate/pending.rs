@@ -1,9 +1,9 @@
 //! Pending gate state — unified type replacing `PendingApproval` and `PendingAuth`.
 
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use t3claw_common::ExternalThreadId;
 use t3claw_engine::{CapabilityLease, ResumeKind, ThreadId};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Composite key for the pending gate store.

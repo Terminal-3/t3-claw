@@ -1385,10 +1385,7 @@ mod tests {
             "wasm_output_dir should default to None"
         );
         assert!(
-            config
-                .build_dir
-                .to_string_lossy()
-                .contains("t3claw-builds"),
+            config.build_dir.to_string_lossy().contains("t3claw-builds"),
             "build_dir should contain 't3claw-builds'"
         );
     }

@@ -450,10 +450,7 @@ mod tests {
     #[test]
     fn malformed_timestamp_fallback_works() {
         let mut labels: HashMap<String, String> = HashMap::new();
-        labels.insert(
-            "t3claw.created_at".to_string(),
-            "invalid-date".to_string(),
-        );
+        labels.insert("t3claw.created_at".to_string(), "invalid-date".to_string());
 
         let parsed_time = labels
             .get("t3claw.created_at")
@@ -781,10 +778,7 @@ mod tests {
 
             // Create a fake job ID that won't exist in context manager
             let orphaned_job_id = Uuid::new_v4();
-            let test_name = format!(
-                "t3claw-orphan-test-{}",
-                &orphaned_job_id.to_string()[..8]
-            );
+            let test_name = format!("t3claw-orphan-test-{}", &orphaned_job_id.to_string()[..8]);
 
             let job_id_str = orphaned_job_id.to_string();
             let created_at_str = (Utc::now() - chrono::Duration::hours(2)).to_rfc3339();

@@ -17,9 +17,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use serde_json::Value;
 use t3claw_engine::workspace::{DirEntry, EntryKind, ShellOutput};
 use t3claw_engine::{MountBackend, MountError};
-use serde_json::Value;
 use uuid::Uuid;
 
 use super::protocol::{Request, Response, RpcError};

@@ -58,9 +58,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use t3claw::bridge::sandbox::protocol::{Request, Response, RpcError, SUPPORTED_TOOLS};
 use t3claw::context::JobContext;
-use t3claw::tools::builtin::{
-    ApplyPatchTool, ListDirTool, ReadFileTool, ShellTool, WriteFileTool,
-};
+use t3claw::tools::builtin::{ApplyPatchTool, ListDirTool, ReadFileTool, ShellTool, WriteFileTool};
 use t3claw::tools::{Tool, ToolError, ToolOutput};
 
 /// Default project mount path inside the container.

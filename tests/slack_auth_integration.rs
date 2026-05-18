@@ -10,6 +10,8 @@ use std::sync::Arc;
 use std::sync::{Mutex, OnceLock};
 
 #[cfg(feature = "integration")]
+use futures::StreamExt;
+#[cfg(feature = "integration")]
 use t3claw::channels::Channel;
 #[cfg(feature = "integration")]
 use t3claw::channels::OutgoingResponse;
@@ -17,8 +19,6 @@ use t3claw::channels::wasm::{
     PreparedChannelModule, WasmChannel, WasmChannelRuntime, WasmChannelRuntimeConfig,
 };
 use t3claw::pairing::PairingStore;
-#[cfg(feature = "integration")]
-use futures::StreamExt;
 #[cfg(feature = "integration")]
 use tokio::time::{Duration, timeout};
 
@@ -729,10 +729,7 @@ async fn test_respond_posts_to_slack_api() {
     assert_eq!(incoming.content, "hello from slack dm");
 
     channel
-        .respond(
-            &incoming,
-            OutgoingResponse::text("hello back from t3claw"),
-        )
+        .respond(&incoming, OutgoingResponse::text("hello back from t3claw"))
         .await
         .expect("slack respond should succeed");
 
