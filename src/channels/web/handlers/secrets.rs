@@ -298,11 +298,11 @@ pub async fn secrets_put_handler(
         .to_string();
 
     // Per-secret shape validation before persisting.
-    if name == crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET {
-        if let Err(e) = validate_delegation_token(&value) {
-            let (status, body) = e.to_response();
-            return Err((status, body));
-        }
+    if name == crate::tools::mcp::config::T3N_DELEGATION_TOKEN_SECRET
+        && let Err(e) = validate_delegation_token(&value)
+    {
+        let (status, body) = e.to_response();
+        return Err((status, body));
     }
 
     let provider = body

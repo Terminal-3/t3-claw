@@ -791,14 +791,14 @@ impl McpClient {
         };
 
         // Cross-check if the LLM supplied org_did; the credential's value is authoritative.
-        if let Some(caller_org_did) = merged.get("org_did").and_then(|v| v.as_str()) {
-            if caller_org_did != credential_org_did {
-                return Err(ToolError::ExternalService(format!(
-                    "t3n-mcp: org_did mismatch — caller supplied '{caller_org_did}', \
-                     stored credential is for '{credential_org_did}'. \
-                     The credential's org_did is authoritative."
-                )));
-            }
+        if let Some(caller_org_did) = merged.get("org_did").and_then(|v| v.as_str())
+            && caller_org_did != credential_org_did
+        {
+            return Err(ToolError::ExternalService(format!(
+                "t3n-mcp: org_did mismatch — caller supplied '{caller_org_did}', \
+                 stored credential is for '{credential_org_did}'. \
+                 The credential's org_did is authoritative."
+            )));
         }
         merged.insert(
             "org_did".to_string(),
