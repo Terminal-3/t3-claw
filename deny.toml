@@ -14,6 +14,9 @@ ignore = [
     "RUSTSEC-2026-0098",
     # rustls-webpki wildcard name constraint bypass — same 0.102.8 pin from libsql
     "RUSTSEC-2026-0099",
+    # rustls-webpki CRL parsing panic on empty BIT STRING — same 0.102.8 pin from libsql;
+    # the CRL parser is only reachable when CRLs are configured, which we never do.
+    "RUSTSEC-2026-0104",
     # rand unsoundness with custom logger calling rand::rng() during reseed — we don't use this pattern;
     # revisit/remove by 2026-06-30, or when transitive deps (tower, nanoid, phf_generator) release rand ≥0.9.3 compat
     "RUSTSEC-2026-0097",
