@@ -6,8 +6,8 @@ use std::future::Future;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 
-use t3claw_common::ExtensionName;
 use serde::{Deserialize, Serialize};
+use t3claw_common::ExtensionName;
 
 use crate::db::{SettingsStore, UserStore};
 use crate::secrets::{CreateSecretParams, DecryptedSecret, SecretError, SecretsStore};

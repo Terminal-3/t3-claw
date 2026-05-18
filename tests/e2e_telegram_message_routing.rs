@@ -9,6 +9,7 @@ mod tests {
     use std::time::Duration;
 
     use async_trait::async_trait;
+    use futures::StreamExt;
     use t3claw::agent::{Agent, AgentDeps};
     use t3claw::app::{AppBuilder, AppBuilderFlags};
     use t3claw::channels::web::log_layer::LogBroadcaster;
@@ -19,7 +20,6 @@ mod tests {
     use t3claw::db::{Database, libsql::LibSqlBackend};
     use t3claw::error::ChannelError;
     use t3claw::llm::{LlmProvider, SessionConfig, SessionManager};
-    use futures::StreamExt;
     use tokio::sync::{Mutex, mpsc};
     use tokio_stream::wrappers::ReceiverStream;
 
@@ -200,8 +200,7 @@ mod tests {
             http_interceptor: None,
             transcription: None,
             document_extraction: None,
-            sandbox_readiness:
-                t3claw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
+            sandbox_readiness: t3claw::agent::routine_engine::SandboxReadiness::DisabledByConfig,
             builder: None,
             llm_backend: "nearai".to_string(),
             tenant_rates: std::sync::Arc::new(t3claw::tenant::TenantRateRegistry::new(4, 3)),

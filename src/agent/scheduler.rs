@@ -749,8 +749,8 @@ mod tests {
         ToolCompletionResponse,
     };
     use crate::tools::{ApprovalRequirement, Tool, ToolError, ToolOutput};
-    use t3claw_safety::SafetyLayer;
     use rust_decimal_macros::dec;
+    use t3claw_safety::SafetyLayer;
 
     /// Minimal LLM provider stub for scheduler tests that don't exercise LLM calls.
     struct StubLlm;

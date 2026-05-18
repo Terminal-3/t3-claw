@@ -158,9 +158,7 @@ async fn cmd_list(config: &SkillsConfig, verbose: bool, json: bool) -> anyhow::R
 
     if !verbose {
         println!();
-        println!(
-            "Use --verbose for details, or 't3claw skills info <name>' for a specific skill."
-        );
+        println!("Use --verbose for details, or 't3claw skills info <name>' for a specific skill.");
     }
 
     Ok(())

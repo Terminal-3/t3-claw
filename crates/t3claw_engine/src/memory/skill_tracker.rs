@@ -6,8 +6,8 @@
 
 use std::sync::Arc;
 
-use t3claw_skills::v2::{SkillRevision, V2SkillMetadata};
 use sha2::{Digest, Sha256};
+use t3claw_skills::v2::{SkillRevision, V2SkillMetadata};
 
 use crate::traits::store::Store;
 use crate::types::error::EngineError;

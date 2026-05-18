@@ -253,10 +253,7 @@ pub(crate) async fn build_frontend_html(state: &GatewayState) -> Option<String> 
             // double-application — see the doc comment on this function.
             custom_css: None,
         };
-        Some(t3claw_gateway::assemble_index(
-            assets::INDEX_HTML,
-            &bundle,
-        ))
+        Some(t3claw_gateway::assemble_index(assets::INDEX_HTML, &bundle))
     };
 
     // Store in cache. If another request raced us here, either writer wins —

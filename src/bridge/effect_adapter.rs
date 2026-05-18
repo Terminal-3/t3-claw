@@ -2223,9 +2223,7 @@ fn parse_routine_request(
 /// Structured features (channel filter, system event filters, webhook secret)
 /// are lossy through this path; callers that need full fidelity should use
 /// `update_mission` with a typed `MissionUpdate` instead.
-fn cadence_to_round_trip_string(
-    cadence: &t3claw_engine::types::mission::MissionCadence,
-) -> String {
+fn cadence_to_round_trip_string(cadence: &t3claw_engine::types::mission::MissionCadence) -> String {
     use t3claw_engine::types::mission::MissionCadence;
     match cadence {
         MissionCadence::Cron { expression, .. } => expression.clone(),
@@ -4770,10 +4768,10 @@ Use this skill to set up a Pika meeting.
     // handle_mission_call path, per .claude/rules/testing.md.
 
     mod mission_store {
+        use std::collections::HashMap;
         use t3claw_engine::types::mission::{Mission, MissionId, MissionStatus};
         use t3claw_engine::types::thread::{Thread, ThreadId, ThreadState};
         use t3claw_engine::{EngineError, ProjectId};
-        use std::collections::HashMap;
         use tokio::sync::RwLock;
 
         pub(super) struct TestStore {

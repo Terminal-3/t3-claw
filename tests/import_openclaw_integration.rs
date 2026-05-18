@@ -8,12 +8,12 @@
 
 #[cfg(feature = "import")]
 mod import_integration_tests {
+    use std::path::PathBuf;
+    use std::sync::Arc;
     use t3claw::db::Database;
     use t3claw::db::libsql::LibSqlBackend;
     use t3claw::import::ImportStats;
     use t3claw::import::openclaw::reader::OpenClawReader;
-    use std::path::PathBuf;
-    use std::sync::Arc;
     use tempfile::TempDir;
     use uuid::Uuid;
 

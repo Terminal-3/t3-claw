@@ -30,8 +30,7 @@ fn libsql_config(path: &std::path::Path) -> t3claw::config::DatabaseConfig {
 
 /// Build a master-key crypto instance for tests.
 fn test_crypto() -> Arc<SecretsCrypto> {
-    let key =
-        secrecy::SecretString::from(t3claw::secrets::keychain::generate_master_key_hex());
+    let key = secrecy::SecretString::from(t3claw::secrets::keychain::generate_master_key_hex());
     Arc::new(SecretsCrypto::new(key).expect("test crypto"))
 }
 

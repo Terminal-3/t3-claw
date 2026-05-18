@@ -174,23 +174,23 @@ impl McpTransport for UnixMcpTransport {
         // common case where the sidecar container was recycled (e.g. to pick
         // up a new env var) while bastionclaw was already running. The caller
         // does not need to know a reconnect happened.
-        if let Err(ref e) = result {
-            if is_broken_pipe(e) {
-                tracing::info!(
-                    "[{}] Broken pipe detected; reconnecting to '{}'",
-                    self.server_name,
-                    self.socket_path.display()
-                );
-                self.reconnect().await?;
-                return stream_transport_send(
-                    &self.writer,
-                    &self.pending,
-                    request,
-                    &self.server_name,
-                    Duration::from_secs(30),
-                )
-                .await;
-            }
+        if let Err(ref e) = result
+            && is_broken_pipe(e)
+        {
+            tracing::info!(
+                "[{}] Broken pipe detected; reconnecting to '{}'",
+                self.server_name,
+                self.socket_path.display()
+            );
+            self.reconnect().await?;
+            return stream_transport_send(
+                &self.writer,
+                &self.pending,
+                request,
+                &self.server_name,
+                Duration::from_secs(30),
+            )
+            .await;
         }
 
         result

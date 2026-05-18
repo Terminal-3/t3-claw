@@ -500,6 +500,7 @@ pub async fn users_delete_handler(
 /// Generates a new API token without requiring a name in the request body.
 /// The token name is auto-set to `"recovery"` so the purpose is clear in the
 /// token list. Returns the plaintext token once — the only opportunity to capture it.
+#[allow(dead_code)] // Admin recovery endpoint; route wiring is pending.
 pub async fn users_create_token_handler(
     State(state): State<Arc<GatewayState>>,
     AdminUser(_admin): AdminUser,

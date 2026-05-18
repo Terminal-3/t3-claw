@@ -2441,8 +2441,7 @@ mod tests {
             "tool_install",
             r#"{"name":"telegram"}"#,
             &t3claw_engine::ResumeKind::Authentication {
-                credential_name: t3claw_common::CredentialName::new("telegram_bot_token")
-                    .unwrap(),
+                credential_name: t3claw_common::CredentialName::new("telegram_bot_token").unwrap(),
                 instructions: "paste token".to_string(),
                 auth_url: None,
             },

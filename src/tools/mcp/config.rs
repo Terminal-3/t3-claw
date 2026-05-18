@@ -1911,6 +1911,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::await_holding_lock)] // env guard must span the entire test
     async fn test_bootstrap_t3n_mcp_server_writes_entry_on_empty_config() {
         let _guard = crate::config::helpers::lock_env();
         let dir = tempdir().unwrap();

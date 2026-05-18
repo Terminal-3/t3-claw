@@ -16,6 +16,8 @@ use std::sync::Arc;
 use std::sync::{Mutex, OnceLock};
 
 #[cfg(feature = "integration")]
+use futures::StreamExt;
+#[cfg(feature = "integration")]
 use t3claw::channels::Channel;
 #[cfg(feature = "integration")]
 use t3claw::channels::OutgoingResponse;
@@ -23,8 +25,6 @@ use t3claw::channels::wasm::{
     PreparedChannelModule, WasmChannel, WasmChannelRuntime, WasmChannelRuntimeConfig,
 };
 use t3claw::pairing::PairingStore;
-#[cfg(feature = "integration")]
-use futures::StreamExt;
 #[cfg(feature = "integration")]
 use tokio::time::{Duration, timeout};
 
@@ -575,10 +575,7 @@ async fn test_private_dm_webhook_and_reply_use_fake_telegram_api() {
     assert_eq!(incoming.thread_id.as_ref().map(|t| t.as_str()), Some("999"));
 
     channel
-        .respond(
-            &incoming,
-            OutgoingResponse::text("hello back from t3claw"),
-        )
+        .respond(&incoming, OutgoingResponse::text("hello back from t3claw"))
         .await
         .expect("telegram respond should succeed");
 

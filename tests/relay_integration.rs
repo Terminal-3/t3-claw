@@ -7,9 +7,9 @@ use axum::{
     extract::Query,
     routing::{get, post},
 };
-use t3claw::channels::relay::client::{ChannelEvent, RelayClient};
 use secrecy::SecretString;
 use serde::Deserialize;
+use t3claw::channels::relay::client::{ChannelEvent, RelayClient};
 use tokio::net::TcpListener;
 
 /// Start an axum server on a random port, returning the base URL.

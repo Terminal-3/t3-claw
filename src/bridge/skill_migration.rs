@@ -203,8 +203,8 @@ async fn v1_skill_to_memory_doc(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use t3claw_skills::types::{ActivationCriteria, SkillManifest, SkillTrust};
     use std::path::PathBuf;
+    use t3claw_skills::types::{ActivationCriteria, SkillManifest, SkillTrust};
 
     fn make_v1_skill(name: &str, content: &str) -> LoadedSkill {
         LoadedSkill {

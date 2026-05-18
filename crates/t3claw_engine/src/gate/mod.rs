@@ -17,8 +17,8 @@ pub mod tool_tier;
 use std::collections::HashSet;
 
 use async_trait::async_trait;
-use t3claw_common::CredentialName;
 use serde::{Deserialize, Serialize};
+use t3claw_common::CredentialName;
 
 use crate::types::capability::ActionDef;
 use crate::types::thread::ThreadId;

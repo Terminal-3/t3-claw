@@ -556,8 +556,7 @@ mod tests {
                     TraceStep {
                         request_hint: None,
                         response: TraceResponse::Text {
-                            content: "Found issues in nearai/ironclaw with limit 100."
-                                .to_string(),
+                            content: "Found issues in nearai/ironclaw with limit 100.".to_string(),
                             input_tokens: 150,
                             output_tokens: 20,
                         },
@@ -659,8 +658,7 @@ mod tests {
             .build()
             .await;
 
-        rig.send_message("Get issue 42 from nearai/ironclaw")
-            .await;
+        rig.send_message("Get issue 42 from nearai/ironclaw").await;
         let responses = rig.wait_for_responses(1, Duration::from_secs(15)).await;
 
         rig.verify_trace_expects(&trace, &responses);

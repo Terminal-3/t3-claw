@@ -4332,10 +4332,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_discover_wasm_channels_nonexistent_dir() {
-        let channels = discover_wasm_channels(
-            &std::env::temp_dir().join("t3claw_nonexistent_dir_abcxyz123"),
-        )
-        .await;
+        let channels =
+            discover_wasm_channels(&std::env::temp_dir().join("t3claw_nonexistent_dir_abcxyz123"))
+                .await;
         assert!(channels.is_empty());
     }
 

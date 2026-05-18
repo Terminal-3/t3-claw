@@ -7,9 +7,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use t3claw_engine::gate::{
-    ExecutionGate, ExecutionMode, GateContext, GateDecision, ResumeKind,
-};
+use t3claw_engine::gate::{ExecutionGate, ExecutionMode, GateContext, GateDecision, ResumeKind};
 
 use crate::tools::rate_limiter::RateLimiter;
 use crate::tools::{ApprovalRequirement, ToolRegistry};
@@ -320,10 +318,10 @@ impl ExecutionGate for RelayChannelGate {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use t3claw_engine::gate::ExecutionMode;
     use t3claw_engine::types::capability::{ActionDef, EffectType};
     use t3claw_engine::types::thread::ThreadId;
-    use std::collections::HashSet;
 
     fn action_def(name: &str, requires_approval: bool) -> ActionDef {
         ActionDef {

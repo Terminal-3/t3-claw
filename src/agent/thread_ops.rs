@@ -2722,10 +2722,10 @@ mod tests {
     use crate::tools::ToolRegistry;
     use chrono::TimeZone;
     use futures::stream;
-    use t3claw_safety::SafetyLayer;
     use rust_decimal::Decimal;
     use std::sync::Arc;
     use std::time::Duration;
+    use t3claw_safety::SafetyLayer;
     use tokio::sync::Mutex as TokioMutex;
 
     #[derive(Clone)]

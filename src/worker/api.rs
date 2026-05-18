@@ -119,8 +119,7 @@ impl WorkerHttpClient {
     ///
     /// Reads `T3CLAW_WORKER_TOKEN` from the environment.
     pub fn from_env(orchestrator_url: String, job_id: Uuid) -> Result<Self, WorkerError> {
-        let token =
-            std::env::var("T3CLAW_WORKER_TOKEN").map_err(|_| WorkerError::MissingToken)?;
+        let token = std::env::var("T3CLAW_WORKER_TOKEN").map_err(|_| WorkerError::MissingToken)?;
 
         Ok(Self {
             client: reqwest::Client::new(),

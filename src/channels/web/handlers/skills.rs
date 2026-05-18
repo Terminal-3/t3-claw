@@ -135,10 +135,7 @@ pub async fn skills_search_handler(
     catalog.enrich_search_results(&mut entries, 5).await;
 
     let query_lower = req.query.to_lowercase();
-    let (installed_names, matching_skills): (
-        Vec<String>,
-        Vec<t3claw_skills::types::LoadedSkill>,
-    ) = {
+    let (installed_names, matching_skills): (Vec<String>, Vec<t3claw_skills::types::LoadedSkill>) = {
         let guard = registry.read().map_err(|e| {
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -238,10 +235,8 @@ pub async fn skills_install_handler(
             req.name.clone()
         } else {
             let outcome = catalog.search(&req.name).await;
-            match t3claw_skills::catalog::resolve_catalog_slug_for_name(
-                &req.name,
-                &outcome.results,
-            ) {
+            match t3claw_skills::catalog::resolve_catalog_slug_for_name(&req.name, &outcome.results)
+            {
                 Ok(Some(resolved)) => resolved,
                 Ok(None) => {
                     let reason = outcome
@@ -258,8 +253,7 @@ pub async fn skills_install_handler(
                 Err(e) => return Err((StatusCode::BAD_REQUEST, e.to_string())),
             }
         };
-        let url =
-            t3claw_skills::catalog::skill_download_url(catalog.registry_url(), &download_key);
+        let url = t3claw_skills::catalog::skill_download_url(catalog.registry_url(), &download_key);
         resolved_download_key = Some(download_key);
         crate::tools::builtin::skill_tools::fetch_skill_payload(&url)
             .await

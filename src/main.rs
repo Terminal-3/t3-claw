@@ -159,11 +159,8 @@ async fn async_main() -> anyhow::Result<()> {
         }
         Some(Command::Channels(channels_cmd)) => {
             init_cli_tracing();
-            return t3claw::cli::run_channels_command(
-                channels_cmd.clone(),
-                cli.config.as_deref(),
-            )
-            .await;
+            return t3claw::cli::run_channels_command(channels_cmd.clone(), cli.config.as_deref())
+                .await;
         }
         Some(Command::Routines(routines_cmd)) => {
             init_cli_tracing();
@@ -196,8 +193,7 @@ async fn async_main() -> anyhow::Result<()> {
         }
         Some(Command::Hooks(hooks_cmd)) => {
             init_cli_tracing();
-            return t3claw::cli::run_hooks_command(hooks_cmd.clone(), cli.config.as_deref())
-                .await;
+            return t3claw::cli::run_hooks_command(hooks_cmd.clone(), cli.config.as_deref()).await;
         }
         Some(Command::Logs(logs_cmd)) => {
             init_cli_tracing();
@@ -245,13 +241,8 @@ async fn async_main() -> anyhow::Result<()> {
             model,
         }) => {
             init_worker_tracing();
-            return t3claw::worker::run_claude_bridge(
-                *job_id,
-                orchestrator_url,
-                *max_turns,
-                model,
-            )
-            .await;
+            return t3claw::worker::run_claude_bridge(*job_id, orchestrator_url, *max_turns, model)
+                .await;
         }
         Some(Command::AcpBridge {
             job_id,
@@ -990,10 +981,9 @@ async fn async_main() -> anyhow::Result<()> {
         if gw_config.auth_token.is_none() {
             let token_to_persist = gw.auth_token().to_string();
             tokio::spawn(async move {
-                if let Err(e) = t3claw::bootstrap::upsert_bootstrap_var(
-                    "GATEWAY_AUTH_TOKEN",
-                    &token_to_persist,
-                ) {
+                if let Err(e) =
+                    t3claw::bootstrap::upsert_bootstrap_var("GATEWAY_AUTH_TOKEN", &token_to_persist)
+                {
                     tracing::warn!("Failed to persist auto-generated gateway auth token: {e}");
                 } else {
                     tracing::debug!("Persisted auto-generated gateway auth token to bootstrap env");
@@ -1150,9 +1140,7 @@ async fn async_main() -> anyhow::Result<()> {
                         "Persisted WASM channel still needs authentication"
                     );
                 }
-                Ok(t3claw::extensions::EnsureReadyOutcome::NeedsSetup {
-                    instructions, ..
-                }) => {
+                Ok(t3claw::extensions::EnsureReadyOutcome::NeedsSetup { instructions, .. }) => {
                     tracing::warn!(
                         channel = %name,
                         instructions = %instructions,
@@ -1257,11 +1245,10 @@ async fn async_main() -> anyhow::Result<()> {
         cost_guard: components.cost_guard,
         sse_tx: sse_manager,
         http_interceptor,
-        transcription: config.transcription.create_provider().map(|p| {
-            Arc::new(t3claw::llm::transcription::TranscriptionMiddleware::new(
-                p,
-            ))
-        }),
+        transcription: config
+            .transcription
+            .create_provider()
+            .map(|p| Arc::new(t3claw::llm::transcription::TranscriptionMiddleware::new(p))),
         document_extraction: Some(Arc::new(
             t3claw::document_extraction::DocumentExtractionMiddleware::new(),
         )),
