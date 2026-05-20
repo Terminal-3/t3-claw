@@ -33,6 +33,26 @@ use crate::workspace::Workspace;
 use t3claw_safety::SafetyLayer;
 use t3claw_skills::SkillRegistry;
 
+/// Wait for a graceful-shutdown signal: SIGINT (Ctrl+C) on every platform,
+/// plus SIGTERM on Unix. SIGTERM is what `kill <pid>` and most service
+/// managers send; without this, the default disposition terminates the
+/// process without running destructors, leaking `~/.t3claw/t3claw.pid`.
+async fn await_shutdown_signal() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{SignalKind, signal};
+        if let Ok(mut sigterm) = signal(SignalKind::terminate()) {
+            tokio::select! {
+                _ = tokio::signal::ctrl_c() => {}
+                _ = sigterm.recv() => {}
+            }
+            return;
+        }
+        tracing::warn!("Failed to register SIGTERM handler; only SIGINT will trigger shutdown");
+    }
+    let _ = tokio::signal::ctrl_c().await;
+}
+
 /// Outcome of [`Agent::handle_message`] — drives the run-loop's response/Done dispatch.
 ///
 /// Distinguishes "no response, turn is over" from "no response, turn is paused"
@@ -1143,8 +1163,8 @@ impl Agent {
         loop {
             let message = tokio::select! {
                 biased;
-                _ = tokio::signal::ctrl_c() => {
-                    tracing::debug!("Ctrl+C received, shutting down...");
+                _ = await_shutdown_signal() => {
+                    tracing::debug!("Shutdown signal received, shutting down...");
                     break;
                 }
                 msg = message_stream.next() => {

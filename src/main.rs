@@ -1,6 +1,7 @@
 //! T3Claw - Main entry point.
 
 use std::collections::HashSet;
+use std::io::IsTerminal;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -392,14 +393,31 @@ async fn async_main() -> anyhow::Result<()> {
     // Create log broadcaster before tracing init so the WebLogLayer can capture all events.
     let log_broadcaster = Arc::new(LogBroadcaster::new());
 
+    // Detect headless invocation. Even when TUI is configured, we must not run
+    // it if stdin/stdout aren't TTYs: crossterm's `enable_raw_mode()` falls back
+    // to opening `/dev/tty` and calling `tcsetattr` on the controlling terminal,
+    // which raises SIGTTOU on every process in a background pgrp (e.g.
+    // `nohup t3claw run &`) and freezes the process before any logs flush.
+    let stdin_is_tty = std::io::stdin().is_terminal();
+    let stdout_is_tty = std::io::stdout().is_terminal();
+    let tui_requested = config.channels.tui.is_some();
+    let tui_runnable = tui_requested && stdin_is_tty && stdout_is_tty;
+
     // Initialize tracing with a reloadable EnvFilter so the gateway can switch
     // log levels at runtime without restarting.
-    let suppress_stderr =
-        config.channels.tui.is_some() && cli.message.is_none() && cfg!(feature = "tui");
+    let suppress_stderr = tui_runnable && cli.message.is_none() && cfg!(feature = "tui");
     let log_level_handle = t3claw::channels::web::log_layer::init_tracing(
         Arc::clone(&log_broadcaster),
         suppress_stderr,
     );
+
+    if tui_requested && !tui_runnable {
+        tracing::debug!(
+            stdin_is_tty,
+            stdout_is_tty,
+            "TUI configured but no controlling TTY available — running headless"
+        );
+    }
 
     tracing::debug!("Starting T3Claw...");
     tracing::debug!("Loaded configuration for agent: {}", config.agent.name);
@@ -500,8 +518,10 @@ async fn async_main() -> anyhow::Result<()> {
         Arc<WasmChannelRouter>,
     )> = None;
 
-    // Create CLI channel (REPL or TUI — mutually exclusive, both claim stdin)
-    let tui_mode = config.channels.tui.is_some();
+    // Create CLI channel (REPL or TUI — mutually exclusive, both claim stdin).
+    // `tui_runnable` was computed near tracing init: TUI configured AND we have
+    // a controlling TTY on both stdin and stdout. See the SIGTTOU note above.
+    let tui_mode = tui_runnable;
 
     #[cfg(feature = "tui")]
     if tui_mode && cli.message.is_none() {
