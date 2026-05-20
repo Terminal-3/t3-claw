@@ -747,12 +747,31 @@ async fn async_main() -> anyhow::Result<()> {
         );
     }
 
+    // Pre-flight: detect a gateway/webhook bind-address collision before
+    // either listener is started. Without this check, the webhook server
+    // wins the race (it binds first), the gateway's bind fails, and the
+    // failure is swallowed inside `ChannelManager::start_all` — the user
+    // sees a working "gateway URL" that 404s on every route. Returning
+    // anyhow here lets `format_top_level_error` print the remediation
+    // hint on stderr even when TUI suppression is active for tracing.
+    if !webhook_routes.is_empty()
+        && let Some(collision) = t3claw::config::check_gateway_webhook_collision(
+            config.channels.gateway.as_ref(),
+            config.channels.http.as_ref(),
+            true,
+        )
+    {
+        let msg = t3claw::config::gateway_webhook_collision_message(&collision);
+        return Err(anyhow::anyhow!("port collision at startup: {msg}"));
+    }
+
     // Start the unified webhook server if any routes were registered.
     let webhook_server: Option<Arc<tokio::sync::Mutex<WebhookServer>>> = if !webhook_routes
         .is_empty()
     {
-        let addr = webhook_server_addr
-            .unwrap_or_else(|| std::net::SocketAddr::from(([127, 0, 0, 1], 8080)));
+        let addr = webhook_server_addr.unwrap_or_else(|| {
+            std::net::SocketAddr::from(([127, 0, 0, 1], t3claw::config::DEFAULT_WEBHOOK_PORT))
+        });
         if addr.ip().is_unspecified() {
             tracing::warn!(
                 "Webhook server is binding to {} — it will be reachable from all network interfaces. \

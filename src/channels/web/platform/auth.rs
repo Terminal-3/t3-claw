@@ -1207,7 +1207,14 @@ async fn load_identity_for_user(
 /// the admin UI without leaking the full identifier.
 fn trinity_default_display_name(did: &str) -> String {
     let tail = did.rsplit(':').next().unwrap_or(did);
-    let suffix: String = tail.chars().rev().take(8).collect::<String>().chars().rev().collect();
+    let suffix: String = tail
+        .chars()
+        .rev()
+        .take(8)
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect();
     if suffix.is_empty() {
         "Trinity user".to_string()
     } else {
@@ -1319,28 +1326,27 @@ pub async fn auth_middleware(
     // first and only valid Trinity JWS values fall through.
     if let (Some(tok), Some(trinity)) = (&token, &auth.trinity) {
         match trinity.verifier.verify(tok).await {
-            Ok(claims) => match resolve_or_provision_trinity_identity(
-                trinity.store.as_ref(),
-                &claims.sub,
-            )
-            .await
-            {
-                Ok(identity) => {
-                    auth.adoption
-                        .record(crate::auth::adoption::AuthVerifier::TrinityIdToken);
-                    request.extensions_mut().insert(identity);
-                    return next.run(request).await;
+            Ok(claims) => {
+                match resolve_or_provision_trinity_identity(trinity.store.as_ref(), &claims.sub)
+                    .await
+                {
+                    Ok(identity) => {
+                        auth.adoption
+                            .record(crate::auth::adoption::AuthVerifier::TrinityIdToken);
+                        request.extensions_mut().insert(identity);
+                        return next.run(request).await;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            did = %claims.sub,
+                            error = %e,
+                            "Trinity identity resolve / provision failed"
+                        );
+                        return (StatusCode::SERVICE_UNAVAILABLE, "Database unavailable")
+                            .into_response();
+                    }
                 }
-                Err(e) => {
-                    tracing::warn!(
-                        did = %claims.sub,
-                        error = %e,
-                        "Trinity identity resolve / provision failed"
-                    );
-                    return (StatusCode::SERVICE_UNAVAILABLE, "Database unavailable")
-                        .into_response();
-                }
-            },
+            }
             Err(e) => {
                 tracing::debug!(error = %e, "Trinity ID-token verify failed");
             }
@@ -2833,9 +2839,7 @@ mod tests {
             .expect("list");
         let trinity_rows: Vec<_> = rows
             .iter()
-            .filter(|r| {
-                r.provider == TRINITY_IDENTITY_PROVIDER && r.provider_user_id == did
-            })
+            .filter(|r| r.provider == TRINITY_IDENTITY_PROVIDER && r.provider_user_id == did)
             .collect();
         assert_eq!(trinity_rows.len(), 1);
     }
@@ -2870,18 +2874,18 @@ mod tests {
             .expect("list");
         let trinity_rows: Vec<_> = rows
             .iter()
-            .filter(|r| {
-                r.provider == TRINITY_IDENTITY_PROVIDER && r.provider_user_id == did
-            })
+            .filter(|r| r.provider == TRINITY_IDENTITY_PROVIDER && r.provider_user_id == did)
             .collect();
-        assert_eq!(trinity_rows.len(), 1, "concurrent provision must not duplicate");
+        assert_eq!(
+            trinity_rows.len(),
+            1,
+            "concurrent provision must not duplicate"
+        );
     }
 
     #[test]
     fn trinity_display_name_uses_did_tail() {
-        let name = trinity_default_display_name(
-            "did:t3n:000000000000000000000000000000000000beef",
-        );
+        let name = trinity_default_display_name("did:t3n:000000000000000000000000000000000000beef");
         assert_eq!(name, "Trinity user 0000beef");
     }
 
@@ -2925,9 +2929,7 @@ mod tests {
             discovery_url: "https://example.invalid/.well-known/openid-configuration".to_string(),
         };
         let verifier = TrinityVerifier::new(cfg.clone(), reqwest::Client::new());
-        verifier
-            .seed_key("tee-eoa-v1", vk)
-            .await;
+        verifier.seed_key("tee-eoa-v1", vk).await;
 
         // Build a token whose nbf < now < exp (use 1500 as "now"
         // matches Phase A's test choice).

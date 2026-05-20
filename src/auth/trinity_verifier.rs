@@ -72,6 +72,8 @@ pub enum TrinityVerifyError {
     NotYetValid { nbf: i64, now: i64 },
     #[error("discovery fetch failed: {0}")]
     DiscoveryFetch(String),
+    #[error("discovery document missing required field: {0}")]
+    DiscoveryMissingField(&'static str),
     #[error("jwks fetch failed: {0}")]
     JwksFetch(String),
     #[error("user has no provisioned local identity for did {did}")]
@@ -136,6 +138,17 @@ struct JwsPayload {
 struct DiscoveryDoc {
     #[serde(default)]
     jwks_uri: Option<String>,
+    /// `authorization_endpoint` per RFC 8414 / OIDC discovery. The
+    /// Trinity issuer (`iss`) claim is a DID, not an HTTP URL, so this
+    /// field is the only way to learn where to send the browser for
+    /// `GET /auth/authorize`.
+    #[serde(default)]
+    authorization_endpoint: Option<String>,
+    /// `token_endpoint` per RFC 8414 / OIDC discovery. As with
+    /// `authorization_endpoint`, the issuer DID is not a usable base
+    /// URL, so RP-side code must take the token endpoint from here.
+    #[serde(default)]
+    token_endpoint: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -167,6 +180,12 @@ struct CachedKey {
 #[derive(Clone)]
 struct CachedDiscovery {
     jwks_uri: String,
+    /// `authorization_endpoint` from the discovery doc — used by the
+    /// browser auth-code flow's `/auth/trinity/login` redirect.
+    authorization_endpoint: Option<String>,
+    /// `token_endpoint` from the discovery doc — used by the server-side
+    /// code-for-token exchange in `/auth/trinity/callback`.
+    token_endpoint: Option<String>,
     fetched_at: Instant,
 }
 
@@ -211,6 +230,26 @@ impl TrinityVerifier {
         cache.insert(kid.to_string(), CachedKey { verifying_key });
         drop(cache);
         *self.jwks_fetched_at.write().await = Some(Instant::now());
+    }
+
+    /// Seed the in-memory discovery cache. Test-only helper — the
+    /// production path always loads endpoints by HTTP-fetching the
+    /// configured `discovery_url`. Used by handler tests that need to
+    /// drive `authorization_endpoint()` / `token_endpoint()` without
+    /// standing up a discovery server.
+    #[cfg(test)]
+    pub(crate) async fn seed_discovery(
+        &self,
+        jwks_uri: String,
+        authorization_endpoint: Option<String>,
+        token_endpoint: Option<String>,
+    ) {
+        *self.discovery_cache.write().await = Some(CachedDiscovery {
+            jwks_uri,
+            authorization_endpoint,
+            token_endpoint,
+            fetched_at: Instant::now(),
+        });
     }
 
     /// Verify a compact JWS produced by Trinity's `client-token`
@@ -368,10 +407,46 @@ impl TrinityVerifier {
     }
 
     async fn resolve_jwks_uri(&self) -> Result<String, TrinityVerifyError> {
+        Ok(self.resolve_discovery().await?.jwks_uri)
+    }
+
+    /// Return the HTTP authorisation endpoint published by the issuer's
+    /// OIDC discovery document. The Trinity issuer is a DID
+    /// (`did:t3n:trinity-cluster-…`), not a usable HTTP base URL, so
+    /// this is the only correct way for the RP-side browser auth-code
+    /// flow to learn where to send the user agent. Cached for
+    /// `CACHE_TTL` to mirror Trinity's `Cache-Control: public,
+    /// max-age=300`.
+    pub async fn authorization_endpoint(&self) -> Result<String, TrinityVerifyError> {
+        self.resolve_discovery()
+            .await?
+            .authorization_endpoint
+            .ok_or(TrinityVerifyError::DiscoveryMissingField(
+                "authorization_endpoint",
+            ))
+    }
+
+    /// Return the HTTP token endpoint published by the issuer's OIDC
+    /// discovery document. Sibling of `authorization_endpoint` — used
+    /// by `/auth/trinity/callback`'s server-side code-for-token
+    /// exchange.
+    pub async fn token_endpoint(&self) -> Result<String, TrinityVerifyError> {
+        self.resolve_discovery()
+            .await?
+            .token_endpoint
+            .ok_or(TrinityVerifyError::DiscoveryMissingField("token_endpoint"))
+    }
+
+    /// Fetch the discovery doc (or return the cached copy), populating
+    /// `jwks_uri`, `authorization_endpoint`, and `token_endpoint` in a
+    /// single round-trip. Trinity's discovery doc is ~300 bytes; we
+    /// cache it for `CACHE_TTL` so the auth-code flow does not pay an
+    /// HTTP cost per login.
+    async fn resolve_discovery(&self) -> Result<CachedDiscovery, TrinityVerifyError> {
         if let Some(cached) = self.discovery_cache.read().await.clone()
             && cached.fetched_at.elapsed() < CACHE_TTL
         {
-            return Ok(cached.jwks_uri);
+            return Ok(cached);
         }
 
         let response = self
@@ -391,17 +466,27 @@ impl TrinityVerifier {
             .json()
             .await
             .map_err(|e| TrinityVerifyError::DiscoveryFetch(e.to_string()))?;
+
+        // `jwks_uri` falls back to the `/.well-known/jwks.json` sibling
+        // of the issuer for historical Trinity deployments where the
+        // discovery doc omitted the field. `authorization_endpoint` /
+        // `token_endpoint` have no analogous fallback — the issuer DID
+        // is not a usable HTTP base, so callers must surface the
+        // missing-field error.
         let jwks_uri = doc.jwks_uri.unwrap_or_else(|| {
             format!(
                 "{}/.well-known/jwks.json",
                 self.cfg.issuer.trim_end_matches('/')
             )
         });
-        *self.discovery_cache.write().await = Some(CachedDiscovery {
-            jwks_uri: jwks_uri.clone(),
+        let cached = CachedDiscovery {
+            jwks_uri,
+            authorization_endpoint: doc.authorization_endpoint,
+            token_endpoint: doc.token_endpoint,
             fetched_at: Instant::now(),
-        });
-        Ok(jwks_uri)
+        };
+        *self.discovery_cache.write().await = Some(cached.clone());
+        Ok(cached)
     }
 }
 
@@ -726,6 +811,129 @@ mod tests {
         assert!(matches!(
             err,
             TrinityVerifyError::DiscoveryFetch(_) | TrinityVerifyError::JwksFetch(_)
+        ));
+    }
+
+    /// Drive `authorization_endpoint()` / `token_endpoint()` through a
+    /// real HTTP discovery server. The bug being fixed by TS-031 is
+    /// that the issuer DID was used to synthesise these URLs; the
+    /// only correct source is the discovery doc, so we assert the
+    /// accessors round-trip exactly what the server published — and
+    /// in particular that the issuer DID is NOT what comes back.
+    #[tokio::test]
+    async fn discovery_doc_supplies_authorization_and_token_endpoints() {
+        use axum::Router;
+        use axum::routing::get;
+        use tokio::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let http_base = format!("http://127.0.0.1:{}", addr.port());
+
+        let body = serde_json::json!({
+            "issuer": "did:t3n:trinity-cluster-test",
+            "authorization_endpoint": format!("{http_base}/auth/authorize"),
+            "token_endpoint": format!("{http_base}/auth/token"),
+            "jwks_uri": format!("{http_base}/.well-known/jwks.json"),
+        });
+        let body_str = serde_json::to_string(&body).unwrap();
+        tokio::spawn(async move {
+            let app = Router::new().route(
+                "/.well-known/openid-configuration",
+                get(move || {
+                    let body = body_str.clone();
+                    async move {
+                        (
+                            [(axum::http::header::CONTENT_TYPE, "application/json")],
+                            body,
+                        )
+                    }
+                }),
+            );
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        let cfg = TrinityVerifierConfig {
+            issuer: "did:t3n:trinity-cluster-test".to_string(),
+            audience: "claw-test".to_string(),
+            discovery_url: format!("{http_base}/.well-known/openid-configuration"),
+        };
+        let verifier = TrinityVerifier::new(cfg, reqwest::Client::new());
+
+        let authz = verifier.authorization_endpoint().await.expect("ok");
+        let token = verifier.token_endpoint().await.expect("ok");
+
+        assert_eq!(authz, format!("{http_base}/auth/authorize"));
+        assert_eq!(token, format!("{http_base}/auth/token"));
+        assert!(
+            authz.starts_with("http://"),
+            "authorization_endpoint must be HTTP; got {authz}"
+        );
+        assert!(
+            !authz.starts_with("did:"),
+            "issuer DID leaked into authorization_endpoint: {authz}"
+        );
+    }
+
+    /// If the discovery doc omits `authorization_endpoint` (or
+    /// `token_endpoint`), callers must surface
+    /// `DiscoveryMissingField` rather than silently falling back to a
+    /// URL composed from the issuer DID. That fallback is exactly the
+    /// bug TS-031 fixes.
+    #[tokio::test]
+    async fn discovery_missing_authorization_endpoint_returns_distinct_error() {
+        use axum::Router;
+        use axum::routing::get;
+        use tokio::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let http_base = format!("http://127.0.0.1:{}", addr.port());
+
+        let body = serde_json::json!({
+            "issuer": "did:t3n:trinity-cluster-test",
+            // No authorization_endpoint / token_endpoint on purpose.
+            "jwks_uri": format!("{http_base}/.well-known/jwks.json"),
+        });
+        let body_str = serde_json::to_string(&body).unwrap();
+        tokio::spawn(async move {
+            let app = Router::new().route(
+                "/.well-known/openid-configuration",
+                get(move || {
+                    let body = body_str.clone();
+                    async move {
+                        (
+                            [(axum::http::header::CONTENT_TYPE, "application/json")],
+                            body,
+                        )
+                    }
+                }),
+            );
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        let cfg = TrinityVerifierConfig {
+            issuer: "did:t3n:trinity-cluster-test".to_string(),
+            audience: "claw-test".to_string(),
+            discovery_url: format!("{http_base}/.well-known/openid-configuration"),
+        };
+        let verifier = TrinityVerifier::new(cfg, reqwest::Client::new());
+
+        let err = verifier
+            .authorization_endpoint()
+            .await
+            .expect_err("must error when discovery omits the field");
+        assert!(matches!(
+            err,
+            TrinityVerifyError::DiscoveryMissingField("authorization_endpoint")
+        ));
+        let err = verifier
+            .token_endpoint()
+            .await
+            .expect_err("must error when discovery omits the field");
+        assert!(matches!(
+            err,
+            TrinityVerifyError::DiscoveryMissingField("token_endpoint")
         ));
     }
 
