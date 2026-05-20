@@ -281,6 +281,7 @@ async fn put_rejects_oversized_system_prompt() {
             user_id: "admin".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec![],
+            did: None,
         },
     );
     let auth = MultiAuthState::multi(tokens);
@@ -321,6 +322,7 @@ async fn put_accepts_system_prompt_within_limit() {
             user_id: "admin".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec![],
+            did: None,
         },
     );
     let auth = MultiAuthState::multi(tokens);

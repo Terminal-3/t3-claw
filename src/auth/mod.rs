@@ -1,5 +1,7 @@
+pub mod adoption;
 pub mod oauth;
 pub mod providers;
+pub mod trinity_verifier;
 
 use std::collections::HashMap;
 use std::future::Future;

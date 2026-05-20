@@ -312,6 +312,7 @@ mod tests {
             oauth_sweep_shutdown: None,
             frontend_html_cache: Arc::new(tokio::sync::RwLock::new(None)),
             tool_dispatcher: None,
+            trinity_sso: None,
         })
     }
 
@@ -323,6 +324,7 @@ mod tests {
                 user_id: "bob".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             },
         );
         let auth = MultiAuthState::multi(tokens);
@@ -354,6 +356,7 @@ mod tests {
             user_id: "bob".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         };
         let bob_workspace = pool.get_or_create(&bob).await;
         bob_workspace

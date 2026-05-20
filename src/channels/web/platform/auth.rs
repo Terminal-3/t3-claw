@@ -63,7 +63,7 @@ pub const SESSION_COOKIE_NAME: &str = "t3claw_session";
 
 // ── User identity ────────────────────────────────────────────────────────
 
-/// Identity resolved from a bearer token or OIDC JWT.
+/// Identity resolved from a bearer token, OIDC JWT, or Trinity ID token.
 #[derive(Debug, Clone)]
 pub struct UserIdentity {
     pub user_id: String,
@@ -73,6 +73,10 @@ pub struct UserIdentity {
     pub role: String,
     /// Additional user scopes this identity can read from.
     pub workspace_read_scopes: Vec<String>,
+    /// Trinity DID for users authenticated via the T3-TS-031 ID token
+    /// path. `None` for users resolved through bearer-token or OIDC
+    /// paths.
+    pub did: Option<String>,
 }
 
 impl UserIdentity {
@@ -123,6 +127,7 @@ impl MultiAuthState {
                     user_id,
                     role: "admin".to_string(),
                     workspace_read_scopes: Vec::new(),
+                    did: None,
                 },
             )],
             display_token: Some(token),
@@ -267,6 +272,7 @@ impl DbAuthenticator {
             user_id: user_record.id.clone(),
             role: user_record.role.clone(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         };
 
         // Record token usage (best-effort, don't block auth)
@@ -288,10 +294,35 @@ impl DbAuthenticator {
     }
 }
 
+// ── Trinity verifier state ────────────────────────────────────────────────
+
+/// `provider` value written to `user_identities` for Trinity-linked
+/// accounts.
+pub const TRINITY_IDENTITY_PROVIDER: &str = "trinity";
+
+/// Trinity ID-token verifier bundled with the DB store used to resolve
+/// `claims.sub` (the user's Trinity DID) to a local user row. Spec
+/// T3-TS-031 §"t3-claw integration" point 2.
+#[derive(Clone)]
+pub struct TrinityAuthState {
+    pub verifier: crate::auth::trinity_verifier::TrinityVerifier,
+    pub store: Arc<dyn Database>,
+}
+
+impl TrinityAuthState {
+    pub fn new(
+        verifier: crate::auth::trinity_verifier::TrinityVerifier,
+        store: Arc<dyn Database>,
+    ) -> Self {
+        Self { verifier, store }
+    }
+}
+
 // ── Combined auth state ────────────────────────────────────────────────────
 
 /// Combined auth state: tries env-var tokens first, then DB-backed tokens,
-/// then OIDC JWT (if configured).
+/// then OIDC JWT (if configured), then Trinity ID-token verifier
+/// (if configured).
 #[derive(Clone)]
 pub struct CombinedAuthState {
     /// In-memory tokens from GATEWAY_AUTH_TOKEN.
@@ -302,6 +333,14 @@ pub struct CombinedAuthState {
     pub oidc: Option<OidcState>,
     /// Email domains allowed for OIDC login. Empty means allow all.
     pub oidc_allowed_domains: Vec<String>,
+    /// Trinity ID-token verifier (None when `T3_TRINITY_ISSUER` is
+    /// unset). Tried last so legacy bearer-token clients pay no
+    /// verification cost during the migration window.
+    pub trinity: Option<TrinityAuthState>,
+    /// `claw_authn_requests_total{verifier}` adoption counter. Spec
+    /// T3-TS-031 §"Operational risks" — drives the deprecation gate
+    /// before the legacy paths are removed.
+    pub adoption: Arc<crate::auth::adoption::AuthAdoptionCounter>,
 }
 
 impl From<MultiAuthState> for CombinedAuthState {
@@ -311,6 +350,8 @@ impl From<MultiAuthState> for CombinedAuthState {
             db_auth: None,
             oidc: None,
             oidc_allowed_domains: Vec::new(),
+            trinity: None,
+            adoption: crate::auth::adoption::AuthAdoptionCounter::new(),
         }
     }
 }
@@ -1044,17 +1085,159 @@ fn extract_token(headers: &HeaderMap, request: &Request) -> Option<String> {
     extract_cookie_value(headers, SESSION_COOKIE_NAME)
 }
 
+// ── Trinity identity resolution + auto-provision ─────────────────────────
+
+/// Look up the local user linked to `did`, or atomically create one
+/// when no row exists yet.
+///
+/// Spec T3-TS-031 §"t3-claw integration" point 2: a verified Trinity
+/// ID token whose `sub` (DID) does not yet match a row in
+/// `user_identities` triggers auto-provision. The new user is
+/// persisted together with its identity row in a single transaction
+/// (via [`crate::db::IdentityStore::create_user_with_identity`]),
+/// matching the existing OAuth provisioning path in
+/// `src/channels/web/handlers/auth.rs::resolve_user`.
+///
+/// On a concurrent-provision race two parallel callers both observe
+/// `Ok(None)` from `get_identity_by_provider`; one wins the unique
+/// `(provider, provider_user_id)` constraint, the other's insert
+/// fails — we then re-read instead of surfacing the conflict.
+///
+/// `email` is left as `None` for v1: Trinity ID tokens do not carry
+/// an email claim today (spec §"Token shape" — only `iss / sub / aud
+/// / exp / nbf / iat / jti / auth_method / org_dids / roles /
+/// session_ref`). When Trinity ships an email claim the DB
+/// columns are already there.
+pub(crate) async fn resolve_or_provision_trinity_identity(
+    store: &dyn Database,
+    did: &str,
+) -> Result<UserIdentity, String> {
+    // Fast path: identity already linked.
+    if let Some(existing) = store
+        .get_identity_by_provider(TRINITY_IDENTITY_PROVIDER, did)
+        .await
+        .map_err(|e| e.to_string())?
+    {
+        return load_identity_for_user(store, &existing.user_id, did).await;
+    }
+
+    // Slow path: provision a fresh user + identity row.
+    let now = chrono::Utc::now();
+    let user_id = uuid::Uuid::new_v4().to_string();
+    let display_name = trinity_default_display_name(did);
+    let user = crate::db::UserRecord {
+        id: user_id.clone(),
+        email: None,
+        display_name,
+        status: "active".to_string(),
+        // `create_user_with_identity` atomically promotes the row to
+        // `admin` if this is the only user (matches the OAuth path);
+        // every subsequent user is created as `member`.
+        role: "member".to_string(),
+        created_at: now,
+        updated_at: now,
+        last_login_at: Some(now),
+        created_by: None,
+        metadata: serde_json::json!({}),
+    };
+    let identity = crate::db::UserIdentityRecord {
+        id: uuid::Uuid::new_v4(),
+        user_id: user_id.clone(),
+        provider: TRINITY_IDENTITY_PROVIDER.to_string(),
+        provider_user_id: did.to_string(),
+        email: None,
+        email_verified: false,
+        display_name: None,
+        avatar_url: None,
+        raw_profile: serde_json::json!({}),
+        created_at: now,
+        updated_at: now,
+    };
+
+    match store.create_user_with_identity(&user, &identity).await {
+        Ok(()) => {
+            tracing::info!(
+                did = %did,
+                user_id = %user_id,
+                "Auto-provisioned Trinity-linked user"
+            );
+            load_identity_for_user(store, &user_id, did).await
+        }
+        Err(e) => {
+            // Conflict path: another caller raced us. Re-read from
+            // the unique `(provider, provider_user_id)` constraint
+            // and yield that result instead of surfacing the error.
+            tracing::debug!(
+                did = %did,
+                error = %e,
+                "Trinity provision insert failed — re-reading for concurrent winner"
+            );
+            match store
+                .get_identity_by_provider(TRINITY_IDENTITY_PROVIDER, did)
+                .await
+                .map_err(|e| e.to_string())?
+            {
+                Some(winner) => load_identity_for_user(store, &winner.user_id, did).await,
+                None => Err(format!("trinity provision failed: {e}")),
+            }
+        }
+    }
+}
+
+async fn load_identity_for_user(
+    store: &dyn Database,
+    user_id: &str,
+    did: &str,
+) -> Result<UserIdentity, String> {
+    let role = match store.get_user(user_id).await.map_err(|e| e.to_string())? {
+        Some(user) => user.role,
+        None => "member".to_string(),
+    };
+    Ok(UserIdentity {
+        user_id: user_id.to_string(),
+        role,
+        workspace_read_scopes: Vec::new(),
+        did: Some(did.to_string()),
+    })
+}
+
+/// Build a default display name for an auto-provisioned Trinity
+/// user. `did:t3n:<hex>` is opaque to humans; we use the trailing 8
+/// chars of the DID's address portion so the row is recognisable in
+/// the admin UI without leaking the full identifier.
+fn trinity_default_display_name(did: &str) -> String {
+    let tail = did.rsplit(':').next().unwrap_or(did);
+    let suffix: String = tail
+        .chars()
+        .rev()
+        .take(8)
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect();
+    if suffix.is_empty() {
+        "Trinity user".to_string()
+    } else {
+        format!("Trinity user {suffix}")
+    }
+}
+
 // ── Middleware ────────────────────────────────────────────────────────────
 
-/// Auth middleware: bearer/query token → OIDC JWT → 401.
+/// Auth middleware: bearer/query token → OIDC JWT → Trinity ID token → 401.
 ///
-/// Tries env-var tokens first (constant-time, in-memory), then falls back
-/// to DB-backed token lookup if configured, then OIDC JWT validation.
-/// SSE connections can't set headers from `EventSource`, so we also accept
-/// `?token=xxx` as a query parameter, but only on SSE/WS endpoints.
+/// Tries env-var tokens first (constant-time, in-memory), then falls
+/// back to DB-backed token lookup if configured, then OIDC JWT
+/// validation, then the Trinity ID-token verifier (T3-TS-031) if
+/// configured. Trinity is intentionally last so legacy bearer-token
+/// clients pay no verification cost during the migration window.
+/// SSE connections can't set headers from `EventSource`, so we also
+/// accept `?token=xxx` as a query parameter, but only on SSE/WS
+/// endpoints.
 ///
-/// On successful authentication, inserts the matching `UserIdentity` into
-/// request extensions for downstream extraction via `AuthenticatedUser`.
+/// On successful authentication, inserts the matching `UserIdentity`
+/// into request extensions for downstream extraction via
+/// `AuthenticatedUser`.
 pub async fn auth_middleware(
     State(auth): State<CombinedAuthState>,
     headers: HeaderMap,
@@ -1067,6 +1250,8 @@ pub async fn auth_middleware(
     if let Some(ref tok) = token {
         // 1. Try env-var tokens first (fast, constant-time, in-memory).
         if let Some(identity) = auth.env_auth.authenticate(tok) {
+            auth.adoption
+                .record(crate::auth::adoption::AuthVerifier::LegacyBearer);
             request.extensions_mut().insert(identity.clone());
             return next.run(request).await;
         }
@@ -1075,6 +1260,8 @@ pub async fn auth_middleware(
         if let Some(ref db_auth) = auth.db_auth {
             match db_auth.authenticate(tok).await {
                 Ok(Some(identity)) => {
+                    auth.adoption
+                        .record(crate::auth::adoption::AuthVerifier::LegacyBearer);
                     request.extensions_mut().insert(identity);
                     return next.run(request).await;
                 }
@@ -1120,12 +1307,48 @@ pub async fn auth_middleware(
                     user_id: sub,
                     role: "member".to_string(),
                     workspace_read_scopes: Vec::new(),
+                    did: None,
                 };
+                auth.adoption
+                    .record(crate::auth::adoption::AuthVerifier::LegacyOidc);
                 request.extensions_mut().insert(identity);
                 return next.run(request).await;
             }
             Err(e) => {
                 tracing::warn!(error = %e, "OIDC auth failed");
+            }
+        }
+    }
+
+    // 4. Try the Trinity ID-token verifier (T3-TS-031). The candidate
+    // is the same bearer token already extracted above; we re-check
+    // here so legacy bearer-token clients see the existing fast paths
+    // first and only valid Trinity JWS values fall through.
+    if let (Some(tok), Some(trinity)) = (&token, &auth.trinity) {
+        match trinity.verifier.verify(tok).await {
+            Ok(claims) => {
+                match resolve_or_provision_trinity_identity(trinity.store.as_ref(), &claims.sub)
+                    .await
+                {
+                    Ok(identity) => {
+                        auth.adoption
+                            .record(crate::auth::adoption::AuthVerifier::TrinityIdToken);
+                        request.extensions_mut().insert(identity);
+                        return next.run(request).await;
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            did = %claims.sub,
+                            error = %e,
+                            "Trinity identity resolve / provision failed"
+                        );
+                        return (StatusCode::SERVICE_UNAVAILABLE, "Database unavailable")
+                            .into_response();
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::debug!(error = %e, "Trinity ID-token verify failed");
             }
         }
     }
@@ -1199,6 +1422,7 @@ mod tests {
                 user_id: "alice".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             },
         );
         tokens.insert(
@@ -1207,6 +1431,7 @@ mod tests {
                 user_id: "bob".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             },
         );
         let state = MultiAuthState::multi(tokens);
@@ -1804,6 +2029,7 @@ mod tests {
                 user_id: "alice".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec!["shared".to_string()],
+                did: None,
             },
         );
         tokens.insert(
@@ -1812,6 +2038,7 @@ mod tests {
                 user_id: "bob".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec!["shared".to_string(), "alice".to_string()],
+                did: None,
             },
         );
         tokens
@@ -2020,6 +2247,8 @@ mod tests {
             db_auth: None,
             oidc: Some(test_oidc_state().await),
             oidc_allowed_domains: Vec::new(),
+            trinity: None,
+            adoption: crate::auth::adoption::AuthAdoptionCounter::new(),
         }
     }
 
@@ -2540,5 +2769,277 @@ mod tests {
             !err_msg.contains("backing off"),
             "should attempt fetch, not backoff: {err_msg}"
         );
+    }
+
+    // ── Trinity auto-provision + adoption counter ─────────────────────────
+
+    use crate::db::Database as _Database;
+    use crate::db::libsql::LibSqlBackend;
+
+    async fn provision_backend() -> (Arc<dyn _Database>, tempfile::TempDir) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("trinity_provision.db");
+        let backend = LibSqlBackend::new_local(&path).await.unwrap();
+        backend.run_migrations().await.unwrap();
+        let store: Arc<dyn _Database> = Arc::new(backend);
+        (store, dir)
+    }
+
+    #[tokio::test]
+    async fn provision_creates_one_user_and_one_identity_row() {
+        let (store, _dir) = provision_backend().await;
+        let did = "did:t3n:000000000000000000000000000000000000beef";
+
+        let identity = resolve_or_provision_trinity_identity(store.as_ref(), did)
+            .await
+            .expect("first provision");
+        assert_eq!(identity.did.as_deref(), Some(did));
+        assert!(!identity.user_id.is_empty());
+
+        // Identity row exists.
+        let record = store
+            .get_identity_by_provider(TRINITY_IDENTITY_PROVIDER, did)
+            .await
+            .expect("ok")
+            .expect("identity row");
+        assert_eq!(record.user_id, identity.user_id);
+        assert_eq!(record.provider, TRINITY_IDENTITY_PROVIDER);
+
+        // User row exists.
+        let user = store
+            .get_user(&identity.user_id)
+            .await
+            .expect("ok")
+            .expect("user row");
+        assert_eq!(user.status, "active");
+        // First user auto-promotes to admin via the
+        // `create_user_with_identity` atomic count check.
+        assert_eq!(user.role, "admin");
+        assert!(user.email.is_none(), "v1 leaves email empty");
+    }
+
+    #[tokio::test]
+    async fn provision_is_idempotent_for_repeated_subject() {
+        let (store, _dir) = provision_backend().await;
+        let did = "did:t3n:1111111111111111111111111111111111111111";
+
+        let a = resolve_or_provision_trinity_identity(store.as_ref(), did)
+            .await
+            .expect("first provision");
+        let b = resolve_or_provision_trinity_identity(store.as_ref(), did)
+            .await
+            .expect("second provision");
+        assert_eq!(a.user_id, b.user_id, "must reuse the same user_id");
+
+        // There must be exactly one identity row for this provider /
+        // subject pair. `list_identities_for_user` returns them all.
+        let rows = store
+            .list_identities_for_user(&a.user_id)
+            .await
+            .expect("list");
+        let trinity_rows: Vec<_> = rows
+            .iter()
+            .filter(|r| r.provider == TRINITY_IDENTITY_PROVIDER && r.provider_user_id == did)
+            .collect();
+        assert_eq!(trinity_rows.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn provision_concurrent_race_does_not_double_create() {
+        let (store, _dir) = provision_backend().await;
+        let did = "did:t3n:2222222222222222222222222222222222222222";
+
+        // Two parallel provisioners. SQLite's serialised writes mean
+        // one will win the unique-constraint race; the other must
+        // re-read instead of erroring.
+        let store_a = Arc::clone(&store);
+        let store_b = Arc::clone(&store);
+        let did_a = did.to_string();
+        let did_b = did.to_string();
+        let (a, b) = tokio::join!(
+            tokio::spawn(async move {
+                resolve_or_provision_trinity_identity(store_a.as_ref(), &did_a).await
+            }),
+            tokio::spawn(async move {
+                resolve_or_provision_trinity_identity(store_b.as_ref(), &did_b).await
+            }),
+        );
+        let a = a.unwrap().expect("provision a");
+        let b = b.unwrap().expect("provision b");
+        assert_eq!(a.user_id, b.user_id, "race resolves to one user_id");
+
+        let rows = store
+            .list_identities_for_user(&a.user_id)
+            .await
+            .expect("list");
+        let trinity_rows: Vec<_> = rows
+            .iter()
+            .filter(|r| r.provider == TRINITY_IDENTITY_PROVIDER && r.provider_user_id == did)
+            .collect();
+        assert_eq!(
+            trinity_rows.len(),
+            1,
+            "concurrent provision must not duplicate"
+        );
+    }
+
+    #[test]
+    fn trinity_display_name_uses_did_tail() {
+        let name = trinity_default_display_name("did:t3n:000000000000000000000000000000000000beef");
+        assert_eq!(name, "Trinity user 0000beef");
+    }
+
+    #[test]
+    fn adoption_counter_records_each_branch_independently() {
+        use crate::auth::adoption::{AuthAdoptionCounter, AuthVerifier};
+        let counter = AuthAdoptionCounter::new();
+        counter.record(AuthVerifier::TrinityIdToken);
+        counter.record(AuthVerifier::LegacyBearer);
+        counter.record(AuthVerifier::LegacyOidc);
+        counter.record(AuthVerifier::TrinityIdToken);
+
+        assert_eq!(counter.get(AuthVerifier::TrinityIdToken), 2);
+        assert_eq!(counter.get(AuthVerifier::LegacyBearer), 1);
+        assert_eq!(counter.get(AuthVerifier::LegacyOidc), 1);
+    }
+
+    #[tokio::test]
+    async fn auth_middleware_increments_trinity_counter_on_success() {
+        // Wire up a CombinedAuthState with a seeded Trinity verifier
+        // and DB store, send one Trinity-signed bearer through
+        // `auth_middleware`, and observe the counter.
+        use crate::auth::adoption::{AuthAdoptionCounter, AuthVerifier};
+        use crate::auth::trinity_verifier::TrinityVerifier;
+        use crate::config::TrinityVerifierConfig;
+        use base64::Engine;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use k256::ecdsa::SigningKey;
+        use k256::ecdsa::signature::hazmat::PrehashSigner;
+        use rand::rngs::OsRng;
+        use serde_json::json;
+        use sha2::{Digest, Sha256};
+
+        let (store, _dir) = provision_backend().await;
+
+        let sk = SigningKey::random(&mut OsRng);
+        let vk = *sk.verifying_key();
+        let cfg = TrinityVerifierConfig {
+            issuer: "did:t3n:test".to_string(),
+            audience: "claw-test".to_string(),
+            discovery_url: "https://example.invalid/.well-known/openid-configuration".to_string(),
+        };
+        let verifier = TrinityVerifier::new(cfg.clone(), reqwest::Client::new());
+        verifier.seed_key("tee-eoa-v1", vk).await;
+
+        // Build a token whose nbf < now < exp (use 1500 as "now"
+        // matches Phase A's test choice).
+        let claims = json!({
+            "iss": cfg.issuer,
+            "aud": cfg.audience,
+            "sub": "did:t3n:3333333333333333333333333333333333333333",
+            "nbf": 1000,
+            "iat": 1000,
+            "exp": i64::MAX / 2,
+        });
+        let header_b64 = URL_SAFE_NO_PAD.encode(
+            serde_json::to_vec(&json!({"alg":"ES256K","typ":"JWT","kid":"tee-eoa-v1"})).unwrap(),
+        );
+        let payload_b64 = URL_SAFE_NO_PAD.encode(serde_json::to_vec(&claims).unwrap());
+        let signing_input = format!("{header_b64}.{payload_b64}");
+        let digest: [u8; 32] = Sha256::digest(signing_input.as_bytes()).into();
+        let signature: k256::ecdsa::Signature = sk.sign_prehash(&digest).unwrap();
+        let sig_b64 = URL_SAFE_NO_PAD.encode(signature.to_bytes());
+        let jws = format!("{header_b64}.{payload_b64}.{sig_b64}");
+
+        let adoption = AuthAdoptionCounter::new();
+        let auth_state = CombinedAuthState {
+            env_auth: MultiAuthState::single("never-matches".to_string(), "u".to_string()),
+            db_auth: None,
+            oidc: None,
+            oidc_allowed_domains: Vec::new(),
+            trinity: Some(TrinityAuthState::new(verifier, Arc::clone(&store))),
+            adoption: Arc::clone(&adoption),
+        };
+
+        let app: axum::Router = axum::Router::new()
+            .route("/whoami", axum::routing::get(|| async { "ok" }))
+            .layer(axum::middleware::from_fn_with_state(
+                auth_state,
+                auth_middleware,
+            ));
+
+        let req = axum::http::Request::builder()
+            .uri("/whoami")
+            .header("Authorization", format!("Bearer {jws}"))
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(resp.status(), axum::http::StatusCode::OK);
+        assert_eq!(adoption.get(AuthVerifier::TrinityIdToken), 1);
+        assert_eq!(adoption.get(AuthVerifier::LegacyBearer), 0);
+        assert_eq!(adoption.get(AuthVerifier::LegacyOidc), 0);
+    }
+
+    #[tokio::test]
+    async fn auth_middleware_increments_legacy_bearer_counter() {
+        use crate::auth::adoption::{AuthAdoptionCounter, AuthVerifier};
+        let adoption = AuthAdoptionCounter::new();
+        let auth_state = CombinedAuthState {
+            env_auth: MultiAuthState::single("the-bearer".to_string(), "alice".to_string()),
+            db_auth: None,
+            oidc: None,
+            oidc_allowed_domains: Vec::new(),
+            trinity: None,
+            adoption: Arc::clone(&adoption),
+        };
+        let app: axum::Router = axum::Router::new()
+            .route("/whoami", axum::routing::get(|| async { "ok" }))
+            .layer(axum::middleware::from_fn_with_state(
+                auth_state,
+                auth_middleware,
+            ));
+        let req = axum::http::Request::builder()
+            .uri("/whoami")
+            .header("Authorization", "Bearer the-bearer")
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(resp.status(), axum::http::StatusCode::OK);
+        assert_eq!(adoption.get(AuthVerifier::LegacyBearer), 1);
+        assert_eq!(adoption.get(AuthVerifier::TrinityIdToken), 0);
+        assert_eq!(adoption.get(AuthVerifier::LegacyOidc), 0);
+    }
+
+    #[tokio::test]
+    async fn auth_middleware_increments_legacy_oidc_counter() {
+        use crate::auth::adoption::{AuthAdoptionCounter, AuthVerifier};
+        let oidc = test_oidc_state().await;
+        let jwt = valid_oidc_jwt("alice@example.com");
+
+        let adoption = AuthAdoptionCounter::new();
+        let auth_state = CombinedAuthState {
+            env_auth: MultiAuthState::single("never-matches".to_string(), "u".to_string()),
+            db_auth: None,
+            oidc: Some(oidc),
+            oidc_allowed_domains: Vec::new(),
+            trinity: None,
+            adoption: Arc::clone(&adoption),
+        };
+        let app: axum::Router = axum::Router::new()
+            .route("/whoami", axum::routing::get(|| async { "ok" }))
+            .layer(axum::middleware::from_fn_with_state(
+                auth_state,
+                auth_middleware,
+            ));
+        let req = axum::http::Request::builder()
+            .uri("/whoami")
+            .header(OIDC_HEADER_NAME, jwt)
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
+        assert_eq!(resp.status(), axum::http::StatusCode::OK);
+        assert_eq!(adoption.get(AuthVerifier::LegacyOidc), 1);
+        assert_eq!(adoption.get(AuthVerifier::TrinityIdToken), 0);
+        assert_eq!(adoption.get(AuthVerifier::LegacyBearer), 0);
     }
 }

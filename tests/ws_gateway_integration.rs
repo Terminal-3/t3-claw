@@ -87,6 +87,7 @@ async fn start_test_server() -> (
         oauth_sweep_shutdown: None,
         frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
         tool_dispatcher: None,
+        trinity_sso: None,
     });
 
     let auth = t3claw::channels::web::auth::MultiAuthState::single(

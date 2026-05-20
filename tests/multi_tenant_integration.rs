@@ -50,6 +50,7 @@ fn two_user_auth() -> MultiAuthState {
             user_id: ALICE_USER_ID.to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         },
     );
     tokens.insert(
@@ -58,6 +59,7 @@ fn two_user_auth() -> MultiAuthState {
             user_id: BOB_USER_ID.to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec!["shared".to_string()],
+            did: None,
         },
     );
     MultiAuthState::multi(tokens)
@@ -578,6 +580,7 @@ fn gateway_state_has_multi_tenant_fields() {
         oauth_sweep_shutdown: None,
         frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
         tool_dispatcher: None,
+        trinity_sso: None,
     };
 
     assert_eq!(state.owner_id, "fallback");
@@ -613,6 +616,7 @@ async fn start_owner_scoped_sender_server() -> (
             user_id: OWNER_SCOPE_ID.to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         },
     );
     tokens.insert(
@@ -621,6 +625,7 @@ async fn start_owner_scoped_sender_server() -> (
             user_id: BOB_USER_ID.to_string(),
             role: "member".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         },
     );
 
@@ -671,6 +676,7 @@ async fn start_owner_scoped_sender_server() -> (
         oauth_sweep_shutdown: None,
         frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
         tool_dispatcher: None,
+        trinity_sso: None,
     });
 
     let auth = MultiAuthState::multi(tokens).into();
@@ -1153,6 +1159,7 @@ async fn start_multi_user_server_with_db() -> (
         oauth_sweep_shutdown: None,
         frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
         tool_dispatcher: None,
+        trinity_sso: None,
     });
 
     let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();

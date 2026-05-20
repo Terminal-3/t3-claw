@@ -1312,6 +1312,7 @@ mod tests {
             oauth_sweep_shutdown: None,
             frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
             tool_dispatcher: None,
+            trinity_sso: None,
         }
     }
 
@@ -1587,6 +1588,7 @@ mod tests {
                 user_id: "member".to_string(),
                 role: "member".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("ollama_base_url".to_string()),
             Query(SettingScopeQuery::default()),
@@ -1611,6 +1613,7 @@ mod tests {
                 user_id: "member".to_string(),
                 role: "member".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("llm_custom_providers".to_string()),
             Query(SettingScopeQuery::default()),
@@ -1718,6 +1721,7 @@ mod tests {
                 user_id: admin_scope.to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("selected_model".to_string()),
             Query(SettingScopeQuery {
@@ -1763,6 +1767,7 @@ mod tests {
                 user_id: crate::tools::permissions::ADMIN_SETTINGS_USER_ID.to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("selected_model".to_string()),
             Query(SettingScopeQuery {
@@ -1872,6 +1877,7 @@ mod tests {
                 user_id: "member".to_string(),
                 role: "member".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("llm_backend".to_string()),
             Query(SettingScopeQuery::default()),
@@ -1901,6 +1907,7 @@ mod tests {
                 user_id: "member".to_string(),
                 role: "member".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("selected_model".to_string()),
             Query(SettingScopeQuery::default()),
@@ -1960,6 +1967,7 @@ mod tests {
                 user_id: "owner".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("selected_model".to_string()),
             Query(SettingScopeQuery::default()),
@@ -2030,6 +2038,7 @@ mod tests {
                 user_id: admin_scope.to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("llm_custom_providers".to_string()),
             Query(SettingScopeQuery {
@@ -2113,6 +2122,7 @@ mod tests {
                 user_id: admin_scope.to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Path("llm_custom_providers".to_string()),
             Query(SettingScopeQuery {
@@ -2150,6 +2160,7 @@ mod tests {
                 user_id: "member".to_string(),
                 role: "member".to_string(),
                 workspace_read_scopes: Vec::new(),
+                did: None,
             }),
             Json(SettingsImportRequest { settings }),
         )
@@ -2242,6 +2253,7 @@ mod tests {
                     user_id: "test".to_string(),
                     role: "admin".to_string(),
                     workspace_read_scopes: vec![],
+                    did: None,
                 },
             ),
             Path::<String>("locked_shell".to_string()),
@@ -2326,6 +2338,7 @@ mod tests {
                     user_id: "test".to_string(),
                     role: "admin".to_string(),
                     workspace_read_scopes: vec![],
+                    did: None,
                 },
             ),
         )

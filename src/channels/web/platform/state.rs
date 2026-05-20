@@ -464,6 +464,33 @@ pub struct GatewayState {
     /// Channel-agnostic tool dispatcher for routing handler operations through
     /// the tool pipeline with audit trail.
     pub tool_dispatcher: Option<Arc<crate::tools::dispatch::ToolDispatcher>>,
+    /// Trinity SSO auth-code flow state. Populated when
+    /// `T3_TRINITY_ISSUER` (and `T3_TRINITY_AUDIENCE`) are set —
+    /// `/auth/trinity/login` and `/auth/trinity/callback` read this
+    /// to redirect to and exchange against the Trinity authorisation
+    /// server. Spec T3-TS-031 §"t3-claw integration" point 5.
+    pub trinity_sso: Option<TrinitySsoState>,
+}
+
+/// State for the Trinity SSO browser auth-code flow.
+///
+/// Distinct from the middleware-side `TrinityAuthState` (which owns
+/// the verifier + DB store): this struct carries the issuer /
+/// audience config and a clone of the verifier so the
+/// `/auth/trinity/callback` handler can re-verify the returned
+/// `id_token` before minting a local session cookie.
+#[derive(Clone)]
+pub struct TrinitySsoState {
+    /// The Trinity cluster issuer (`T3_TRINITY_ISSUER`). Used to
+    /// build the authorisation + token endpoint URLs.
+    pub issuer: String,
+    /// Per-instance `client_id` (`T3_TRINITY_AUDIENCE`, e.g.
+    /// `claw-acme`). Sent as `client_id` on the authorise redirect
+    /// and the token exchange.
+    pub audience: String,
+    /// Verifier used to re-validate the `id_token` returned from
+    /// `/auth/token` before linking to a local user.
+    pub verifier: crate::auth::trinity_verifier::TrinityVerifier,
 }
 
 /// Cached result of `build_frontend_html()`, keyed by a cheap workspace

@@ -45,6 +45,7 @@ mod tests {
                     user_id: user_id.to_string(),
                     role: "admin".to_string(),
                     workspace_read_scopes: Vec::new(),
+                    did: None,
                 },
             );
         }
@@ -105,6 +106,7 @@ mod tests {
             oauth_sweep_shutdown: None,
             frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
             tool_dispatcher: None,
+            trinity_sso: None,
         });
 
         let addr: std::net::SocketAddr = "127.0.0.1:0".parse().unwrap();

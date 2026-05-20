@@ -165,6 +165,17 @@ pub async fn start_server(
         .route(
             "/auth/near/verify",
             post(crate::channels::web::handlers::auth::near_verify_handler),
+        )
+        // Trinity SSO auth-code flow (T3-TS-031). Dedicated paths
+        // because reusing `/auth/login/{provider}` would conflict with
+        // the generic OAuth provider callbacks.
+        .route(
+            "/auth/trinity/login",
+            get(crate::channels::web::handlers::trinity_auth::trinity_login_handler),
+        )
+        .route(
+            "/auth/trinity/callback",
+            get(crate::channels::web::handlers::trinity_auth::trinity_callback_handler),
         );
 
     // Protected routes (require auth)
