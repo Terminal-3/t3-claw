@@ -1890,9 +1890,14 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
     async fn test_resolve_bearer_token_session_beats_env_var() {
         // Session token takes priority over NEARAI_API_KEY env var.
         // This prevents unexpected auth mode switches mid-run.
+        // Hold the env lock: other tests (e.g. extensions::manager's
+        // ScopedNearAiEnv suites) read NEARAI_API_KEY under the same lock,
+        // and mutating it unguarded races them.
+        let _env_guard = crate::config::helpers::lock_env();
         let mut cfg = test_nearai_config("http://localhost:8318");
         cfg.api_key = None;
         let session = test_session();
@@ -1923,8 +1928,12 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::await_holding_lock)]
     async fn test_resolve_bearer_token_config_beats_session_and_env() {
         // Config API key should win even when session token AND env var are set.
+        // Env lock held for the same reason as
+        // test_resolve_bearer_token_session_beats_env_var above.
+        let _env_guard = crate::config::helpers::lock_env();
         let cfg = test_nearai_config("http://localhost:8318");
         let session = test_session();
         session

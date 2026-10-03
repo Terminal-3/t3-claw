@@ -2230,7 +2230,7 @@ mod tests {
     #[test]
     fn test_parse_github_blob_ref_preserves_slashed_ref_segments() {
         let parsed = reqwest::Url::parse(
-            "https://github.com/nearai/ironclaw/blob/feature/foo/skills/demo/SKILL.md",
+            "https://github.com/nearai/t3claw/blob/feature/foo/skills/demo/SKILL.md",
         )
         .unwrap();
 
@@ -2246,7 +2246,7 @@ mod tests {
     #[test]
     fn test_parse_github_repo_ref_preserves_slashed_tree_segments() {
         let parsed =
-            reqwest::Url::parse("https://github.com/nearai/ironclaw/tree/feature/foo/skills/demo")
+            reqwest::Url::parse("https://github.com/nearai/t3claw/tree/feature/foo/skills/demo")
                 .unwrap();
 
         let repo = super::parse_github_repo_ref(&parsed).expect("repo ref");

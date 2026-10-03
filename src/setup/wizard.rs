@@ -1168,11 +1168,11 @@ impl SetupWizard {
 
     /// Quick first-run local deployment profile selection.
     ///
-    /// Existing `IRONCLAW_PROFILE` values are respected because
+    /// Existing `T3CLAW_PROFILE` values are respected because
     /// `load_bootstrap_settings()` has already applied them before the wizard
     /// starts. This prompt only fills in the missing first-run local default.
     fn step_quick_local_profile(&mut self) -> Result<(), SetupError> {
-        if crate::config::env_or_override("IRONCLAW_PROFILE").is_some() {
+        if crate::config::env_or_override("T3CLAW_PROFILE").is_some() {
             return Ok(());
         }
 
@@ -1203,7 +1203,7 @@ impl SetupWizard {
             }
         }
 
-        crate::config::set_runtime_env("IRONCLAW_PROFILE", profile);
+        crate::config::set_runtime_env("T3CLAW_PROFILE", profile);
         crate::config::profile::apply_profile(&mut self.settings)
             .map_err(|e| SetupError::Config(e.to_string()))?;
 
@@ -3271,7 +3271,7 @@ impl SetupWizard {
     /// Write bootstrap environment variables to `~/.t3claw/.env`.
     ///
     /// Only true chicken-and-egg settings are written here — things needed
-    /// before the database is connected: `IRONCLAW_PROFILE`, `DATABASE_BACKEND`,
+    /// before the database is connected: `T3CLAW_PROFILE`, `DATABASE_BACKEND`,
     /// `DATABASE_URL`, `LIBSQL_PATH`, `SECRETS_MASTER_KEY`, `ONBOARD_COMPLETED`, and
     /// channel config vars (Signal, Claude Code sandbox).
     ///
@@ -3284,7 +3284,7 @@ impl SetupWizard {
         let mut env_vars: Vec<(String, String)> = Vec::new();
 
         if let Some(ref profile) = self.selected_deployment_profile {
-            env_vars.push(("IRONCLAW_PROFILE".to_string(), profile.clone()));
+            env_vars.push(("T3CLAW_PROFILE".to_string(), profile.clone()));
         }
 
         if let Some(ref backend) = self.settings.database_backend {
@@ -4001,7 +4001,7 @@ mod tests {
     #[test]
     fn test_wizard_owner_id_uses_resolved_env_scope() {
         let _guard = lock_env();
-        let _owner = EnvGuard::set("IRONCLAW_OWNER_ID", " wizard-owner ");
+        let _owner = EnvGuard::set("T3CLAW_OWNER_ID", " wizard-owner ");
 
         let wizard = SetupWizard::new();
         assert_eq!(wizard.owner_id(), "wizard-owner"); // safety: test-only assertion
@@ -4010,7 +4010,7 @@ mod tests {
     #[test]
     fn test_wizard_owner_id_uses_toml_scope() {
         let _guard = lock_env();
-        let _owner = EnvGuard::clear("IRONCLAW_OWNER_ID");
+        let _owner = EnvGuard::clear("T3CLAW_OWNER_ID");
         let dir = tempdir().unwrap(); // safety: test-only tempdir setup
         let path = dir.path().join("config.toml");
         std::fs::write(&path, "owner_id = \"toml-owner\"\n").unwrap(); // safety: test-only fixture write
@@ -4023,7 +4023,7 @@ mod tests {
     #[test]
     fn test_bootstrap_env_vars_include_selected_deployment_profile() {
         let _guard = lock_env();
-        let _profile = EnvGuard::clear("IRONCLAW_PROFILE");
+        let _profile = EnvGuard::clear("T3CLAW_PROFILE");
         let mut wizard = SetupWizard::with_config(SetupConfig {
             quick: true,
             ..Default::default()
@@ -4035,7 +4035,7 @@ mod tests {
 
         assert!(
             vars.iter().any(|(key, value)| {
-                key == "IRONCLAW_PROFILE" && value == QUICK_PROFILE_LOCAL_SANDBOX
+                key == "T3CLAW_PROFILE" && value == QUICK_PROFILE_LOCAL_SANDBOX
             }),
             "selected deployment profile should be persisted to bootstrap env"
         );
@@ -4049,7 +4049,7 @@ mod tests {
     #[test]
     fn test_bootstrap_env_vars_do_not_persist_unselected_profile() {
         let _guard = lock_env();
-        let _profile = EnvGuard::set("IRONCLAW_PROFILE", QUICK_PROFILE_LOCAL);
+        let _profile = EnvGuard::set("T3CLAW_PROFILE", QUICK_PROFILE_LOCAL);
         let wizard = SetupWizard::with_config(SetupConfig {
             quick: true,
             ..Default::default()
@@ -4058,7 +4058,7 @@ mod tests {
         let vars = wizard.bootstrap_env_vars();
 
         assert!(
-            !vars.iter().any(|(key, _)| key == "IRONCLAW_PROFILE"),
+            !vars.iter().any(|(key, _)| key == "T3CLAW_PROFILE"),
             "only a wizard-selected profile should be written back"
         );
     }
@@ -4066,7 +4066,7 @@ mod tests {
     #[test]
     fn test_apply_quick_local_profile_sets_profile_and_preserves_db_config_on_merge() {
         let _guard = lock_env();
-        let _profile = EnvGuard::clear("IRONCLAW_PROFILE");
+        let _profile = EnvGuard::clear("T3CLAW_PROFILE");
 
         let mut wizard = SetupWizard::with_config(SetupConfig {
             quick: true,
@@ -4125,18 +4125,18 @@ mod tests {
         use std::os::unix::ffi::OsStringExt;
 
         let _guard = lock_env();
-        let original = std::env::var_os("IRONCLAW_OWNER_ID");
+        let original = std::env::var_os("T3CLAW_OWNER_ID");
         unsafe {
-            std::env::set_var("IRONCLAW_OWNER_ID", OsString::from_vec(vec![0x66, 0x80]));
+            std::env::set_var("T3CLAW_OWNER_ID", OsString::from_vec(vec![0x66, 0x80]));
         }
 
         let result = SetupWizard::try_with_config_and_toml(Default::default(), None);
 
         unsafe {
             if let Some(value) = original {
-                std::env::set_var("IRONCLAW_OWNER_ID", value);
+                std::env::set_var("T3CLAW_OWNER_ID", value);
             } else {
-                std::env::remove_var("IRONCLAW_OWNER_ID");
+                std::env::remove_var("T3CLAW_OWNER_ID");
             }
         }
 

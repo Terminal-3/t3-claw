@@ -76,7 +76,7 @@ fn redact_oauth_state_for_logs(state: &str) -> String {
 /// redirect the user's browser here. The `state` query parameter correlates
 /// the callback with a pending OAuth flow registered by `start_wasm_oauth()`.
 ///
-/// Used on hosted instances where `IRONCLAW_OAUTH_CALLBACK_URL` points to
+/// Used on hosted instances where `T3CLAW_OAUTH_CALLBACK_URL` points to
 /// the gateway (e.g., `https://kind-deer.agent1.near.ai/oauth/callback`).
 /// Local/desktop mode continues to use the TCP listener on port 9876.
 pub(crate) async fn oauth_callback_handler(
@@ -1504,9 +1504,8 @@ mod tests {
         // Keep the process-wide env locked for the full callback so the handler
         // sees a stable proxy URL/token configuration throughout the test.
         let _env_guard = crate::config::helpers::lock_env();
-        let _exchange_url_guard =
-            set_env_var("IRONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
-        let _proxy_auth_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
+        let _exchange_url_guard = set_env_var("T3CLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
+        let _proxy_auth_guard = set_env_var("T3CLAW_OAUTH_PROXY_AUTH_TOKEN", None);
         let _gateway_token_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-test-token"));
 
         let secrets = test_secrets_store();
@@ -1604,10 +1603,9 @@ mod tests {
         // Keep the process-wide env locked for the full callback so the handler
         // sees a stable proxy URL/token configuration throughout the test.
         let _env_guard = crate::config::helpers::lock_env();
-        let _exchange_url_guard =
-            set_env_var("IRONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
+        let _exchange_url_guard = set_env_var("T3CLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
         let _proxy_auth_guard = set_env_var(
-            "IRONCLAW_OAUTH_PROXY_AUTH_TOKEN",
+            "T3CLAW_OAUTH_PROXY_AUTH_TOKEN",
             Some("shared-oauth-proxy-secret"),
         );
         let _gateway_token_guard = set_env_var("GATEWAY_AUTH_TOKEN", None);
@@ -1704,9 +1702,8 @@ mod tests {
 
         let proxy = MockOauthProxyServer::start().await;
         let _env_guard = crate::config::helpers::lock_env();
-        let _exchange_url_guard =
-            set_env_var("IRONCLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
-        let _proxy_auth_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
+        let _exchange_url_guard = set_env_var("T3CLAW_OAUTH_EXCHANGE_URL", Some(&proxy.base_url()));
+        let _proxy_auth_guard = set_env_var("T3CLAW_OAUTH_PROXY_AUTH_TOKEN", None);
         let _gateway_token_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-test-token"));
 
         let secrets = test_secrets_store();
@@ -1775,8 +1772,8 @@ mod tests {
 
         let _env_guard = crate::config::helpers::lock_env();
         let _exchange_url_guard =
-            set_env_var("IRONCLAW_OAUTH_EXCHANGE_URL", Some("http://127.0.0.1:1"));
-        let _proxy_auth_guard = set_env_var("IRONCLAW_OAUTH_PROXY_AUTH_TOKEN", None);
+            set_env_var("T3CLAW_OAUTH_EXCHANGE_URL", Some("http://127.0.0.1:1"));
+        let _proxy_auth_guard = set_env_var("T3CLAW_OAUTH_PROXY_AUTH_TOKEN", None);
         let _gateway_token_guard = set_env_var("GATEWAY_AUTH_TOKEN", Some("gateway-test-token"));
 
         let secrets = test_secrets_store();

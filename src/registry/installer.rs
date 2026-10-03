@@ -29,7 +29,7 @@ fn should_attempt_source_fallback(err: &RegistryError) -> bool {
         // Version-pinned URLs (`releases/download/vX.Y.Z/`) point to an immutable
         // asset; a mismatch there is genuinely suspicious and remains a hard block.
         RegistryError::ChecksumMismatch { url, .. } => {
-            url.contains("github.com/terminal-3/t3claw/releases/latest/")
+            url.contains("github.com/terminal-3/t3-claw/releases/latest/")
         }
         // Never fall back for these — they signal a structural problem or a
         // deliberate "already done" state, not a transient artifact issue.
@@ -913,7 +913,7 @@ mod tests {
             "demo",
             "tools-src/demo",
             Some(
-                "http://github.com/terminal-3/t3claw/releases/latest/download/demo.wasm"
+                "http://github.com/terminal-3/t3-claw/releases/latest/download/demo.wasm"
                     .to_string(),
             ),
             None,

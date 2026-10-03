@@ -95,8 +95,11 @@ jobs:
         run: ./scripts/trace-coverage.sh
 
       - name: Reject committed .snap.new files
+        # Repo-wide, not just tests/snapshots/ — committed .snap.new files in
+        # src/cli/snapshots/ kept this gate red on staging for days because
+        # the old glob never saw them.
         run: |
-          if git ls-files 'tests/snapshots/*.snap.new' | grep .; then
+          if git ls-files '*.snap.new' | grep .; then
             echo "Committed .snap.new files found — run 'cargo insta review' and commit the accepted .snap."
             exit 1
           fi

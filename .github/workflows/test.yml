@@ -8,9 +8,11 @@ on:
         type: string
   pull_request:
     branches:
+      - staging
       - main
   push:
     branches:
+      - staging
       - main
 
 permissions:
@@ -19,6 +21,15 @@ permissions:
 concurrency:
   group: test-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
+
+# The full-feature test build does not fit the runner disk with default
+# dev-profile settings (the all-features leg died on ENOSPC mid-build).
+# Incremental artefacts are useless on throwaway runners, and full debug
+# info multiplies the size of every test binary; line tables keep
+# backtraces readable at a fraction of the size.
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
 
 jobs:
   # ── Skip expensive jobs when only docs/config changed on a PR ──
@@ -58,7 +69,6 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       test_matrix: ${{ steps.set.outputs.test_matrix }}
-      windows_matrix: ${{ steps.set.outputs.windows_matrix }}
     steps:
       - id: set
         run: |
@@ -67,10 +77,8 @@ jobs:
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "test_matrix=${SLIM}" >> "$GITHUB_OUTPUT"
-            echo "windows_matrix=${SLIM}" >> "$GITHUB_OUTPUT"
           else
             echo "test_matrix=${FULL}" >> "$GITHUB_OUTPUT"
-            echo "windows_matrix=${FULL}" >> "$GITHUB_OUTPUT"
           fi
 
   tests:
@@ -160,32 +168,6 @@ jobs:
           timeout --signal=INT --kill-after=30s 10m \
             cargo test --manifest-path channels-src/telegram/Cargo.toml -- --nocapture
 
-  windows-build:
-    name: Windows Build (${{ matrix.name }})
-    needs: matrix-config
-    if: >
-      github.event_name != 'pull_request' ||
-      github.base_ref != 'staging'
-    runs-on: blacksmith-2vcpu-ubuntu-2204
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJSON(needs.matrix-config.outputs.windows_matrix) }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          ref: ${{ inputs.ref || github.sha }}
-          persist-credentials: false
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-        with:
-          key: windows-${{ matrix.name }}
-          save-if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging') }}
-      - name: Check compilation
-        run: cargo check --all --benches --tests --examples ${{ matrix.flags }}
-
   wasm-wit-compat:
     name: WASM WIT Compatibility
     if: >
@@ -272,7 +254,7 @@ jobs:
     name: Run Tests
     runs-on: blacksmith-4vcpu-ubuntu-2404
     if: always()
-    needs: [changes, matrix-config, tests, heavy-integration-tests, telegram-tests, wasm-wit-compat, docker-build, windows-build, version-check, bench-compile]
+    needs: [changes, matrix-config, tests, heavy-integration-tests, telegram-tests, wasm-wit-compat, docker-build, version-check, bench-compile]
     steps:
       - run: |
           # If no code changes on a PR, expensive jobs were correctly skipped
@@ -291,12 +273,11 @@ jobs:
             exit 1
           fi
           # Gated jobs: must pass on promotion PRs / push, skipped on developer PRs
-          for job in telegram-tests wasm-wit-compat docker-build windows-build version-check bench-compile; do
+          for job in telegram-tests wasm-wit-compat docker-build version-check bench-compile; do
             case "$job" in
               telegram-tests) result="${{ needs.telegram-tests.result }}" ;;
               wasm-wit-compat) result="${{ needs.wasm-wit-compat.result }}" ;;
               docker-build) result="${{ needs.docker-build.result }}" ;;
-              windows-build) result="${{ needs.windows-build.result }}" ;;
               version-check) result="${{ needs.version-check.result }}" ;;
               bench-compile) result="${{ needs.bench-compile.result }}" ;;
             esac

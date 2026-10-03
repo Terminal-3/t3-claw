@@ -4,11 +4,11 @@ expression: help
 ---
 Secure personal AI assistant that protects your data and expands its capabilities
 
-Usage: ironclaw [OPTIONS] [COMMAND]
+Usage: t3claw [OPTIONS] [COMMAND]
 
 Commands:
   run         Run the AI agent
-  onboard     Run interactive setup wizard (start here if new to IronClaw)
+  onboard     Run interactive setup wizard (start here if new to T3Claw)
   config      Manage app configuration settings
   tool        Manage WASM tools
   registry    Browse/install extensions

@@ -11,7 +11,7 @@
 #
 # When adding a new migration, append a new line in the same commit.
 # Regenerate locally with:
-#   cargo test -p ironclaw -- --ignored regenerate_migration_checksums_lockfile
+#   cargo test -p t3claw -- --ignored regenerate_migration_checksums_lockfile
 
 V1__initial = 13924994861355873385
 V2__wasm_secure_api = 7920426121433120191
@@ -20,7 +20,7 @@ V4__sandbox_columns = 4066773473211554372
 V5__claude_code = 879553427473911756
 V6__routines = 18049045188188232070
 V7__rename_events = 13503025792365661965
-V8__settings = 2960080429880963815
+V8__settings = 8884808754749135964
 V9__flexible_embedding_dimension = 8136426081104542386
 V10__wasm_versioning = 18212435829290780557
 V11__conversation_unique_indexes = 9262706107262242885
@@ -31,10 +31,10 @@ V15__conversation_source_channel = 6931108907510923101
 V16__document_versions = 6496010415720970575
 V17__user_identities = 14415325645069692436
 V18__tool_scope = 3125684809935466111
-V19__channel_identities = 409356689302266680
-V20__pairing_requests = 17756233693090004940
+V19__channel_identities = 13439320849194462214
+V20__pairing_requests = 14640373561089270535
 V21__backfill_conversation_source_channel = 4041142068103384561
 V22__sandbox_restart_params = 12611649486554869350
-V23__list_workspace_files_escape_like = 12519024535161914473
+V23__list_workspace_files_escape_like = 684524430416036771
 V24__llm_calls_created_at_index = 2650126284755685421
 V25__log_entries = 14192231136836277522

@@ -1083,7 +1083,7 @@ Test skill
     async fn check_http_missing_credential_starts_skill_oauth_flow() {
         let _env_guard = crate::config::helpers::lock_env();
         let _callback_guard = set_test_env_var(
-            "IRONCLAW_OAUTH_CALLBACK_URL",
+            "T3CLAW_OAUTH_CALLBACK_URL",
             Some("https://example.com/oauth/callback"),
         );
 
@@ -1245,7 +1245,7 @@ Test skill
     async fn check_http_missing_credential_starts_skill_oauth_flow_with_custom_client_config() {
         let _env_guard = crate::config::helpers::lock_env();
         let _callback_guard = set_test_env_var(
-            "IRONCLAW_OAUTH_CALLBACK_URL",
+            "T3CLAW_OAUTH_CALLBACK_URL",
             Some("https://example.com/oauth/callback"),
         );
 
@@ -1288,7 +1288,7 @@ Test skill
     async fn check_wasm_channel_readiness_uses_secret_oauth_metadata() {
         let _env_guard = crate::config::helpers::lock_env();
         let _callback_guard = set_test_env_var(
-            "IRONCLAW_OAUTH_CALLBACK_URL",
+            "T3CLAW_OAUTH_CALLBACK_URL",
             Some("https://example.com/oauth/callback"),
         );
 
@@ -1388,7 +1388,7 @@ Test skill
 
         let _env_guard = crate::config::helpers::lock_env();
         let _callback_guard = set_test_env_var(
-            "IRONCLAW_OAUTH_CALLBACK_URL",
+            "T3CLAW_OAUTH_CALLBACK_URL",
             Some("https://example.com/oauth/callback"),
         );
 
