@@ -82,6 +82,10 @@ pub struct GatewayConfig {
     pub memory_layers: Vec<crate::workspace::layer::MemoryLayer>,
     /// OIDC JWT authentication (e.g., behind AWS ALB with Okta).
     pub oidc: Option<GatewayOidcConfig>,
+    /// Trinity-derived ID token verifier (T3-TS-031). When set, the
+    /// middleware accepts `ES256K` JWS bearer tokens issued by the
+    /// configured Trinity cluster.
+    pub trinity_verifier: Option<TrinityVerifierConfig>,
 }
 
 /// OIDC JWT authentication configuration for the web gateway.
@@ -100,6 +104,25 @@ pub struct GatewayOidcConfig {
     pub issuer: Option<String>,
     /// Expected `aud` claim. Validated if set.
     pub audience: Option<String>,
+}
+
+/// Trinity-derived ID token verifier configuration.
+///
+/// Activated by `T3_TRINITY_ISSUER`; when that is set, the verifier
+/// also requires `T3_TRINITY_AUDIENCE`. Spec: T3-TS-031 §"t3-claw
+/// integration" point 4. The discovery URL defaults to
+/// `{issuer}/.well-known/openid-configuration` and can be overridden
+/// for non-standard deployments via `T3_TRINITY_DISCOVERY_URL`.
+#[derive(Debug, Clone)]
+pub struct TrinityVerifierConfig {
+    /// Expected `iss` claim — the Trinity cluster identifier.
+    pub issuer: String,
+    /// Expected `aud` claim — the per-instance `client_id`, e.g.
+    /// `claw-acme`.
+    pub audience: String,
+    /// OIDC discovery URL. Defaults to
+    /// `{issuer}/.well-known/openid-configuration`.
+    pub discovery_url: String,
 }
 
 /// Signal channel configuration (signal-cli daemon HTTP/JSON-RPC).
@@ -277,6 +300,43 @@ impl ChannelsConfig {
                 None
             };
 
+            // Trinity-derived ID token verifier (T3-TS-031). Activated
+            // when `T3_TRINITY_ISSUER` is set. Audience is mandatory
+            // in that case — a misconfigured instance must fail
+            // closed rather than accept tokens from any RP.
+            let trinity_verifier = match optional_env("T3_TRINITY_ISSUER")? {
+                Some(issuer) => {
+                    let audience =
+                        optional_env("T3_TRINITY_AUDIENCE")?.ok_or(ConfigError::InvalidValue {
+                            key: "T3_TRINITY_AUDIENCE".to_string(),
+                            message: "required when T3_TRINITY_ISSUER is set".to_string(),
+                        })?;
+                    let discovery_url =
+                        optional_env("T3_TRINITY_DISCOVERY_URL")?.unwrap_or_else(|| {
+                            format!(
+                                "{}/.well-known/openid-configuration",
+                                issuer.trim_end_matches('/')
+                            )
+                        });
+                    Some(TrinityVerifierConfig {
+                        issuer,
+                        audience,
+                        discovery_url,
+                    })
+                }
+                None => {
+                    if optional_env("T3_TRINITY_AUDIENCE")?.is_some()
+                        || optional_env("T3_TRINITY_DISCOVERY_URL")?.is_some()
+                    {
+                        tracing::warn!(
+                            "T3_TRINITY_AUDIENCE / T3_TRINITY_DISCOVERY_URL set without \
+                             T3_TRINITY_ISSUER; Trinity verifier remains disabled."
+                        );
+                    }
+                    None
+                }
+            };
+
             Some(GatewayConfig {
                 host: db_first_optional_string(&cs.gateway_host, "GATEWAY_HOST")?
                     .unwrap_or_else(|| "127.0.0.1".to_string()),
@@ -323,6 +383,7 @@ impl ChannelsConfig {
                 workspace_read_scopes,
                 memory_layers,
                 oidc,
+                trinity_verifier,
             })
         } else {
             None
@@ -456,6 +517,126 @@ impl ChannelsConfig {
 /// other modules that need to construct a gateway URL.
 pub const DEFAULT_GATEWAY_PORT: u16 = 3000;
 
+/// Default webhook server port — used when no HTTP channel is configured but
+/// other subsystems still need an HTTP listener (e.g. tool webhooks, WASM
+/// channel routes). Mirrors the `HTTP_PORT` default so a single env var
+/// configures both the HTTP channel and the underlying webhook server.
+pub const DEFAULT_WEBHOOK_PORT: u16 = 8080;
+
+/// Default webhook server bind host — mirrors `HTTP_HOST`'s default.
+pub const DEFAULT_WEBHOOK_HOST: &str = "127.0.0.1";
+
+/// Describes a detected bind-address collision between the gateway channel
+/// and the unified webhook server. Returned by [`check_gateway_webhook_collision`]
+/// when both subsystems would attempt to bind the same `host:port`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GatewayWebhookCollision {
+    /// Effective webhook server bind address (host:port string for logging).
+    pub webhook_addr: String,
+    /// Effective gateway channel bind address.
+    pub gateway_addr: String,
+    /// The colliding port (always equal between the two addresses).
+    pub port: u16,
+    /// Whether the webhook server is using its built-in default (no `HTTP_PORT`
+    /// set). Drives the user-facing remediation hint.
+    pub webhook_uses_default: bool,
+}
+
+/// Check whether the gateway channel and the unified webhook server would
+/// collide on the same bind address.
+///
+/// Both subsystems independently bind a TCP listener at startup. If they
+/// converge on the same `host:port` (typically because `GATEWAY_PORT=8080`
+/// is set while `HTTP_PORT` is unset, leaving the webhook server on its
+/// default), the second listener silently fails to bind. The gateway's
+/// `start()` runs after the webhook server, so the gateway loses — every
+/// gateway route returns 404 from the webhook router instead.
+///
+/// Returns `Some(GatewayWebhookCollision)` if a collision is detected, or
+/// `None` if the configuration is safe (different ports, different hosts
+/// outside the loopback-overlap case, or gateway disabled).
+pub fn check_gateway_webhook_collision(
+    gateway: Option<&GatewayConfig>,
+    http: Option<&HttpConfig>,
+    webhook_routes_present: bool,
+) -> Option<GatewayWebhookCollision> {
+    let gw = gateway?;
+    if !webhook_routes_present {
+        return None;
+    }
+
+    let (wh_host, wh_port, wh_uses_default) = match http {
+        Some(h) => (h.host.as_str(), h.port, false),
+        None => (DEFAULT_WEBHOOK_HOST, DEFAULT_WEBHOOK_PORT, true),
+    };
+
+    if wh_port != gw.port {
+        return None;
+    }
+    if !hosts_overlap(wh_host, &gw.host) {
+        return None;
+    }
+
+    Some(GatewayWebhookCollision {
+        webhook_addr: format!("{wh_host}:{wh_port}"),
+        gateway_addr: format!("{}:{}", gw.host, gw.port),
+        port: gw.port,
+        webhook_uses_default: wh_uses_default,
+    })
+}
+
+/// Build the human-readable remediation guidance for a collision.
+///
+/// Returned as a single multi-line string suitable for `eprintln!` or
+/// wrapping in `anyhow::anyhow!`.
+pub fn gateway_webhook_collision_message(c: &GatewayWebhookCollision) -> String {
+    let fix_hint = if c.webhook_uses_default {
+        // Webhook server is on its default. Easiest fix is to move the
+        // gateway off 8080, since the user explicitly chose that port.
+        format!(
+            "Set GATEWAY_PORT to a different value (e.g. {} or {}), or set HTTP_PORT \
+             to move the webhook server to a different port.",
+            DEFAULT_GATEWAY_PORT,
+            c.port.wrapping_add(10)
+        )
+    } else {
+        // Both are explicit — user must choose one to change.
+        "Set HTTP_PORT or GATEWAY_PORT to a different value so the two \
+         listeners do not collide."
+            .to_string()
+    };
+    format!(
+        "gateway channel and webhook server both want to bind {addr} \
+         (gateway={gw}, webhook_server={wh}). \
+         {fix_hint}",
+        addr = c.webhook_addr,
+        gw = c.gateway_addr,
+        wh = c.webhook_addr,
+        fix_hint = fix_hint,
+    )
+}
+
+/// Best-effort check for whether two bind hosts would compete for the same
+/// kernel TCP slot at the same port.
+///
+/// Treats `0.0.0.0`, `::`, and any unspecified address as overlapping with
+/// every host. Otherwise compares string-equality after trimming. This is
+/// intentionally conservative: a false positive aborts startup with a
+/// human-readable error, which is recoverable; a false negative reproduces
+/// the original silent-bind-failure bug, which is not.
+fn hosts_overlap(a: &str, b: &str) -> bool {
+    let a = a.trim();
+    let b = b.trim();
+    if a == b {
+        return true;
+    }
+    is_unspecified_host(a) || is_unspecified_host(b)
+}
+
+fn is_unspecified_host(h: &str) -> bool {
+    matches!(h, "0.0.0.0" | "::" | "[::]")
+}
+
 /// Get the default channels directory (~/.t3claw/channels/).
 fn default_channels_dir() -> PathBuf {
     t3claw_base_dir().join("channels")
@@ -513,6 +694,7 @@ mod tests {
             workspace_read_scopes: vec![],
             memory_layers: vec![],
             oidc: None,
+            trinity_verifier: None,
         };
         assert_eq!(cfg.host, "127.0.0.1");
         assert_eq!(cfg.port, 3000);
@@ -530,6 +712,7 @@ mod tests {
             workspace_read_scopes: vec![],
             memory_layers: vec![],
             oidc: None,
+            trinity_verifier: None,
         };
         assert!(cfg.auth_token.is_none());
     }
@@ -743,6 +926,150 @@ mod tests {
             std::env::remove_var("CLI_MODE");
             std::env::remove_var("TUI_THEME");
             std::env::remove_var("TUI_SIDEBAR");
+        }
+    }
+
+    fn make_gw(host: &str, port: u16) -> GatewayConfig {
+        GatewayConfig {
+            host: host.to_string(),
+            port,
+            auth_token: None,
+            max_connections: 100,
+            broadcast_buffer: DEFAULT_BROADCAST_BUFFER,
+            workspace_read_scopes: vec![],
+            memory_layers: vec![],
+            oidc: None,
+            trinity_verifier: None,
+        }
+    }
+
+    fn make_http(host: &str, port: u16) -> HttpConfig {
+        HttpConfig {
+            host: host.to_string(),
+            port,
+            webhook_secret: None,
+            user_id: "owner".to_string(),
+        }
+    }
+
+    /// Regression: the canonical TS-031 test recipe sets `GATEWAY_PORT=8080`
+    /// without an `HTTP_PORT`. The webhook server falls back to its 8080
+    /// default and silently steals the bind from the gateway. The
+    /// pre-flight check must surface this before either server starts.
+    #[test]
+    fn collision_detected_when_gateway_takes_default_webhook_port() {
+        let gw = make_gw("127.0.0.1", DEFAULT_WEBHOOK_PORT);
+        let c = check_gateway_webhook_collision(Some(&gw), None, true)
+            .expect("collision must be reported when gateway=8080 and webhook on default");
+        assert_eq!(c.port, DEFAULT_WEBHOOK_PORT);
+        assert!(c.webhook_uses_default);
+        assert_eq!(c.gateway_addr, format!("127.0.0.1:{DEFAULT_WEBHOOK_PORT}"));
+        let msg = gateway_webhook_collision_message(&c);
+        // Remediation should point at GATEWAY_PORT first (user explicitly
+        // set 8080) and mention both env vars.
+        assert!(msg.contains("GATEWAY_PORT"));
+        assert!(msg.contains("HTTP_PORT"));
+        assert!(msg.contains("8080"));
+    }
+
+    /// Canonical safe configuration: gateway on the default 3000, webhook
+    /// server on the default 8080. No collision.
+    #[test]
+    fn no_collision_when_defaults_disjoint() {
+        let gw = make_gw("127.0.0.1", DEFAULT_GATEWAY_PORT);
+        assert!(check_gateway_webhook_collision(Some(&gw), None, true).is_none());
+    }
+
+    /// When the operator sets both `HTTP_PORT` and `GATEWAY_PORT` to the
+    /// same value, the remediation hint should reflect that both are
+    /// explicit (not pointing the user at the default fallback).
+    #[test]
+    fn collision_detected_with_explicit_http_port() {
+        let gw = make_gw("127.0.0.1", 9000);
+        let http = make_http("127.0.0.1", 9000);
+        let c = check_gateway_webhook_collision(Some(&gw), Some(&http), true)
+            .expect("explicit equal ports must collide");
+        assert!(!c.webhook_uses_default);
+        let msg = gateway_webhook_collision_message(&c);
+        assert!(msg.contains("HTTP_PORT"));
+        assert!(msg.contains("GATEWAY_PORT"));
+    }
+
+    /// Webhook server is not started when no routes are registered (CLI-only
+    /// builds, no HTTP channel, no WASM channel webhooks). In that case the
+    /// gateway is free to use any port without colliding.
+    #[test]
+    fn no_collision_when_webhook_has_no_routes() {
+        let gw = make_gw("127.0.0.1", DEFAULT_WEBHOOK_PORT);
+        assert!(check_gateway_webhook_collision(Some(&gw), None, false).is_none());
+    }
+
+    /// Different ports never collide regardless of host overlap.
+    #[test]
+    fn no_collision_when_ports_differ() {
+        let gw = make_gw("127.0.0.1", 8090);
+        assert!(check_gateway_webhook_collision(Some(&gw), None, true).is_none());
+
+        let http = make_http("127.0.0.1", 8080);
+        assert!(check_gateway_webhook_collision(Some(&gw), Some(&http), true).is_none());
+    }
+
+    /// `0.0.0.0` overlaps with every host on the same port — both listeners
+    /// would race for the kernel's wildcard slot.
+    #[test]
+    fn collision_detected_when_one_side_binds_unspecified() {
+        let gw = make_gw("127.0.0.1", 8080);
+        let http = make_http("0.0.0.0", 8080);
+        assert!(check_gateway_webhook_collision(Some(&gw), Some(&http), true).is_some());
+
+        let gw = make_gw("0.0.0.0", 8080);
+        let http = make_http("127.0.0.1", 8080);
+        assert!(check_gateway_webhook_collision(Some(&gw), Some(&http), true).is_some());
+    }
+
+    /// Gateway disabled — no collision possible.
+    #[test]
+    fn no_collision_when_gateway_disabled() {
+        assert!(check_gateway_webhook_collision(None, None, true).is_none());
+        let http = make_http("127.0.0.1", 8080);
+        assert!(check_gateway_webhook_collision(None, Some(&http), true).is_none());
+    }
+
+    /// Resolved configuration check: when only `GATEWAY_PORT=8080` is set
+    /// (the TS-031 recipe), the resolved `ChannelsConfig` must be
+    /// detectable as a collision through the public helper.
+    #[test]
+    fn resolved_config_with_ts031_recipe_collides() {
+        let _guard = lock_env();
+        let settings = Settings::default();
+
+        // SAFETY: under ENV_MUTEX
+        unsafe {
+            std::env::set_var("GATEWAY_ENABLED", "true");
+            std::env::set_var("GATEWAY_PORT", "8080");
+            std::env::remove_var("HTTP_PORT");
+            std::env::remove_var("HTTP_HOST");
+            std::env::remove_var("HTTP_ENABLED");
+        }
+
+        let cfg = ChannelsConfig::resolve(&settings, "owner").expect("resolve");
+        // No HTTP channel configured — but tool/WASM webhooks still bring
+        // up the webhook server on the default 8080.
+        assert!(cfg.http.is_none(), "no HTTP channel configured");
+        let gw = cfg.gateway.as_ref().expect("gateway configured");
+        assert_eq!(gw.port, 8080);
+
+        let collision =
+            check_gateway_webhook_collision(cfg.gateway.as_ref(), cfg.http.as_ref(), true);
+        assert!(
+            collision.is_some(),
+            "TS-031 recipe must be flagged as a collision"
+        );
+
+        // SAFETY: under ENV_MUTEX
+        unsafe {
+            std::env::remove_var("GATEWAY_ENABLED");
+            std::env::remove_var("GATEWAY_PORT");
         }
     }
 }

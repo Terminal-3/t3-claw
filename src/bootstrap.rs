@@ -596,7 +596,20 @@ impl PidLock {
 impl Drop for PidLock {
     fn drop(&mut self) {
         // Remove the PID file; the OS-level lock is released when _file is dropped.
-        let _ = std::fs::remove_file(&self.path);
+        // NotFound is fine (e.g. user removed it manually); other errors are surfaced
+        // because a leaked PID file blocks the next launch with a misleading
+        // "already running" error.
+        match std::fs::remove_file(&self.path) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                tracing::warn!(
+                    path = %self.path.display(),
+                    error = %e,
+                    "Failed to remove PID lock file on drop"
+                );
+            }
+        }
     }
 }
 

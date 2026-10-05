@@ -701,6 +701,7 @@ mod tests {
             user_id: "test".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         });
 
         let resp = ServiceExt::<axum::http::Request<Body>>::oneshot(app, req)
@@ -748,6 +749,7 @@ mod tests {
             user_id: "member".to_string(),
             role: "member".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         });
 
         let resp = ServiceExt::<axum::http::Request<Body>>::oneshot(app, req)
@@ -780,6 +782,7 @@ mod tests {
             user_id: "member".to_string(),
             role: "member".to_string(),
             workspace_read_scopes: Vec::new(),
+            did: None,
         });
 
         let resp = ServiceExt::<axum::http::Request<Body>>::oneshot(app, req)

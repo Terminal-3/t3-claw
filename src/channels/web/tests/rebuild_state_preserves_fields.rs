@@ -27,6 +27,7 @@ fn test_gateway() -> GatewayChannel {
             workspace_read_scopes: vec![],
             memory_layers: vec![],
             oidc: None,
+            trinity_verifier: None,
             max_connections: 100,
             broadcast_buffer: DEFAULT_BROADCAST_BUFFER,
         },

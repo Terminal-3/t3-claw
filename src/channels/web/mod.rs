@@ -142,6 +142,11 @@ impl GatewayChannel {
             db_auth: None,
             oidc: oidc_state,
             oidc_allowed_domains: Vec::new(),
+            // Trinity verifier requires a DB store for user-identity
+            // lookup; populated later via `with_store` once the
+            // gateway gains a DB binding.
+            trinity: None,
+            adoption: crate::auth::adoption::AuthAdoptionCounter::new(),
         };
 
         let state = Arc::new(GatewayState {
@@ -196,6 +201,7 @@ impl GatewayChannel {
             oauth_sweep_shutdown: None,
             frontend_html_cache: Arc::new(tokio::sync::RwLock::new(None)),
             tool_dispatcher: None,
+            trinity_sso: None,
         });
 
         Self {
@@ -262,6 +268,7 @@ impl GatewayChannel {
             // just because a `with_*` builder added a new subsystem.
             frontend_html_cache: Arc::clone(&self.state.frontend_html_cache),
             tool_dispatcher: self.state.tool_dispatcher.clone(),
+            trinity_sso: self.state.trinity_sso.clone(),
         };
         mutate(&mut new_state);
         new_state.auth_manager = build_gateway_auth_manager(&new_state);
@@ -330,12 +337,49 @@ impl GatewayChannel {
 
     /// Enable DB-backed token authentication alongside env-var tokens.
     pub fn with_db_auth(mut self, store: Arc<dyn Database>) -> Self {
-        let authenticator = DbAuthenticator::new(store);
+        let authenticator = DbAuthenticator::new(Arc::clone(&store));
         // Share the same DbAuthenticator (and its cache) between the auth
         // middleware and GatewayState so handlers can invalidate the cache
         // on security-critical actions (suspend, role change, token revoke).
         self.rebuild_state(|s| s.db_auth = Some(Arc::new(authenticator.clone())));
         self.auth.db_auth = Some(authenticator);
+
+        // Wire the Trinity verifier in lockstep with the DB store —
+        // verification produces a DID which must be resolved via
+        // `user_identities` before a handler ever sees the request.
+        // Spec T3-TS-031 §"t3-claw integration" point 4.
+        if let Some(ref trinity_cfg) = self.config.trinity_verifier {
+            match reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+            {
+                Ok(http) => {
+                    let verifier = crate::auth::trinity_verifier::TrinityVerifier::new(
+                        trinity_cfg.clone(),
+                        http,
+                    );
+                    tracing::info!(
+                        issuer = %trinity_cfg.issuer,
+                        audience = %trinity_cfg.audience,
+                        "Trinity ID-token verifier enabled"
+                    );
+                    let sso = platform::state::TrinitySsoState {
+                        issuer: trinity_cfg.issuer.clone(),
+                        audience: trinity_cfg.audience.clone(),
+                        verifier: verifier.clone(),
+                    };
+                    self.auth.trinity = Some(auth::TrinityAuthState::new(verifier, store));
+                    self.rebuild_state(|s| s.trinity_sso = Some(sso));
+                }
+                Err(e) => {
+                    tracing::error!(
+                        error = %e,
+                        "Failed to build HTTP client for Trinity verifier; \
+                         continuing without the Trinity auth path"
+                    );
+                }
+            }
+        }
         self
     }
 

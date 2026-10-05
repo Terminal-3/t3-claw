@@ -190,6 +190,11 @@ bytes = "1"
 base64 = "0.22.1"
 cookie = "0.18"
 jsonwebtoken = "9"
+# secp256k1 ECDSA for hand-rolled ES256K (RFC 8812) JWS verification.
+# `jsonwebtoken` 9 does not implement ES256K, which Trinity-issued ID
+# tokens use; the verifier in `src/auth/trinity_verifier.rs` parses the
+# JWS by hand and calls into `k256` for signature checking.
+k256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
 mime_guess = "2.0.5"
 clap_complete = "4.5.0"
 lru = "0.16.3"

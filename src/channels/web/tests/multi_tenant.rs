@@ -35,6 +35,7 @@ fn two_user_auth() -> MultiAuthState {
             user_id: "alice".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec!["shared".to_string()],
+            did: None,
         },
     );
     tokens.insert(
@@ -43,6 +44,7 @@ fn two_user_auth() -> MultiAuthState {
             user_id: "bob".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec!["shared".to_string(), "alice".to_string()],
+            did: None,
         },
     );
     MultiAuthState::multi(tokens)
@@ -100,6 +102,7 @@ fn build_state(
         oauth_sweep_shutdown: None,
         frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
         tool_dispatcher: None,
+        trinity_sso: None,
     })
 }
 
@@ -213,6 +216,7 @@ mod workspace_pool {
             user_id: "alice".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec![],
+            did: None,
         };
         let ws = pool.get_or_create(&identity).await;
         assert_eq!(ws.user_id(), "alice");
@@ -242,6 +246,7 @@ mod workspace_pool {
             user_id: "alice".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec![],
+            did: None,
         };
         let ws = pool.get_or_create(&identity).await;
         // Memory layer scope "shared" should appear in read_user_ids.
@@ -266,6 +271,7 @@ mod workspace_pool {
             user_id: "bob".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec!["alice".to_string(), "shared".to_string()],
+            did: None,
         };
         let ws = pool.get_or_create(&identity).await;
         assert_eq!(ws.user_id(), "bob");
@@ -293,11 +299,13 @@ mod workspace_pool {
             user_id: "alice".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec![],
+            did: None,
         };
         let bob_id = UserIdentity {
             user_id: "bob".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec![],
+            did: None,
         };
 
         let alice_ws1 = pool.get_or_create(&alice_id).await;
@@ -330,6 +338,7 @@ mod workspace_pool {
             user_id: "alice".to_string(),
             role: "admin".to_string(),
             workspace_read_scopes: vec!["token-scope".to_string()],
+            did: None,
         };
         let ws = pool.get_or_create(&identity).await;
         let scopes = ws.read_user_ids();
@@ -855,6 +864,7 @@ mod admin_role_enforcement {
                 user_id: "admin-user".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec![],
+                did: None,
             },
         );
         tokens.insert(
@@ -863,6 +873,7 @@ mod admin_role_enforcement {
                 user_id: "member-user".to_string(),
                 role: "member".to_string(),
                 workspace_read_scopes: vec![],
+                did: None,
             },
         );
         let auth = MultiAuthState::multi(tokens);
@@ -1307,6 +1318,7 @@ mod admin_tool_policy {
             auth_manager: None,
             frontend_html_cache: std::sync::Arc::new(tokio::sync::RwLock::new(None)),
             tool_dispatcher: None,
+            trinity_sso: None,
         })
     }
 
@@ -1319,6 +1331,7 @@ mod admin_tool_policy {
                 user_id: "admin-user".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec![],
+                did: None,
             },
         );
         tokens.insert(
@@ -1327,6 +1340,7 @@ mod admin_tool_policy {
                 user_id: "member-user".to_string(),
                 role: "member".to_string(),
                 workspace_read_scopes: vec![],
+                did: None,
             },
         );
         let auth = MultiAuthState::multi(tokens);
@@ -1395,6 +1409,7 @@ mod admin_tool_policy {
                 user_id: "admin-user".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec![],
+                did: None,
             },
         );
         let auth = MultiAuthState::multi(tokens);
@@ -1472,6 +1487,7 @@ mod admin_tool_policy {
                 user_id: "admin-user".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec![],
+                did: None,
             },
         );
         let auth = MultiAuthState::multi(tokens);
@@ -1529,6 +1545,7 @@ mod admin_tool_policy {
                 user_id: "admin-user".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec![],
+                did: None,
             },
         );
         let auth = MultiAuthState::multi(tokens);
@@ -1573,6 +1590,7 @@ mod admin_tool_policy {
                 user_id: "admin-user".to_string(),
                 role: "admin".to_string(),
                 workspace_read_scopes: vec![],
+                did: None,
             },
         );
         let auth = MultiAuthState::multi(tokens);
@@ -1633,6 +1651,7 @@ mod db_auth_cache {
                             user_id: format!("user-{i}"),
                             role: "member".to_string(),
                             workspace_read_scopes: vec![],
+                            did: None,
                         },
                         Instant::now(),
                     ),

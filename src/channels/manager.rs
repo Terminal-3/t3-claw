@@ -96,6 +96,19 @@ impl ChannelManager {
     ///
     /// Also merges the injection channel so background tasks can push messages
     /// into the same stream.
+    ///
+    /// Most channel-start failures are non-fatal: the other channels keep
+    /// running. The `gateway` channel is the exception — it is the primary
+    /// user-facing surface, and a silent gateway failure (typically a bind
+    /// collision, see `config::channels::check_gateway_webhook_collision`)
+    /// reads to operators as "everything started" while every gateway route
+    /// 404s from the webhook router that won the port race. Surface that
+    /// case directly.
+    ///
+    /// In all failure paths we also write to stderr unconditionally. This
+    /// is the only escape hatch for startup ERROR events when TUI mode has
+    /// routed all tracing into the in-app log view (see `main.rs`'s
+    /// `suppress_stderr` and `init_tracing`).
     pub async fn start_all(&self) -> Result<MessageStream, ChannelError> {
         let channels = self.channels.read().await;
         let mut streams: Vec<MessageStream> = Vec::new();
@@ -107,8 +120,20 @@ impl ChannelManager {
                     streams.push(stream);
                 }
                 Err(e) => {
+                    // Tracing for the log layer / SSE log tail; stderr for
+                    // humans watching `t3claw run` even under TUI suppression.
                     tracing::error!("Failed to start channel {}: {}", name, e);
-                    // Continue with other channels, don't fail completely
+                    eprintln!("error: failed to start channel '{name}': {e}");
+                    // The gateway channel is fatal — a silent gateway is the
+                    // exact symptom of the bug this guard protects against.
+                    if name == "gateway" {
+                        return Err(ChannelError::StartupFailed {
+                            name: name.clone(),
+                            reason: format!("gateway channel failed to start: {e}"),
+                        });
+                    }
+                    // Other channels: keep going, the user can still use the
+                    // surviving channels.
                 }
             }
         }
@@ -378,5 +403,99 @@ mod tests {
         let channels = manager.channels.read().await;
         assert_eq!(channels.len(), 1);
         assert!(channels.contains_key("relay"));
+    }
+
+    /// A channel that always fails at `start()`. Used to verify the
+    /// gateway-failure-is-fatal contract in `start_all`.
+    struct FailingChannel(String);
+
+    #[async_trait::async_trait]
+    impl crate::channels::Channel for FailingChannel {
+        fn name(&self) -> &str {
+            &self.0
+        }
+
+        async fn start(&self) -> Result<crate::channels::MessageStream, ChannelError> {
+            Err(ChannelError::StartupFailed {
+                name: self.0.clone(),
+                reason: "bind 127.0.0.1:8080: Address already in use".to_string(),
+            })
+        }
+
+        async fn respond(
+            &self,
+            _msg: &IncomingMessage,
+            _response: OutgoingResponse,
+        ) -> Result<(), ChannelError> {
+            Ok(())
+        }
+
+        async fn send_status(
+            &self,
+            _status: crate::channels::StatusUpdate,
+            _metadata: &serde_json::Value,
+        ) -> Result<(), ChannelError> {
+            Ok(())
+        }
+
+        async fn health_check(&self) -> Result<(), ChannelError> {
+            Ok(())
+        }
+
+        async fn shutdown(&self) -> Result<(), ChannelError> {
+            Ok(())
+        }
+    }
+
+    /// Regression for TS-031 SSO dry-run: when the gateway channel fails
+    /// to start (typically because the webhook server stole its bind
+    /// address), `start_all` must surface a fatal error rather than
+    /// silently dropping the gateway and pretending the boot succeeded.
+    #[tokio::test]
+    async fn test_gateway_start_failure_is_fatal() {
+        let manager = ChannelManager::new();
+        let (healthy, _tx) = StubChannel::new("repl");
+        manager.add(Box::new(healthy)).await;
+        manager
+            .add(Box::new(FailingChannel("gateway".to_string())))
+            .await;
+
+        let err = match manager.start_all().await {
+            Ok(_) => panic!("gateway failure must propagate as Err"),
+            Err(e) => e,
+        };
+        match err {
+            ChannelError::StartupFailed { name, reason } => {
+                assert_eq!(name, "gateway");
+                assert!(
+                    reason.contains("gateway channel failed to start"),
+                    "reason should explain the source channel: {reason}"
+                );
+            }
+            other => panic!("expected StartupFailed for gateway, got {other:?}"),
+        }
+    }
+
+    /// Non-gateway channel failures must remain non-fatal — surviving
+    /// channels keep the agent loop usable.
+    #[tokio::test]
+    async fn test_non_gateway_start_failure_is_not_fatal() {
+        let manager = ChannelManager::new();
+        let (healthy, sender) = StubChannel::new("repl");
+        manager.add(Box::new(healthy)).await;
+        manager
+            .add(Box::new(FailingChannel("telegram".to_string())))
+            .await;
+
+        let mut stream = manager
+            .start_all()
+            .await
+            .expect("non-gateway failure must not abort start_all");
+        sender
+            .send(IncomingMessage::new("repl", "u1", "still alive"))
+            .await
+            .expect("send");
+        let msg = stream.next().await.expect("stream");
+        assert_eq!(msg.content, "still alive");
     }
 }
