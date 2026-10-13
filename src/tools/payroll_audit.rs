@@ -23,6 +23,8 @@
 
 use serde_json::Value;
 
+use crate::tools::mcp::config::T3N_MCP_SERVER_NAME_NORMALISED;
+
 /// A t3n-mcp generic tool that can carry a z-payroll call, and the param keys
 /// that name the contract and the function on it.
 struct GenericTool {
@@ -80,7 +82,10 @@ impl Step {
 /// Stripping the prefix leaves an already-bare name untouched, so either seam
 /// form matches.
 fn canonical_tool(tool_name: &str) -> &str {
-    tool_name.strip_prefix("t3n_mcp_").unwrap_or(tool_name)
+    tool_name
+        .strip_prefix(T3N_MCP_SERVER_NAME_NORMALISED)
+        .and_then(|rest| rest.strip_prefix('_'))
+        .unwrap_or(tool_name)
 }
 
 /// `z:<tid>:payroll` → `<tid>`; `None` for any other contract name.
@@ -173,18 +178,21 @@ pub fn format_milestone(
 /// `inputJson` string, on `invokeContract`.
 fn request_body(params: Option<&Value>) -> Option<Value> {
     let params = params?;
-    let body = params
-        .get("args")
-        .or_else(|| params.get("input"))
-        .filter(|v| v.is_object())
-        .cloned()
+    ["args", "input"]
+        .iter()
+        .find_map(|key| {
+            params
+                .get(*key)
+                .and_then(|body| body.get("request"))
+                .cloned()
+        })
         .or_else(|| {
             params
                 .get("inputJson")
                 .and_then(Value::as_str)
                 .and_then(|s| serde_json::from_str::<Value>(s).ok())
-        })?;
-    body.get("request").cloned()
+                .and_then(|body| body.get("request").cloned())
+        })
 }
 
 /// Resolve the funnel's value to the useful payload object.
@@ -675,6 +683,16 @@ mod tests {
         });
         let msg = format_milestone("invokeContract", Some(&params), None, Some("boom")).unwrap();
         assert_eq!(msg, "⚠️ Payroll disbursement failed — cycle 2026-07 · boom");
+
+        // An `input` object with no `request` does not hide `inputJson`.
+        let params = json!({
+            "contractId": format!("z:{TID}:payroll"),
+            "functionName": "execute-disbursement",
+            "input": {},
+            "inputJson": "{\"request\":{\"cycle_id\":\"2026-08\"}}"
+        });
+        let msg = format_milestone("invokeContract", Some(&params), None, Some("boom")).unwrap();
+        assert_eq!(msg, "⚠️ Payroll disbursement failed — cycle 2026-08 · boom");
     }
 
     #[test]
