@@ -79,10 +79,10 @@ pub async fn execute_tool_with_safety(
                 result_size_bytes = result_size,
                 "Tool call succeeded"
             );
-            // Curated human-readable audit line for payroll milestone tools.
+            // Curated human-readable audit line for z-payroll milestone calls.
             // This is the shared execution funnel for every agent delegate, so
             // the line fires regardless of which engine path drove the call.
-            // No-ops for non-payroll tools.
+            // No-ops for every other call.
             crate::tools::payroll_audit::emit_payroll_milestone(
                 tool_name,
                 Some(&params),
@@ -298,6 +298,46 @@ mod tests {
         }
     }
 
+    /// Stands in for the t3n-mcp `dispatchContractCall` tool: returns the
+    /// string-wrapped envelope a z-payroll `compute-payroll` dispatch yields.
+    struct PayrollDispatchTool;
+
+    #[async_trait::async_trait]
+    impl Tool for PayrollDispatchTool {
+        fn name(&self) -> &str {
+            "t3n_mcp_dispatchContractCall"
+        }
+        fn description(&self) -> &str {
+            "Dispatches a contract call"
+        }
+        fn parameters_schema(&self) -> serde_json::Value {
+            serde_json::json!({"type": "object", "properties": {}})
+        }
+        async fn execute(
+            &self,
+            _: serde_json::Value,
+            _: &JobContext,
+        ) -> Result<ToolOutput, ToolError> {
+            let envelope = serde_json::json!({
+                "status": "success",
+                "message": "Dispatch completed",
+                "result": {
+                    "cycle_id": "2026-06-0ba009",
+                    "employee_count": 3,
+                    "flagged_count": 0,
+                    "batch_total_cents": "1569000"
+                }
+            });
+            Ok(ToolOutput::success(
+                serde_json::Value::String(envelope.to_string()),
+                Duration::default(),
+            ))
+        }
+        fn requires_sanitization(&self) -> bool {
+            false
+        }
+    }
+
     fn test_safety() -> SafetyLayer {
         SafetyLayer::new(&crate::config::SafetyConfig {
             max_output_length: 100_000,
@@ -359,6 +399,33 @@ mod tests {
             output.contains("hello"),
             "Output should contain the echoed input"
         );
+    }
+
+    #[tokio::test]
+    #[tracing_test::traced_test]
+    async fn test_execute_emits_payroll_milestone_for_generic_dispatch() {
+        let registry = registry_with(vec![Arc::new(PayrollDispatchTool)]).await;
+        let safety = test_safety();
+        let params = serde_json::json!({
+            "contract": "z:a58bb2c562d4f8696bf68a3403591cfc6f84d82e:payroll",
+            "function": "compute-payroll",
+            "args": { "request": {} },
+            "pii_did": "did:t3n:0000000000000000000000000000000000000001"
+        });
+
+        execute_tool_with_safety(
+            &registry,
+            &safety,
+            "t3n_mcp_dispatchContractCall",
+            params,
+            &test_job_ctx(),
+        )
+        .await
+        .expect("dispatch stand-in should succeed"); // safety: test-only assertion
+
+        assert!(logs_contain(
+            "Payroll cycle started — org did:t3n:a58bb2c562d4…, cycle 2026-06-0ba009 · 3 employees · total 15,690.00"
+        ));
     }
 
     #[tokio::test]

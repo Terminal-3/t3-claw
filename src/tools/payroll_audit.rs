@@ -1,6 +1,7 @@
 //! Curated, human-readable audit lines for payroll chat-agent milestones.
 //!
-//! When the chat agent calls one of the payroll MCP tools, we emit a single
+//! When the chat agent calls a z-payroll contract function through the t3n-mcp
+//! generic tools (`dispatchContractCall` or `invokeContract`), we emit a single
 //! plain-English line summarising the milestone onto a dedicated tracing
 //! target so it surfaces in the gateway log stream (the FE log page and
 //! `GET /api/logs/events`). The lines are aggregate-only — cycle id, counts,
@@ -17,49 +18,96 @@
 //!
 //! Structure: [`format_milestone`] is a pure, panic-free formatter (unit
 //! tested); [`emit_payroll_milestone`] is the thin logging wrapper the engine
-//! seams call. The formatter reads both the tool input params (for the
-//! organisation and recipient ids) and the tool result (for cycle id, counts,
-//! totals).
+//! seams call. The formatter reads the tool input params (contract, function,
+//! request body) and the tool result (cycle id, counts, totals, audit).
 
 use serde_json::Value;
 
-/// Bare MCP tool names that mark a payroll milestone. The engine seam hands us
-/// the MCP-prefixed form (`t3n_mcp_runPayrollComputation`); [`canonical_tool`]
-/// strips that prefix before matching against these.
-const RUN: &str = "runPayrollComputation";
-const ESCALATIONS: &str = "submitEscalationResolutions";
-const DISBURSE: &str = "executeDisbursement";
-const FINALIZE: &str = "finalizeAudit";
+/// A t3n-mcp generic tool that can carry a z-payroll call, and the param keys
+/// that name the contract and the function on it.
+struct GenericTool {
+    name: &'static str,
+    contract_key: &'static str,
+    function_key: &'static str,
+}
 
-/// Strip the t3n MCP server prefix so the bare names above match.
+const GENERIC_TOOLS: [GenericTool; 2] = [
+    GenericTool {
+        name: "dispatchContractCall",
+        contract_key: "contract",
+        function_key: "function",
+    },
+    GenericTool {
+        name: "invokeContract",
+        contract_key: "contractId",
+        function_key: "functionName",
+    },
+];
+
+/// A z-payroll contract function that marks a payroll milestone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Step {
+    Compute,
+    Escalations,
+    /// `execute-disbursement` also finalises the audit and reports it as `audit`.
+    Disburse,
+}
+
+impl Step {
+    fn from_function(function: &str) -> Option<Self> {
+        match function {
+            "compute-payroll" => Some(Self::Compute),
+            "submit-escalations" => Some(Self::Escalations),
+            "execute-disbursement" => Some(Self::Disburse),
+            _ => None,
+        }
+    }
+
+    fn failure_label(self) -> &'static str {
+        match self {
+            Self::Compute => "computation",
+            Self::Escalations => "escalation resolution",
+            Self::Disburse => "disbursement",
+        }
+    }
+}
+
+/// Strip the t3n MCP server prefix so the bare tool names above match.
 ///
 /// MCP tools are registered with the agent as `<server>_<tool>` (see
 /// `mcp_tool_id` in `tools::mcp::client`); the t3n server name normalises to
-/// `t3n_mcp`, so the seam hands us e.g. `t3n_mcp_runPayrollComputation`.
+/// `t3n_mcp`, so the seam hands us e.g. `t3n_mcp_dispatchContractCall`.
 /// Stripping the prefix leaves an already-bare name untouched, so either seam
 /// form matches.
 fn canonical_tool(tool_name: &str) -> &str {
     tool_name.strip_prefix("t3n_mcp_").unwrap_or(tool_name)
 }
 
-/// True when `tool_name` is one of the payroll milestone tools (after stripping
-/// the MCP server prefix). Used by the engine seams to gate cheaply before
-/// parsing any tool output.
-pub fn is_payroll_milestone(tool_name: &str) -> bool {
-    matches!(
-        canonical_tool(tool_name),
-        RUN | ESCALATIONS | DISBURSE | FINALIZE
-    )
+/// `z:<tid>:payroll` → `<tid>`; `None` for any other contract name.
+fn payroll_tid(contract: &str) -> Option<&str> {
+    contract
+        .strip_prefix("z:")?
+        .strip_suffix(":payroll")
+        .filter(|tid| !tid.is_empty() && !tid.contains(':'))
+}
+
+/// The milestone step and org tid when this is a call to a z-payroll
+/// milestone function; `None` for every other tool call.
+fn payroll_call<'a>(tool_name: &str, params: Option<&'a Value>) -> Option<(Step, &'a str)> {
+    let tool = canonical_tool(tool_name);
+    let generic = GENERIC_TOOLS.iter().find(|t| t.name == tool)?;
+    let tid = payroll_tid(first_str(params, &[generic.contract_key])?)?;
+    let step = Step::from_function(first_str(params, &[generic.function_key])?)?;
+    Some((step, tid))
 }
 
 /// Emit the milestone line, if any, onto the `t3claw::payroll_audit` target.
 ///
-/// `params` is the tool's input arguments (carries `org_did` and, for
-/// disbursement, the recipient list); `result` is the tool's returned value
-/// (`ToolOutput.result`) — for MCP tools a JSON string of the
-/// `{ status, message, result: … }` envelope, unpacked by
-/// [`descend_to_payload`]. `error` is `Some` when the tool call failed.
-/// Success lines log at `info`, failures at `warn`.
+/// `params` is the tool's input arguments (contract, function and request
+/// body); `result` is the tool's returned value (`ToolOutput.result`) — for
+/// MCP tools a JSON string of the `{ status, message, result: … }` envelope,
+/// unpacked by [`descend_to_payload`]. `error` is `Some` when the tool call
+/// failed. Success lines log at `info`, failures at `warn`.
 pub fn emit_payroll_milestone(
     tool_name: &str,
     params: Option<&Value>,
@@ -77,8 +125,8 @@ pub fn emit_payroll_milestone(
     }
 }
 
-/// Format the human-readable milestone line for a payroll tool, or `None` if
-/// `tool_name` is not a payroll milestone.
+/// Format the human-readable milestone line for a payroll call, or `None` if
+/// the call is not a z-payroll milestone.
 ///
 /// Pure and panic-free: every field read is a fallible `get`/`and_then`, and
 /// a milestone whose key fields are missing degrades to a minimal generic line
@@ -91,10 +139,7 @@ pub fn format_milestone(
     result: Option<&Value>,
     error: Option<&str>,
 ) -> Option<String> {
-    if !is_payroll_milestone(tool_name) {
-        return None;
-    }
-    let canonical = canonical_tool(tool_name);
+    let (step, tid) = payroll_call(tool_name, params)?;
 
     // Navigate to the useful payload: prefer `.result` (re-parsing it when the
     // node hands it back as a JSON string), else fall back to the top-level
@@ -104,30 +149,42 @@ pub fn format_milestone(
     let p = payload.as_ref();
 
     // The cycle id can come from the result payload (authoritative) or, when
-    // the call failed before producing one, from the input params.
-    let cycle = first_str(p, &["cycle_id"]).or_else(|| first_str(params, &["cycle_id"]));
+    // the call failed before producing one, from the request it carried.
+    let request = request_body(params);
+    let cycle = first_str(p, &["cycle_id"]).or_else(|| first_str(request.as_ref(), &["cycle_id"]));
 
     if let Some(err) = error {
-        let step = match canonical {
-            RUN => "computation",
-            DISBURSE => "disbursement",
-            FINALIZE => "finalisation",
-            ESCALATIONS => "escalation resolution",
-            _ => "step",
-        };
+        let step = step.failure_label();
         return Some(match cycle {
             Some(cycle) => format!("⚠️ Payroll {step} failed — cycle {cycle} · {err}"),
             None => format!("⚠️ Payroll {step} failed — {err}"),
         });
     }
 
-    Some(match canonical {
-        RUN => format_run(params, p, cycle),
-        ESCALATIONS => format_escalations(p, cycle),
-        DISBURSE => format_disburse(p, cycle),
-        FINALIZE => format_finalize(p, cycle),
-        _ => unreachable!("guarded by is_payroll_milestone"),
+    Some(match step {
+        Step::Compute => format_run(tid, p, cycle),
+        Step::Escalations => format_escalations(p, cycle),
+        Step::Disburse => format_disburse(p, cycle),
     })
+}
+
+/// The contract request the call carried: `args.request` on
+/// `dispatchContractCall`; `input.request`, or the same inside the
+/// `inputJson` string, on `invokeContract`.
+fn request_body(params: Option<&Value>) -> Option<Value> {
+    let params = params?;
+    let body = params
+        .get("args")
+        .or_else(|| params.get("input"))
+        .filter(|v| v.is_object())
+        .cloned()
+        .or_else(|| {
+            params
+                .get("inputJson")
+                .and_then(Value::as_str)
+                .and_then(|s| serde_json::from_str::<Value>(s).ok())
+        })?;
+    body.get("request").cloned()
 }
 
 /// Resolve the funnel's value to the useful payload object.
@@ -193,42 +250,47 @@ fn shorten_did(did: &str) -> String {
     format!("did:t3n:{prefix}…")
 }
 
-/// The organisation DID from the input params, abbreviated by [`shorten_did`].
-/// Every payroll tool takes an `org_did`; `None` when it is absent.
-fn org_short(params: Option<&Value>) -> Option<String> {
-    first_str(params, &["org_did"]).map(shorten_did)
-}
-
-fn format_run(params: Option<&Value>, p: Option<&Value>, cycle: Option<&str>) -> String {
+fn format_run(tid: &str, p: Option<&Value>, cycle: Option<&str>) -> String {
     let employees = first_u64(p, &["employee_count"]);
-    // Prefer the MCP-enriched ready-to-render total; fall back to raw cents.
-    let total = p
-        .and_then(|obj| obj.get("batch_total"))
-        .and_then(|m| m.get("display"))
-        .and_then(Value::as_str)
-        .map(str::to_owned)
-        .or_else(|| first_str(p, &["batch_total_cents"]).map(str::to_owned));
+    let total = first_str(p, &["batch_total_cents"]).and_then(format_cents);
     let flagged = first_u64(p, &["flagged_count"]).unwrap_or(0);
 
     match (cycle, employees, total) {
         (Some(cycle), Some(employees), Some(total)) => {
             // The org clause only appears here — it establishes org + cycle for
             // the whole run, so later lines need not repeat the long DID.
-            let org_clause = match org_short(params) {
-                Some(org) => format!("org {org}, "),
-                None => String::new(),
-            };
+            let org = shorten_did(&format!("did:t3n:{tid}"));
             let flagged_clause = if flagged > 0 {
                 format!(" · {flagged} flagged")
             } else {
                 String::new()
             };
             format!(
-                "📋 Payroll cycle started — {org_clause}cycle {cycle} · {employees} employees · {total}{flagged_clause}"
+                "📋 Payroll cycle started — org {org}, cycle {cycle} · {employees} employees · {total}{flagged_clause}"
             )
         }
         _ => "📋 Payroll cycle started".to_string(),
     }
+}
+
+/// `"1569000"` → `"total 15,690.00"`. The contract sends no currency, so none
+/// is named. `None` for anything but a decimal string of digits.
+fn format_cents(cents: &str) -> Option<String> {
+    if cents.is_empty() || !cents.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let padded = format!("{cents:0>3}");
+    let (units, fraction) = padded.split_at(padded.len() - 2);
+    let units = units.trim_start_matches('0');
+    let units = if units.is_empty() { "0" } else { units };
+    let mut grouped = String::with_capacity(units.len() + units.len() / 3);
+    for (i, digit) in units.chars().enumerate() {
+        if i > 0 && (units.len() - i) % 3 == 0 {
+            grouped.push(',');
+        }
+        grouped.push(digit);
+    }
+    Some(format!("total {grouped}.{fraction}"))
 }
 
 fn format_escalations(p: Option<&Value>, cycle: Option<&str>) -> String {
@@ -269,6 +331,7 @@ fn format_disburse(p: Option<&Value>, cycle: Option<&str>) -> String {
             first_u64(p, &["total_count", "total"]),
         ),
     };
+    let audit = audit_clause(p.and_then(|obj| obj.get("audit")));
 
     match (success, total) {
         (Some(success), Some(total)) => {
@@ -277,10 +340,33 @@ fn format_disburse(p: Option<&Value>, cycle: Option<&str>) -> String {
                 .map(|rows| disburse_recipients(rows))
                 .unwrap_or_default();
             format!(
-                "📋 Payroll processed and paid{cycle_clause} · {success}/{total} paid{recipients}"
+                "📋 Payroll processed and paid{cycle_clause} · {success}/{total} paid{recipients}{audit}"
             )
         }
-        _ => "📋 Payroll processed and paid".to_string(),
+        _ => format!("📋 Payroll processed and paid{audit}"),
+    }
+}
+
+/// The audit-finalisation clause `execute-disbursement` reports under `audit`.
+/// Empty when there is no `audit` (a `partial` / `failed` payout has none).
+fn audit_clause(audit: Option<&Value>) -> String {
+    match first_str(audit, &["status"]) {
+        Some("ok" | "already_finalised") => {
+            let root = first_str(audit, &["merkle_root_hex", "merkle_root"]);
+            let entries = first_u64(audit, &["entry_count"]);
+            match (root, entries) {
+                (Some(root), Some(entries)) => {
+                    let prefix: String = root.chars().take(10).collect();
+                    format!(" · audit sealed, Merkle root {prefix}… · {entries} entries")
+                }
+                _ => " · audit sealed".to_string(),
+            }
+        }
+        Some("rejected") => match first_str(audit, &["reason"]) {
+            Some(reason) => format!(" · audit rejected ({reason})"),
+            None => " · audit rejected".to_string(),
+        },
+        _ => String::new(),
     }
 }
 
@@ -322,23 +408,6 @@ fn disburse_recipients(rows: &[Value]) -> String {
     format!(" ({listed})")
 }
 
-fn format_finalize(p: Option<&Value>, cycle: Option<&str>) -> String {
-    // The contract field is `merkle_root_hex`; accept `merkle_root` too in
-    // case a future enrichment renames it.
-    let root = first_str(p, &["merkle_root_hex", "merkle_root"]);
-    let entries = first_u64(p, &["entry_count"]);
-
-    match (cycle, root, entries) {
-        (Some(cycle), Some(root), Some(entries)) => {
-            let prefix: String = root.chars().take(10).collect();
-            format!(
-                "📋 Payroll completed and finalised — cycle {cycle} sealed · Merkle root {prefix}… · {entries} entries"
-            )
-        }
-        _ => "📋 Payroll completed and finalised".to_string(),
-    }
-}
-
 /// Length of the named array field, if present and an array.
 fn array_len(v: Option<&Value>, key: &str) -> Option<u64> {
     v.and_then(|obj| obj.get(key))
@@ -351,25 +420,53 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    const TID: &str = "a58bb2c562d4f8696bf68a3403591cfc6f84d82e";
+    const DISPATCH: &str = "t3n_mcp_dispatchContractCall";
+
+    /// `dispatchContractCall` params for a z-payroll function.
+    fn dispatch(function: &str, request: Value) -> Value {
+        json!({
+            "contract": format!("z:{TID}:payroll"),
+            "function": function,
+            "args": { "request": request },
+            "pii_did": "did:t3n:0000000000000000000000000000000000000001"
+        })
+    }
+
+    fn compute() -> Value {
+        dispatch(
+            "compute-payroll",
+            json!({ "org_id": format!("did:t3n:{TID}") }),
+        )
+    }
+
+    fn escalations() -> Value {
+        dispatch("submit-escalations", json!({ "cycle_id": "2026-06" }))
+    }
+
+    fn disburse() -> Value {
+        dispatch("execute-disbursement", json!({ "cycle_id": "2026-06" }))
+    }
+
     #[test]
     fn run_success_with_flagged() {
         let env = json!({
             "status": "success",
-            "message": "Payroll computation completed",
+            "message": "Dispatch completed",
             "result": {
-                "status": "computed",
+                "status": "partial_flags",
                 "cycle_id": "2026-06",
                 "employee_count": 10,
                 "flagged_count": 2,
-                "batch_total_cents": "1569000",
-                "batch_total": { "display": "SGD 15,690.00", "currency": "SGD" }
+                "batch_total_cents": "1569000"
             }
         });
-        let msg = format_milestone(RUN, None, Some(&env), None).expect("payroll tool");
+        let msg = format_milestone(DISPATCH, Some(&compute()), Some(&env), None).unwrap();
         assert!(msg.contains("Payroll cycle started"), "{msg}");
+        assert!(msg.contains("org did:t3n:a58bb2c562d4…"), "{msg}");
         assert!(msg.contains("cycle 2026-06"), "{msg}");
         assert!(msg.contains("10 employees"), "{msg}");
-        assert!(msg.contains("SGD 15,690.00"), "{msg}");
+        assert!(msg.contains("total 15,690.00"), "{msg}");
         assert!(msg.contains("2 flagged"), "{msg}");
     }
 
@@ -380,43 +477,34 @@ mod tests {
                 "cycle_id": "2026-06",
                 "employee_count": 10,
                 "flagged_count": 0,
-                "batch_total": { "display": "SGD 15,690.00" }
+                "batch_total_cents": "1569000"
             }
         });
-        let msg = format_milestone(RUN, None, Some(&env), None).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&compute()), Some(&env), None).unwrap();
         assert!(
             !msg.contains("flagged"),
             "should omit flagged clause: {msg}"
         );
-        assert!(msg.contains("· SGD 15,690.00"), "{msg}");
+        assert!(msg.ends_with("· total 15,690.00"), "{msg}");
     }
 
     #[test]
-    fn run_success_with_org_enrichment() {
-        // The started line carries the abbreviated org DID from params.
-        let params = json!({
-            "org_did": "did:t3n:a58bb2c562d4f8696bf68a3403591cfc6f84d82e",
-            "cycle_id": "2026-06-e0971b"
-        });
-        let env = json!({
-            "result": {
-                "cycle_id": "2026-06-e0971b",
-                "employee_count": 3,
-                "flagged_count": 0,
-                "batch_total": { "display": "SGD 15,690.00" }
-            }
-        });
-        let msg = format_milestone(RUN, Some(&params), Some(&env), None).unwrap();
-        assert!(msg.contains("org did:t3n:a58bb2c562d4…"), "{msg}");
-        assert!(msg.contains("cycle 2026-06-e0971b"), "{msg}");
-        assert!(msg.contains("3 employees"), "{msg}");
-        assert!(msg.contains("SGD 15,690.00"), "{msg}");
+    fn format_cents_groups_and_pads() {
+        assert_eq!(format_cents("0").as_deref(), Some("total 0.00"));
+        assert_eq!(format_cents("5").as_deref(), Some("total 0.05"));
+        assert_eq!(format_cents("100000").as_deref(), Some("total 1,000.00"));
+        assert_eq!(
+            format_cents("123456789").as_deref(),
+            Some("total 1,234,567.89")
+        );
+        assert_eq!(format_cents("12.5"), None);
+        assert_eq!(format_cents(""), None);
     }
 
     #[test]
     fn run_missing_fields_generic_fallback() {
         let env = json!({ "status": "success", "message": "ok", "result": {} });
-        let msg = format_milestone(RUN, None, Some(&env), None).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&compute()), Some(&env), None).unwrap();
         assert_eq!(msg, "📋 Payroll cycle started");
     }
 
@@ -430,12 +518,8 @@ mod tests {
             "rejected_employee_ids": ["e4"]
         })
         .to_string();
-        let env = json!({
-            "status": "success",
-            "message": "Escalation resolutions submitted",
-            "result": inner
-        });
-        let msg = format_milestone(ESCALATIONS, None, Some(&env), None).unwrap();
+        let env = json!({ "status": "success", "result": inner });
+        let msg = format_milestone(DISPATCH, Some(&escalations()), Some(&env), None).unwrap();
         assert!(msg.contains("Escalations resolved"), "{msg}");
         assert!(msg.contains("cycle 2026-06"), "{msg}");
         assert!(msg.contains("3 approved"), "{msg}");
@@ -443,26 +527,16 @@ mod tests {
     }
 
     #[test]
-    fn escalations_success_from_explicit_counts() {
-        let env = json!({
-            "result": { "approved_count": 5, "rejected_count": 0 }
-        });
-        let msg = format_milestone(ESCALATIONS, None, Some(&env), None).unwrap();
-        assert!(msg.contains("5 approved, 0 rejected"), "{msg}");
-    }
-
-    #[test]
     fn escalations_missing_fields_generic_fallback() {
         let env = json!({ "result": "{}" });
-        let msg = format_milestone(ESCALATIONS, None, Some(&env), None).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&escalations()), Some(&env), None).unwrap();
         assert_eq!(msg, "📋 Escalations resolved");
     }
 
     #[test]
     fn disburse_success_counts_rows() {
-        // result is a JSON string (client.execute returns a string).
         let inner = json!({
-            "status": "ok",
+            "status": "partial",
             "cycle_id": "2026-06",
             "disbursement_records": [
                 { "employee_id": "e1", "status": "success", "reference": "r1" },
@@ -471,48 +545,61 @@ mod tests {
             ]
         })
         .to_string();
-        let env = json!({
-            "status": "success",
-            "message": "Disbursement executed",
-            "result": inner
-        });
-        let msg = format_milestone(DISBURSE, None, Some(&env), None).unwrap();
+        let env = json!({ "status": "success", "result": inner });
+        let msg = format_milestone(DISPATCH, Some(&disburse()), Some(&env), None).unwrap();
         assert!(msg.contains("Payroll processed and paid"), "{msg}");
         assert!(msg.contains("2/3 paid"), "{msg}");
         assert!(msg.contains("cycle 2026-06"), "{msg}");
+        // A partial payout carries no audit.
+        assert!(!msg.contains("audit"), "{msg}");
     }
 
     #[test]
-    fn disburse_recipients_all_success_lists_bare_ids() {
-        let inner = json!({
+    fn disburse_reports_sealed_audit() {
+        let env = json!({ "result": {
+            "status": "ok",
             "cycle_id": "2026-06",
             "disbursement_records": [
-                { "employee_id": "E2E-E001", "status": "success" },
-                { "employee_id": "E2E-E002", "status": "success" },
-                { "employee_id": "E2E-E003", "status": "success" }
-            ]
-        });
-        let env = json!({ "result": inner });
-        let msg = format_milestone(DISBURSE, None, Some(&env), None).unwrap();
-        assert!(msg.contains("3/3 paid"), "{msg}");
-        assert!(msg.contains("(E2E-E001, E2E-E002, E2E-E003)"), "{msg}");
-        // No tick/cross markers when all succeeded.
-        assert!(!msg.contains('✓'), "{msg}");
-        assert!(!msg.contains('✗'), "{msg}");
+                { "employee_id": "E1", "status": "success" },
+                { "employee_id": "E2", "status": "success" }
+            ],
+            "audit": {
+                "status": "ok",
+                "cycle_id": "2026-06",
+                "merkle_root_hex": "0123456789abcdef0123456789abcdef",
+                "anchor_tx_ref": "tx",
+                "entry_count": 42
+            }
+        }});
+        let msg = format_milestone(DISPATCH, Some(&disburse()), Some(&env), None).unwrap();
+        assert_eq!(
+            msg,
+            "📋 Payroll processed and paid — cycle 2026-06 · 2/2 paid (E1, E2) · audit sealed, Merkle root 0123456789… · 42 entries"
+        );
+    }
+
+    #[test]
+    fn disburse_reports_rejected_audit() {
+        let env = json!({ "result": {
+            "cycle_id": "2026-06",
+            "disbursement_records": [],
+            "audit": { "status": "rejected", "reason": "entry_mismatch" }
+        }});
+        let msg = format_milestone(DISPATCH, Some(&disburse()), Some(&env), None).unwrap();
+        assert!(msg.ends_with(" · audit rejected (entry_mismatch)"), "{msg}");
     }
 
     #[test]
     fn disburse_recipients_mixed_marks_each_outcome() {
-        let inner = json!({
+        let env = json!({ "result": {
             "cycle_id": "2026-06",
             "disbursement_records": [
                 { "employee_id": "E2E-E001", "status": "success" },
                 { "employee_id": "E2E-E002", "status": "failed" },
                 { "employee_id": "E2E-E003", "status": "success" }
             ]
-        });
-        let env = json!({ "result": inner });
-        let msg = format_milestone(DISBURSE, None, Some(&env), None).unwrap();
+        }});
+        let msg = format_milestone(DISPATCH, Some(&disburse()), Some(&env), None).unwrap();
         assert!(msg.contains("2/3 paid"), "{msg}");
         assert!(msg.contains("E2E-E001 ✓"), "{msg}");
         assert!(msg.contains("E2E-E002 ✗"), "{msg}");
@@ -525,137 +612,113 @@ mod tests {
             .map(|i| json!({ "employee_id": format!("E{i}"), "status": "success" }))
             .collect();
         let env = json!({ "result": { "cycle_id": "2026-06", "disbursement_records": rows } });
-        let msg = format_milestone(DISBURSE, None, Some(&env), None).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&disburse()), Some(&env), None).unwrap();
         assert!(msg.contains("9/9 paid"), "{msg}");
-        // > 8 records: no parenthetical recipient list.
         assert!(!msg.contains('('), "{msg}");
     }
 
     #[test]
     fn disburse_missing_fields_generic_fallback() {
         let env = json!({ "result": "not-json" });
-        let msg = format_milestone(DISBURSE, None, Some(&env), None).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&disburse()), Some(&env), None).unwrap();
         assert_eq!(msg, "📋 Payroll processed and paid");
     }
 
     #[test]
-    fn finalize_success_truncates_root() {
-        let inner = json!({
-            "status": "finalised",
-            "cycle_id": "2026-06",
-            "merkle_root_hex": "0123456789abcdef0123456789abcdef",
-            "entry_count": 42
-        })
-        .to_string();
-        let env = json!({
-            "status": "success",
-            "message": "Audit finalised",
-            "result": inner
-        });
-        let msg = format_milestone(FINALIZE, None, Some(&env), None).unwrap();
-        assert!(msg.contains("Payroll completed and finalised"), "{msg}");
-        assert!(msg.contains("cycle 2026-06 sealed"), "{msg}");
-        // First 10 chars of the root, then an ellipsis.
-        assert!(msg.contains("Merkle root 0123456789…"), "{msg}");
-        assert!(msg.contains("42 entries"), "{msg}");
-    }
-
-    #[test]
-    fn finalize_missing_fields_generic_fallback() {
-        let env = json!({ "result": {} });
-        let msg = format_milestone(FINALIZE, None, Some(&env), None).unwrap();
-        assert_eq!(msg, "📋 Payroll completed and finalised");
-    }
-
-    #[test]
-    fn non_payroll_tool_returns_none() {
+    fn non_payroll_calls_return_none() {
         let env = json!({ "result": { "anything": true } });
         assert!(format_milestone("web_fetch", None, Some(&env), None).is_none());
-        assert!(format_milestone("memory_write", None, None, None).is_none());
+        assert!(format_milestone("t3n_mcp_listMyContext", None, None, None).is_none());
+        // Generic tool, payroll contract, non-milestone function.
+        let params = dispatch("validate-credentials", json!({}));
+        assert!(format_milestone(DISPATCH, Some(&params), Some(&env), None).is_none());
+        // Generic tool, milestone function name, a different contract.
+        let params =
+            json!({ "contract": format!("z:{TID}:flight"), "function": "compute-payroll" });
+        assert!(format_milestone(DISPATCH, Some(&params), Some(&env), None).is_none());
+        // The retired bespoke payroll tool names are no longer milestones.
+        assert!(
+            format_milestone("t3n_mcp_runPayrollComputation", None, Some(&env), None).is_none()
+        );
+    }
+
+    #[test]
+    fn payroll_tid_accepts_only_tenant_payroll_contracts() {
+        assert_eq!(payroll_tid(&format!("z:{TID}:payroll")), Some(TID));
+        assert_eq!(payroll_tid("z::payroll"), None);
+        assert_eq!(payroll_tid("z:a:b:payroll"), None);
+        assert_eq!(payroll_tid("tee:payroll"), None);
+        assert_eq!(payroll_tid(&format!("z:{TID}:payroll-v2")), None);
+    }
+
+    #[test]
+    fn matches_invoke_contract_with_input_or_input_json() {
+        let env = json!({ "result": { "cycle_id": "2026-06", "approved_employee_ids": [], "rejected_employee_ids": [] } });
+        let params = json!({
+            "contractId": format!("z:{TID}:payroll"),
+            "contractVersion": "3.0.0",
+            "functionName": "submit-escalations",
+            "input": { "request": { "cycle_id": "2026-06" } }
+        });
+        let msg =
+            format_milestone("t3n_mcp_invokeContract", Some(&params), Some(&env), None).unwrap();
+        assert_eq!(
+            msg,
+            "📋 Escalations resolved — cycle 2026-06 · 0 approved, 0 rejected"
+        );
+
+        // `inputJson` carries the request when the client cannot send an object.
+        let params = json!({
+            "contractId": format!("z:{TID}:payroll"),
+            "functionName": "execute-disbursement",
+            "inputJson": "{\"request\":{\"cycle_id\":\"2026-07\"}}"
+        });
+        let msg = format_milestone("invokeContract", Some(&params), None, Some("boom")).unwrap();
+        assert_eq!(msg, "⚠️ Payroll disbursement failed — cycle 2026-07 · boom");
     }
 
     #[test]
     fn error_case_uses_failure_shape() {
-        let msg = format_milestone(DISBURSE, None, None, Some("InsufficientCredit")).unwrap();
-        assert_eq!(msg, "⚠️ Payroll disbursement failed — InsufficientCredit");
+        let msg = format_milestone(DISPATCH, Some(&compute()), None, Some("boom")).unwrap();
+        assert_eq!(msg, "⚠️ Payroll computation failed — boom");
 
-        let msg = format_milestone(RUN, None, None, Some("boom")).unwrap();
-        assert!(
-            msg.starts_with("⚠️ Payroll computation failed — boom"),
-            "{msg}"
-        );
-
-        let msg = format_milestone(FINALIZE, None, None, Some("x")).unwrap();
-        assert!(msg.contains("finalisation failed"), "{msg}");
-
-        let msg = format_milestone(ESCALATIONS, None, None, Some("y")).unwrap();
-        assert!(msg.contains("escalation resolution failed"), "{msg}");
-    }
-
-    #[test]
-    fn error_line_includes_cycle_from_params() {
-        // No result, but params carry the cycle the call was attempting.
-        let params = json!({
-            "org_did": "did:t3n:a58bb2c562d4f8696bf68a3403591cfc6f84d82e",
-            "cycle_id": "2026-06-e0971b"
-        });
-        let msg =
-            format_milestone(DISBURSE, Some(&params), None, Some("InsufficientCredit")).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&escalations()), None, Some("y")).unwrap();
         assert_eq!(
             msg,
-            "⚠️ Payroll disbursement failed — cycle 2026-06-e0971b · InsufficientCredit"
+            "⚠️ Payroll escalation resolution failed — cycle 2026-06 · y"
+        );
+
+        let msg = format_milestone(
+            DISPATCH,
+            Some(&disburse()),
+            None,
+            Some("InsufficientCredit"),
+        )
+        .unwrap();
+        assert_eq!(
+            msg,
+            "⚠️ Payroll disbursement failed — cycle 2026-06 · InsufficientCredit"
         );
     }
 
     #[test]
     fn error_takes_precedence_over_result() {
-        // Even with a populated result, an error produces the failure line.
         let env = json!({ "result": { "cycle_id": "c" } });
-        let msg = format_milestone(RUN, None, Some(&env), Some("nope")).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&compute()), Some(&env), Some("nope")).unwrap();
         assert!(msg.contains("computation failed — cycle c · nope"), "{msg}");
     }
 
     #[test]
-    fn descends_top_level_when_no_result_key() {
-        // Defensive: fields present at the top level (no `.result` wrapper).
-        let env = json!({
-            "cycle_id": "2026-06",
-            "employee_count": 4,
-            "batch_total": { "display": "SGD 1,000.00" }
-        });
-        let msg = format_milestone(RUN, None, Some(&env), None).unwrap();
-        assert!(msg.contains("cycle 2026-06"), "{msg}");
-        assert!(msg.contains("4 employees"), "{msg}");
-    }
-
-    #[test]
-    fn matches_mcp_prefixed_tool_names() {
-        // The engine seam hands us the MCP-prefixed form `t3n_mcp_<tool>`.
-        assert!(is_payroll_milestone("t3n_mcp_runPayrollComputation"));
-        assert!(is_payroll_milestone("t3n_mcp_executeDisbursement"));
-        assert!(is_payroll_milestone("t3n_mcp_finalizeAudit"));
-        assert!(is_payroll_milestone("t3n_mcp_submitEscalationResolutions"));
-        // Bare names still match (defensive — either seam form works).
-        assert!(is_payroll_milestone(RUN));
-
-        // A non-payroll t3n tool does not.
-        assert!(!is_payroll_milestone("t3n_mcp_listMyContext"));
-
-        // Success line formats through the prefix.
+    fn matches_bare_tool_names() {
         let env = json!({ "result": {
             "cycle_id": "2026-06",
             "employee_count": 3,
-            "batch_total": { "display": "SGD 1,000.00" }
+            "batch_total_cents": "100000"
         }});
         let msg =
-            format_milestone("t3n_mcp_runPayrollComputation", None, Some(&env), None).unwrap();
-        assert!(msg.contains("Payroll cycle started"), "{msg}");
+            format_milestone("dispatchContractCall", Some(&compute()), Some(&env), None).unwrap();
         assert!(msg.contains("cycle 2026-06"), "{msg}");
-
-        // Error line resolves the step name through the prefix too.
-        let msg =
-            format_milestone("t3n_mcp_executeDisbursement", None, None, Some("boom")).unwrap();
-        assert_eq!(msg, "⚠️ Payroll disbursement failed — boom");
+        assert!(msg.contains("3 employees"), "{msg}");
     }
 
     #[test]
@@ -664,57 +727,36 @@ mod tests {
         // a JSON *string* of the envelope — the real runtime shape.
         let env_text = json!({
             "status": "success",
-            "message": "Payroll computation completed",
+            "message": "Dispatch completed",
             "result": {
                 "cycle_id": "2026-06-0ba009",
                 "employee_count": 3,
                 "flagged_count": 0,
-                "batch_total": { "display": "SGD 15,690.00" }
+                "batch_total_cents": "1569000"
             }
         })
         .to_string();
         let value = Value::String(env_text);
-        let msg =
-            format_milestone("t3n_mcp_runPayrollComputation", None, Some(&value), None).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&compute()), Some(&value), None).unwrap();
         assert!(msg.contains("cycle 2026-06-0ba009"), "{msg}");
         assert!(msg.contains("3 employees"), "{msg}");
-        assert!(msg.contains("SGD 15,690.00"), "{msg}");
 
-        // Double-nested: envelope string whose `.result` is itself a string
-        // (the node re-serialises some contract outputs).
-        let inner = json!({
-            "status": "finalised",
-            "cycle_id": "2026-06-0ba009",
-            "merkle_root_hex": "b4718f96589c5e46950cb8423e69736b",
-            "entry_count": 2
-        })
-        .to_string();
-        let env_text = json!({
-            "status": "success",
-            "message": "Audit finalised",
-            "result": inner
-        })
-        .to_string();
-        let value = Value::String(env_text);
-        let msg = format_milestone("t3n_mcp_finalizeAudit", None, Some(&value), None).unwrap();
-        assert!(msg.contains("Merkle root b4718f9658…"), "{msg}");
-        assert!(msg.contains("2 entries"), "{msg}");
-
-        // Disbursement rows inside a string-wrapped envelope.
+        // Double-nested: envelope string whose `.result` is itself a string.
         let inner = json!({
             "cycle_id": "2026-06-0ba009",
             "disbursement_records": [
                 { "employee_id": "E1", "status": "success" },
                 { "employee_id": "E2", "status": "success" },
                 { "employee_id": "E3", "status": "success" }
-            ]
+            ],
+            "audit": { "status": "ok", "merkle_root_hex": "b4718f96589c5e46950cb8423e69736b", "entry_count": 2 }
         })
         .to_string();
         let value = Value::String(json!({ "result": inner }).to_string());
-        let msg =
-            format_milestone("t3n_mcp_executeDisbursement", None, Some(&value), None).unwrap();
+        let msg = format_milestone(DISPATCH, Some(&disburse()), Some(&value), None).unwrap();
         assert!(msg.contains("3/3 paid"), "{msg}");
-        assert!(msg.contains("cycle 2026-06-0ba009"), "{msg}");
+        assert!(msg.contains("Merkle root b4718f9658…"), "{msg}");
+        assert!(msg.contains("2 entries"), "{msg}");
     }
 
     #[test]
@@ -727,13 +769,11 @@ mod tests {
 
     #[test]
     fn shorten_did_leaves_short_and_non_did_unchanged() {
-        // ≤ 14 hex chars: returned unchanged.
         assert_eq!(shorten_did("did:t3n:abcd1234"), "did:t3n:abcd1234");
         assert_eq!(
             shorten_did("did:t3n:0123456789abcd"),
             "did:t3n:0123456789abcd"
         );
-        // Not a did:t3n value: returned unchanged.
         assert_eq!(shorten_did("not-a-did"), "not-a-did");
         assert_eq!(shorten_did(""), "");
     }

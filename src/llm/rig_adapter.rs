@@ -1721,7 +1721,7 @@ mod tests {
     }
 
     /// A record-of-string map (`additionalProperties: {"type": "string"}`,
-    /// the `runPayrollComputation.historical_baselines` shape) keeps its
+    /// the z-payroll `compute-payroll` request's `historical_baselines` shape) keeps its
     /// value schema. The property is optional here, so `make_nullable` runs
     /// on it — the nullable rewrite must not disturb the open map shape.
     #[test]

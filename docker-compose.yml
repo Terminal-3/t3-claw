@@ -139,10 +139,6 @@ services:
       # payroll/runPayroll/schema.ts in the trinity repo). Empty default
       # keeps existing setups unchanged.
       T3N_MCP_AGENT_SECRET_HEX: ${T3N_MCP_AGENT_SECRET_HEX:-}
-      # z-payroll target org tid (the 40-hex of the org DID). The payroll-z
-      # tools resolve which tenant's payroll to operate on from this; without it
-      # they return "Cannot resolve payroll org tid". Set per deployment in .env.
-      T3N_Z_PAYROLL_ORG_TID: ${T3N_Z_PAYROLL_ORG_TID:-}
       MCP_SOCKET_PATH: /var/run/t3n-mcp/t3n-mcp.sock
       # T3N_PROJECT_DIR is set in docker/t3n-mcp-sidecar.Dockerfile (/workspace/mcp/t3n-mcp).
     volumes:
